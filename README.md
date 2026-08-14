@@ -118,7 +118,7 @@ shared/              # 共享构建预设（tsdown.client.ts）
 ## 版权与许可
 
 - **主体代码**：[zhu1090093659/dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui)，Apache-2.0
-- **增强优化**：@captain1275
+- **增强优化**：[@captain1275](https://github.com/CAPTAIN1275)
 - **DeepSeek 娘精灵图**：[xpy12367/codex-pet-DeepSeek-girl](https://github.com/xpy12367/codex-pet-DeepSeek-girl)，
   社区同人资源，版权归原作者
 - **人形图标**：Font Awesome 6.7.2，CC BY 4.0
