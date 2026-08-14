@@ -318,7 +318,21 @@ export async function checkUpdates(deps: UpdateCheckDeps): Promise<UpdateStatus>
   const linked = profile === undefined
     || isLinkedSpec((profileManifest?.dependencies as Record<string, DependencySpec> | undefined)?.[anchor])
   if (profile === undefined) {
-    return { mode: 'link', packages: [], outdated: false }
+    // Local dev install: report the anchor's current version and probe the
+    // registry for the latest release so the panel still shows what npm
+    // carries (the browser half renders the git-pull hint around it).
+    const latest = await deps.fetchLatest(anchor)
+    return {
+      mode: 'link',
+      anchor,
+      packages: [{
+        name: anchor,
+        current: readInstalledVersion(deps.resolve, anchor),
+        latest,
+        outdated: latest !== undefined && compareVersions(latest, readInstalledVersion(deps.resolve, anchor)) > 0,
+      }],
+      outdated: false,
+    }
   }
   const names = [anchor, ...familyChildren(manifest)]
   const packages: UpdatePackageStatus[] = []
