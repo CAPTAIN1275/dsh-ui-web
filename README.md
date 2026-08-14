@@ -1,5 +1,7 @@
 # DeepSeek Harness UI WEB · DeepSeek Harness WEB UI美化
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
 > 基于 [zhu1090093659/dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui)（Apache-2.0）开发的
 > DeepSeek Harness（DSH）Web UI 插件套件。全套 22 个包已发布到 npm（`@captain1275/*`）。
 
