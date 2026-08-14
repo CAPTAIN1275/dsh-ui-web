@@ -1,0 +1,30 @@
+# Dependencies and build artifacts
+node_modules/
+
+# npm auth config (contains tokens; never commit)
+.npmrc
+
+# Local tool caches
+*.log
+.DS_Store
+
+# GUI test captures
+gui-test-screenshots/
+
+# Local perf scripts
+.dsh/perf/
+
+# Local debug scripts (not committed)
+.dsh/*.js
+.dsh/*.py
+
+# Review prompt drafts (local only)
+REVIEW-PROMPT.md
+
+# Agent skill files (may contain author-local paths; not project content)
+.dsh/skills/
+
+# Upstream screenshots (may contain session/private content; skin previews
+# under packages/skins/*/preview/ are the safe README visuals)
+docs/screenshots/
+docs/dsh-web-ui-banner.png

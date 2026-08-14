@@ -1,0 +1,22 @@
+{
+  "id": "aurora",
+  "name": "极光 · Aurora",
+  "nameEn": "Aurora",
+  "author": "dsh-web-ui-custom",
+  "tagline": "自定义背景图 · 毛玻璃面板 · 极光渐变",
+  "description": "支持自定义背景图片的极光皮肤：在设置中填入任意背景图 URL（或使用内置极光渐变），配合半透明毛玻璃面板与深浅两套极光调色板，背景随心换。",
+  "tags": [
+    "aurora",
+    "custom-background",
+    "glass",
+    "gradient"
+  ],
+  "accent": "#7aa2ff",
+  "bodyAttr": "data-dsh-aurora",
+  "package": "@captain1275/dsh-client-ui-skin-aurora",
+  "wiring": {
+    "id": "ui-skin-aurora",
+    "bundleWired": true
+  },
+  "order": 99
+}

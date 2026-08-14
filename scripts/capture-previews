@@ -1,0 +1,129 @@
+#!/usr/bin/env node
+'use strict'
+
+/**
+ * capture-previews — regenerate every skin's light/dark preview screenshots.
+ *
+ * Opens gallery/preview.html (the real skin renderer: the simulator executes
+ * the actual client bundle, chrome bars and all) in headless Chromium and
+ * screenshots each skin × {light, dark} into packages/skins/<id>/preview/{light,dark}.png.
+ *
+ * Requires playwright + its chromium browser:
+ *   npm i -D playwright && npx playwright install chromium
+ * or run via npx:  npx playwright@latest install chromium
+ *
+ * Usage:
+ *   node scripts/capture-previews              # all skins, light + dark
+ *   node scripts/capture-previews qq98 xp      # only named skins
+ *   node scripts/capture-previews --serve      # serve via http instead of file://
+ *
+ * Outputs PNGs at 1440×900 device scale 2 (2880×1800); the gallery cards
+ * downscale them, so they stay crisp. Re-run after any skin change and
+ * commit the PNGs together with the skin source.
+ */
+
+const { execSync } = require('node:child_process')
+const fs = require('node:fs')
+const http = require('node:http')
+const path = require('node:path')
+
+const ROOT = path.resolve(__dirname, '..')
+const GALLERY = path.join(ROOT, 'gallery')
+
+// --- tiny static server (fallback for environments where file:// screenshots
+// --- misbehave) -------------------------------------------------------------
+let server = null
+
+/** True when `file` is strictly inside `root` (matched at a path boundary). */
+function isInside(root, file) {
+  const rel = path.relative(root, file)
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel))
+}
+
+function serve() {
+  const types = { '.html': 'text/html', '.js': 'text/javascript', '.png': 'image/png' }
+  server = http.createServer((req, res) => {
+    const url = decodeURIComponent((req.url || '/').split('?')[0])
+    const file = path.normalize(path.join(ROOT, url === '/' ? 'gallery/preview.html' : url))
+    if (!isInside(ROOT, file)) { res.writeHead(403); return res.end('forbidden') }
+    fs.readFile(file, (err, buf) => {
+      if (err) { res.writeHead(404); return res.end('not found') }
+      res.writeHead(200, { 'content-type': types[path.extname(file)] || 'application/octet-stream' })
+      res.end(buf)
+    })
+  })
+  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => {
+    resolve(`http://127.0.0.1:${server.address().port}`)
+  }))
+}
+
+function loadPlaywright() {
+  try { return require('playwright') } catch (e) { /* fall through */ }
+  try {
+    const local = path.join(ROOT, 'node_modules', 'playwright')
+    return require(local)
+  } catch (e) {
+    console.error('playwright not found. Install it:\n  npm i -D playwright && npx playwright install chromium')
+    process.exit(1)
+  }
+}
+
+async function main() {
+  const args = process.argv.slice(2)
+  const want = args.filter((a) => !a.startsWith('--'))
+  const useServer = args.includes('--serve')
+
+  const manifest = JSON.parse(fs.readFileSync(path.join(GALLERY, 'manifest.js'), 'utf8')
+    .replace(/^\/\*[\s\S]*?\*\/\s*/, '')   // 头部生成注释
+    .replace(/^window\.SKIN_MANIFEST = /, '')
+    .replace(/;\s*$/, ''))
+  let skins = manifest.skins
+  if (want.length) {
+    const set = new Set(want)
+    skins = skins.filter((s) => set.has(s.id))
+  }
+
+  const base = useServer ? await serve() + '/gallery' : 'file://' + GALLERY
+  console.log(`capture-previews: ${skins.length} skins × {light,dark} @ ${base}`)
+
+  const { chromium } = loadPlaywright()
+  const browser = await chromium.launch()
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 })
+
+  for (const skin of skins) {
+    for (const theme of ['light', 'dark']) {
+      const dir = path.join(ROOT, 'packages', 'skins', skin.id, 'preview')
+      fs.mkdirSync(dir, { recursive: true })
+      const url = `${base}/preview.html?skin=${skin.id}&theme=${theme}&chrome=0`
+      await page.goto(url, { waitUntil: 'networkidle' })
+      // 等皮肤 bundle 执行完（chrome 栏注入 + 样式生效）：等待该皮肤自己的
+      // body 属性出现（取 manifest/skin.json 的 bodyAttr，缺省按 id 推导）。
+      const bodyAttr = skin.bodyAttr || `data-dsh-${skin.id}`
+      // dataset 键形式：data-dsh-retro -> dshRetro
+      const datasetKey = bodyAttr.replace(/^data-/, '').replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+      await page.waitForFunction((key) => {
+        const err = document.getElementById('skinErr')
+        if (err && err.style.display === 'block') return true
+        return document.body.dataset[key] !== undefined
+      }, datasetKey, { timeout: 10000 })
+      const errText = await page.evaluate(() => {
+        const el = document.getElementById('skinErr')
+        return el && el.style.display === 'block' ? el.textContent : null
+      })
+      if (errText) throw new Error(`${skin.id}/${theme}: ${errText}`)
+      await page.waitForTimeout(350) // 让背景图/过渡稳定
+      const out = path.join(dir, `${theme}.png`)
+      await page.screenshot({ path: out })
+      console.log(`  ok ${skin.id}/${theme} → ${path.relative(ROOT, out)}`)
+    }
+  }
+
+  await browser.close()
+  if (server) server.close()
+  console.log('done.')
+}
+
+main().catch((err) => {
+  console.error(err)
+  process.exit(1)
+})

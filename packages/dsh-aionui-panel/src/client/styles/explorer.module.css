@@ -1,0 +1,297 @@
+/**
+ * Explorer column styles — AionUi measured values (tree row 34px, tab bar
+ * 37px, 12px baseline with 8px row padding so content lands at 20px).
+ */
+
+/* The Files/Changes tab bar: 28px buttons + 4px vertical padding + 1px border. */
+.tabBar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 4px 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--aion-bg-3);
+  background: var(--aion-bg-1);
+}
+
+.tabBtn {
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--aion-text-secondary);
+  font-size: 13px;
+  font-family: var(--aion-font-sans);
+  cursor: pointer;
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.tabBtn:hover {
+  background: var(--aion-fill-2);
+}
+
+.tabBtn:active {
+  background: var(--aion-bg-active);
+}
+
+.tabBtn:focus-visible {
+  outline: 2px solid var(--aion-primary);
+  outline-offset: 2px;
+}
+
+.tabBtnActive {
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 2px;
+  background: var(--aion-bg-2);
+  color: var(--aion-text-primary);
+  font-size: 13px;
+  font-family: var(--aion-font-sans);
+  cursor: pointer;
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.tabBtnActive:active {
+  background: var(--aion-bg-active);
+}
+
+.tabBtnActive:focus-visible {
+  outline: 2px solid var(--aion-primary);
+  outline-offset: 2px;
+}
+
+/* The persistent filename search area. */
+.searchArea {
+  flex-shrink: 0;
+  padding: 8px 8px 4px 12px;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 2px;
+  background: var(--aion-bg-base);
+  border: 1px solid transparent;
+  transition: border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.searchBoxFocus {
+  border-color: var(--aion-primary);
+}
+
+/* The inner input is focusable; mirror its focus ring onto the box. */
+.searchBox:focus-within {
+  box-shadow: 0 0 0 2px transparent, 0 0 0 4px var(--aion-primary);
+}
+
+.searchIcon {
+  display: flex;
+  align-items: center;
+  color: var(--aion-text-secondary);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--aion-text-primary);
+  font-size: 13px;
+  font-family: var(--aion-font-sans);
+}
+
+.searchInput::placeholder {
+  color: var(--aion-text-tertiary);
+}
+
+.searchClear {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--aion-text-tertiary);
+  cursor: pointer;
+  padding: 0;
+}
+
+.searchClear:hover {
+  color: var(--aion-text-primary);
+  background: var(--aion-fill-2);
+}
+
+.searchClear:active {
+  background: var(--aion-bg-active);
+}
+
+.searchClear:focus-visible {
+  outline: 2px solid var(--aion-primary);
+  outline-offset: 2px;
+}
+
+.searchAreaFocus .searchClear {
+  display: flex;
+}
+
+/* Scroll region shared by tree and results. */
+.scrollArea {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* The file tree. Rows: 34px, full-row hover/selected, 8px padding (the
+   container adds the 12px baseline). */
+.tree {
+  padding: 2px 0 8px 12px;
+  user-select: none;
+}
+
+.treeRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding-right: 8px;
+  cursor: pointer;
+  border-radius: 0;
+  transition: background-color 0.12s ease;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.treeRow:hover {
+  background-color: var(--aion-fill-2);
+}
+
+.treeRow:active {
+  background-color: var(--aion-bg-active);
+}
+
+.treeRowDragging {
+  cursor: grabbing;
+  opacity: 0.55;
+}
+
+.treeRow:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--aion-primary);
+}
+
+.treeRowSelected,
+.treeRowSelected:hover {
+  background-color: var(--aion-fill-3);
+}
+
+.treeArrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--aion-text-tertiary);
+  flex-shrink: 0;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.treeArrowOpen {
+  transform: rotate(90deg);
+}
+
+.treeArrowEmpty {
+  visibility: hidden;
+}
+
+.treeName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--aion-text-primary);
+}
+
+.treeRowSelected .treeName {
+  color: var(--aion-text-primary);
+}
+
+.treeMeta {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--aion-text-tertiary);
+  flex-shrink: 0;
+  padding-right: 4px;
+}
+
+/* Search results (flat stream). */
+.resultRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px 0 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.12s ease;
+}
+
+.resultRow:hover {
+  background-color: var(--aion-fill-2);
+}
+
+.resultRow:active {
+  background-color: var(--aion-bg-active);
+}
+
+.resultRow:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--aion-primary);
+}
+
+.resultName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--aion-text-primary);
+}
+
+.resultPath {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--aion-text-tertiary);
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.resultMeta {
+  font-size: 11px;
+  color: var(--aion-text-tertiary);
+  flex-shrink: 0;
+}
+
+.searchStatus {
+  padding: 12px;
+  font-size: 12px;
+  color: var(--aion-text-tertiary);
+}
+
+/* Empty tree state. */
+.emptyState {
+  padding: 24px 16px;
+  font-size: 12px;
+  color: var(--aion-text-tertiary);
+  text-align: center;
+}

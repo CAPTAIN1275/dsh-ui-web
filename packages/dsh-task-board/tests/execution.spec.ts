@@ -1,0 +1,357 @@
+/**
+ * Execution-service tests: real dsh session driving — session creation,
+ * prompt delivery, rename, and settlement from the watched snapshot.
+ */
+import { describe, expect, it, vi } from 'vitest'
+import { ExecutionService, type ExecutionEnvironment, type SessionDriver } from '../src/core/execution.ts'
+import { createTask, startExecution } from '../src/core/tasks.ts'
+
+const NOW = 1_700_000_000_000
+
+/** Controllable SessionDriver fake. */
+class FakeDriver implements SessionDriver {
+  renameCalls: string[] = []
+  promptCalls: unknown[] = []
+  promptResult: { ok: true } | { ok: false; error: unknown } = { ok: true }
+  private snapshot: { running: boolean; lastAgentError: string | null; turnEnds: ReadonlyMap<number, number> } = {
+    running: false,
+    lastAgentError: null,
+    turnEnds: new Map(),
+  }
+  private listeners = new Set<() => void>()
+
+  async rename(title: string): Promise<unknown> {
+    this.renameCalls.push(title)
+    return { ok: true, value: { title, seq: 1 } }
+  }
+
+  async prompt(content: unknown[], _mode: 'queue'): Promise<{ ok: true } | { ok: false; error: unknown }> {
+    this.promptCalls.push(content)
+    return this.promptResult
+  }
+
+  getSnapshot(): { running: boolean; lastAgentError: string | null; turnEnds: ReadonlyMap<number, number> } {
+    return this.snapshot
+  }
+
+  subscribe(fn: () => void): () => void {
+    this.listeners.add(fn)
+    return () => { this.listeners.delete(fn) }
+  }
+
+  setSnapshot(snapshot: { running: boolean; lastAgentError?: string | null; turns?: number }): void {
+    const turns = new Map<number, number>()
+    for (let i = 1; i <= (snapshot.turns ?? 0); i += 1) turns.set(i, i * 10)
+    this.snapshot = { running: snapshot.running, lastAgentError: snapshot.lastAgentError ?? null, turnEnds: turns }
+    for (const fn of [...this.listeners]) fn()
+  }
+}
+
+/** Fake env: workspace list, session creation, and one driver per session id. */
+function makeEnv(overrides: {
+  recentWorkspaceId?: string | undefined
+  items?: Array<{ workspaceId: string }>
+  promptResult?: { ok: true } | { ok: false; error: unknown }
+} = {}) {
+  const drivers = new Map<string, FakeDriver>()
+  const summaries = new Map<string, { running: boolean }>()
+  const connectCalls: string[] = []
+  const env: ExecutionEnvironment = {
+    sessions: {
+      list: {
+        getSnapshot: () => ({ phase: 'ready', byId: Object.fromEntries(summaries) }),
+        subscribe: () => () => {},
+      },
+      binding: (id: string) => {
+        const driver = drivers.get(id)
+        return driver === undefined ? undefined : { session: driver }
+      },
+    },
+    workspaces: {
+      list: {
+        getSnapshot: () => ({
+          items: overrides.items ?? [{ workspaceId: 'ws-1' }],
+          recentWorkspaceId: overrides.recentWorkspaceId,
+        }),
+      },
+      connectWorkspace: async (id: string) => {
+        connectCalls.push(id)
+        const driver = new FakeDriver()
+        if (overrides.promptResult !== undefined) driver.promptResult = overrides.promptResult
+        drivers.set('s-1', driver)
+        summaries.set('s-1', { running: false })
+        return 's-1'
+      },
+    },
+  }
+  return { env, drivers, summaries, connectCalls }
+}
+
+function sampleTask() {
+  return createTask({ title: '写个脚本', description: '', prompt: '写一个 bash 脚本，打印 hello' }, NOW, 'task-1')
+}
+
+describe('ExecutionService.run', () => {
+  it('creates a session in the recent workspace, sends the task prompt, and settles succeeded on turn completion', async () => {
+    const { env, drivers, connectCalls } = makeEnv({ recentWorkspaceId: 'ws-recent' })
+    const service = new ExecutionService(env)
+    const task = sampleTask()
+    const { execution } = startExecution(task, NOW, 'exec-1')
+    const events: string[] = []
+    const promise = service.run(task, execution, event => { events.push(event.kind) })
+
+    await promise
+    expect(connectCalls).toEqual(['ws-recent'])
+    expect(drivers.get('s-1')?.renameCalls).toEqual(['写个脚本'])
+    expect(drivers.get('s-1')?.promptCalls).toEqual([[{ type: 'text', text: '写一个 bash 脚本，打印 hello' }]])
+    expect(events).toEqual(['started'])
+
+    // Turn starts…
+    drivers.get('s-1')?.setSnapshot({ running: true, turns: 0 })
+    // …and completes.
+    drivers.get('s-1')?.setSnapshot({ running: false, turns: 1 })
+    expect(events).toEqual(['started', 'settled'])
+  })
+
+  it('falls back to the task title when the prompt is blank', async () => {
+    const { env, drivers } = makeEnv()
+    const service = new ExecutionService(env)
+    const task = createTask({ title: '只是标题', description: '', prompt: '  ' }, NOW, 'task-2')
+    const { execution } = startExecution(task, NOW, 'exec-1')
+    const promise = service.run(task, execution, () => {})
+    await promise
+    expect(drivers.get('s-1')?.promptCalls[0]).toEqual([{ type: 'text', text: '只是标题' }])
+  })
+
+  it('settles failed when the agent reports an error', async () => {
+    const { env, drivers } = makeEnv()
+    const service = new ExecutionService(env)
+    const task = sampleTask()
+    const { execution } = startExecution(task, NOW, 'exec-1')
+    const events: Array<{ kind: string; outcome?: string; error?: string }> = []
+    const promise = service.run(task, execution, event => { events.push(event) })
+    await promise
+    drivers.get('s-1')?.setSnapshot({ running: true })
+    drivers.get('s-1')?.setSnapshot({ running: false, lastAgentError: '模型调用失败', turns: 1 })
+    expect(events.at(-1)).toEqual({
+      kind: 'settled', taskId: 'task-1', executionId: 'exec-1', outcome: 'failed', error: '模型调用失败',
+    })
+  })
+
+  it('settles failed when the prompt is rejected', async () => {
+    const { env } = makeEnv({ promptResult: { ok: false, error: { code: 'bad-request', message: 'nope' } } })
+    const service = new ExecutionService(env)
+    const task = sampleTask()
+    const { execution } = startExecution(task, NOW, 'exec-1')
+    const events: Array<{ kind: string; outcome?: string; error?: string }> = []
+    await service.run(task, execution, event => { events.push(event) })
+    expect(events.at(-1)?.kind).toBe('settled')
+    expect(events.at(-1)?.outcome).toBe('failed')
+  })
+
+  it('settles a turn that completes while the prompt round-trip is in flight', async () => {
+    // A driver whose prompt() advances the turn to completion before it
+    // resolves: the watch must catch it without a later subscription change.
+    const connected = new FakeDriver()
+    const env: ExecutionEnvironment = {
+      sessions: {
+        list: { getSnapshot: () => ({ phase: 'ready', byId: {} }), subscribe: () => () => {} },
+        binding: () => ({ session: connected }),
+      },
+      workspaces: {
+        list: { getSnapshot: () => ({ items: [{ workspaceId: 'ws-1' }], recentWorkspaceId: undefined }) },
+        connectWorkspace: async () => 's-1',
+      },
+    }
+    connected.prompt = async () => {
+      connected.setSnapshot({ running: false, turns: 1 })
+      return { ok: true }
+    }
+    const service = new ExecutionService(env)
+    const task = sampleTask()
+    const { execution } = startExecution(task, NOW, 'exec-1')
+    const events: Array<{ kind: string; outcome?: string }> = []
+    await service.run(task, execution, event => { events.push(event) })
+    expect(events.map(e => e.kind)).toEqual(['started', 'settled'])
+    expect(events[1]).toMatchObject({ kind: 'settled', outcome: 'succeeded' })
+  })
+
+  it('settles failed when no workspace is available', async () => {
+    const { env } = makeEnv({ items: [], recentWorkspaceId: undefined })
+    const service = new ExecutionService(env)
+    const task = sampleTask()
+    const { execution } = startExecution(task, NOW, 'exec-1')
+    const events: Array<{ kind: string; outcome?: string; error?: string }> = []
+    await service.run(task, execution, event => { events.push(event) })
+    expect(events.at(-1)).toMatchObject({ kind: 'settled', outcome: 'failed' })
+    expect(events.at(-1)?.error).toContain('workspace')
+  })
+
+  it('settles failed when the execution session never becomes ready', async () => {
+    const env: ExecutionEnvironment = {
+      sessions: {
+        list: { getSnapshot: () => ({ phase: 'ready', byId: {} }), subscribe: () => () => {} },
+        binding: () => undefined,
+      },
+      workspaces: {
+        list: { getSnapshot: () => ({ items: [{ workspaceId: 'ws-1' }], recentWorkspaceId: undefined }) },
+        connectWorkspace: async () => 's-1',
+      },
+    }
+    const service = new ExecutionService(env)
+    const task = sampleTask()
+    const { execution } = startExecution(task, NOW, 'exec-1')
+    const events: Array<{ kind: string; outcome?: string }> = []
+    await service.run(task, execution, event => { events.push(event) })
+    expect(events.at(-1)).toMatchObject({ kind: 'settled', outcome: 'failed' })
+  })
+
+  it('never rejects — thrown wiring failures become settled-failed events', async () => {
+    const env: ExecutionEnvironment = {
+      sessions: { list: { getSnapshot: () => ({ phase: 'ready', byId: {} }), subscribe: () => () => {} }, binding: () => undefined },
+      workspaces: {
+        list: { getSnapshot: () => ({ items: [], recentWorkspaceId: undefined }) },
+        connectWorkspace: async () => { throw new Error('boom') },
+      },
+    }
+    const service = new ExecutionService(env)
+    const task = sampleTask()
+    const { execution } = startExecution(task, NOW, 'exec-1')
+    const events: string[] = []
+    await expect(service.run(task, execution, event => { events.push(event.kind) })).resolves.toBeUndefined()
+    expect(events).toEqual(['settled'])
+  })
+})
+
+describe('ExecutionService.reconcile', () => {
+  it('settles a task whose execution session no longer exists', async () => {
+    const { env } = makeEnv()
+    const service = new ExecutionService(env)
+    const task = sampleTask()
+    const { task: running } = startExecution(task, NOW, 'exec-1')
+    const withSession = { ...running, executions: running.executions.map(e => ({ ...e, sessionId: 's-gone' })) }
+    const event = await service.reconcile(withSession)
+    expect(event).toMatchObject({ kind: 'settled', outcome: 'cancelled' })
+  })
+
+  it('settles a finished session by its agent error (warm snapshot)', async () => {
+    const { env, drivers, summaries } = makeEnv()
+    drivers.set('s-1', new FakeDriver())
+    summaries.set('s-1', { running: false })
+    drivers.get('s-1')!.setSnapshot({ running: false, lastAgentError: 'x', turns: 1 })
+    const service = new ExecutionService(env)
+    const task = sampleTask()
+    const { task: running } = startExecution(task, NOW, 'exec-1')
+    const withSession = {
+      ...running,
+      executions: running.executions.map(e => ({ ...e, sessionId: 's-1' })),
+    }
+    expect(await service.reconcile(withSession)).toMatchObject({ kind: 'settled', outcome: 'failed' })
+  })
+
+  it('settles a finished cold session as succeeded via the list summary', async () => {
+    const { env, summaries } = makeEnv()
+    summaries.set('s-1', { running: false })
+    const service = new ExecutionService(env)
+    const task = sampleTask()
+    const { task: running } = startExecution(task, NOW, 'exec-1')
+    const withSession = { ...running, executions: running.executions.map(e => ({ ...e, sessionId: 's-1' })) }
+    expect(await service.reconcile(withSession)).toMatchObject({ kind: 'settled', outcome: 'succeeded' })
+  })
+
+  it('detects failure of a cold session from the raw history tail', async () => {
+    const { env, summaries } = makeEnv()
+    summaries.set('s-1', { running: false })
+    const service = new ExecutionService({
+      ...env,
+      history: {
+        loadTail: async () => ({
+          events: [
+            { type: 'user/message' },
+            { type: 'turn/end', data: { reason: { kind: 'error' } } },
+          ],
+        }),
+      },
+    })
+    const task = sampleTask()
+    const { task: running } = startExecution(task, NOW, 'exec-1')
+    const withSession = { ...running, executions: running.executions.map(e => ({ ...e, sessionId: 's-1' })) }
+    expect(await service.reconcile(withSession)).toMatchObject({ kind: 'settled', outcome: 'failed' })
+  })
+
+  it('falls back to succeeded when the history tail has no error turn', async () => {
+    const { env, summaries } = makeEnv()
+    summaries.set('s-1', { running: false })
+    const service = new ExecutionService({
+      ...env,
+      history: {
+        loadTail: async () => ({
+          events: [
+            { type: 'user/message' },
+            { type: 'turn/end', data: { reason: { kind: 'completed' } } },
+          ],
+        }),
+      },
+    })
+    const task = sampleTask()
+    const { task: running } = startExecution(task, NOW, 'exec-1')
+    const withSession = { ...running, executions: running.executions.map(e => ({ ...e, sessionId: 's-1' })) }
+    expect(await service.reconcile(withSession)).toMatchObject({ kind: 'settled', outcome: 'succeeded' })
+  })
+
+  it('stays pending while the session is still running', async () => {
+    const { env, drivers, summaries } = makeEnv()
+    drivers.set('s-1', new FakeDriver())
+    summaries.set('s-1', { running: true })
+    drivers.get('s-1')!.setSnapshot({ running: true, turns: 1 })
+    const service = new ExecutionService(env)
+    const task = sampleTask()
+    const { task: running } = startExecution(task, NOW, 'exec-1')
+    const withSession = { ...running, executions: running.executions.map(e => ({ ...e, sessionId: 's-1' })) }
+    expect(await service.reconcile(withSession)).toBeUndefined()
+  })
+
+  it('waits for the session-list baseline before judging a session missing', async () => {
+    const { env, summaries } = makeEnv()
+    // Baseline not ready yet: even though byId is empty, no cancel verdict.
+    const pendingEnv: ExecutionEnvironment = {
+      ...env,
+      sessions: {
+        ...env.sessions,
+        list: { getSnapshot: () => ({ phase: 'pending' as const, byId: {} }), subscribe: () => () => {} },
+      },
+    }
+    const service = new ExecutionService(pendingEnv)
+    const task = sampleTask()
+    const { task: running } = startExecution(task, NOW, 'exec-1')
+    const withSession = { ...running, executions: running.executions.map(e => ({ ...e, sessionId: 's-1' })) }
+    expect(await service.reconcile(withSession)).toBeUndefined()
+
+    // Once ready with the session present, the finished session settles.
+    summaries.set('s-1', { running: false })
+    const readyService = new ExecutionService(env)
+    expect(await readyService.reconcile(withSession)).toMatchObject({ kind: 'settled', outcome: 'succeeded' })
+
+    // A ready list without the session is a genuine cancel.
+    const missingEnv: ExecutionEnvironment = {
+      ...env,
+      sessions: {
+        ...env.sessions,
+        list: { getSnapshot: () => ({ phase: 'ready' as const, byId: {} }), subscribe: () => () => {} },
+      },
+    }
+    expect(await new ExecutionService(missingEnv).reconcile(withSession)).toMatchObject({ kind: 'settled', outcome: 'cancelled' })
+  })
+
+  it('ignores tasks with no open execution', async () => {
+    const { env } = makeEnv()
+    const service = new ExecutionService(env)
+    expect(await service.reconcile(sampleTask())).toBeUndefined()
+    const { task: running } = startExecution(sampleTask(), NOW, 'exec-1')
+    const settled = {
+      ...running,
+      executions: running.executions.map(e => ({ ...e, endedAt: NOW, result: 'succeeded' as const })),
+    }
+    expect(await service.reconcile(settled)).toBeUndefined()
+  })
+})

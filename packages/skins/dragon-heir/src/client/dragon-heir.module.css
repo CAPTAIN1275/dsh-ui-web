@@ -1,0 +1,821 @@
+/* dragon-heir (龙的传人) skin — the dual-faced dragon theme for the dsh
+   web GUI.
+   Everything is scoped under body[data-dsh-dragon-heir], which the plugin's
+   apply() sets (and retracts on dispose), so the skin stays fully
+   hot-pluggable. The dragon art itself is applied by apply() as an inline
+   background-image (data URL from ./art.ts, with a readability scrim chosen
+   by the current theme); this stylesheet carries the palette remap and the
+   ambient pane frosting:
+     - light theme = 不屈龙魂 (Unyielding Dragon Soul): warm rice-paper
+       surfaces, ink text, 朱砂 (vermilion) brand, gold sparingly for warn
+       accents;
+     - dark theme  = 万里长城 (The Great Wall): ink-blue stone surfaces,
+       gold brand, cool off-white text — the dusk-wall take on the same
+       token map.
+   Deliberately NO backdrop-filter anywhere — an ancestor with
+   backdrop-filter becomes the containing block for fixed-position
+   descendants, which would trap overlays like the settings panel inside
+   the sidebar column (same discipline as blue-fantasy). */
+
+/* --- Base: fonts stay default; the app rides on the dragon backdrop ------- */
+
+body[data-dsh-dragon-heir] {
+  color: #262319;
+  background-color: #f4efe4;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] {
+  color: #eef1f6;
+  background-color: #12161f;
+}
+
+/* The app frame itself is transparent — the panes below carry the frosted
+   paper (light) / stone (dark) glass over the art. */
+body[data-dsh-dragon-heir] [id='root'] {
+  background: transparent;
+}
+
+/* --- Static palette: light (paper + ink + vermilion) ----------------------- */
+
+body[data-dsh-dragon-heir] {
+  --dsw-static-amber-100: #f7ecd8;
+  --dsw-static-amber-400: #c8912f;
+  --dsw-static-amber-500: #a3732a;
+  --dsw-static-amber-600: #8a5f1f;
+  --dsw-static-amber-900: #4a3515;
+  --dsw-static-blue-100: #f2cdcc;
+  --dsw-static-blue-300: #dd8f8c;
+  --dsw-static-blue-400: #d2605c;
+  --dsw-static-blue-450: #c9443f;
+  --dsw-static-blue-500: #c3272b;
+  --dsw-static-blue-50: #fbeceb;
+  --dsw-static-blue-50p: #f8e0df;
+  --dsw-static-blue-600: #a81f22;
+  --dsw-static-blue-75: #f7dcdb;
+  --dsw-static-blue-800: #741517;
+  --dsw-static-blue-950: #3d0b0c;
+  --dsw-static-deepseek-100: #f2cdcc;
+  --dsw-static-deepseek-200: #e9b3b1;
+  --dsw-static-deepseek-300: #dd8f8c;
+  --dsw-static-deepseek-400: #d2605c;
+  --dsw-static-deepseek-450: #c9443f;
+  --dsw-static-deepseek-500: #c3272b;
+  --dsw-static-deepseek-50: #fbeceb;
+  --dsw-static-deepseek-600: #a81f22;
+  --dsw-static-deepseek-700-delete: #8f1a1d;
+  --dsw-static-deepseek-800: #741517;
+  --dsw-static-deepseek-900: #581012;
+  --dsw-static-green-100: #dcefe2;
+  --dsw-static-green-400: #5cb877;
+  --dsw-static-green-500: #2e8e52;
+  --dsw-static-green-900: #1e3f2c;
+  --dsw-static-neutral-00: #ffffff;
+  --dsw-static-neutral-1000: #131009;
+  --dsw-static-neutral-100: #f4efe4;
+  --dsw-static-neutral-150: #ede6d6;
+  --dsw-static-neutral-200: #e5dcc8;
+  --dsw-static-neutral-250: #ddd2bb;
+  --dsw-static-neutral-300: #ccc0a6;
+  --dsw-static-neutral-400: #a89c82;
+  --dsw-static-neutral-500: #8a7f68;
+  --dsw-static-neutral-50: #faf6ee;
+  --dsw-static-neutral-550: #7a7059;
+  --dsw-static-neutral-600: #6b624e;
+  --dsw-static-neutral-700: #544c3c;
+  --dsw-static-neutral-800: #3c362b;
+  --dsw-static-neutral-850: #343026;
+  --dsw-static-neutral-900: #262319;
+  --dsw-static-neutral-bluish-00: #ffffff;
+  --dsw-static-neutral-bluish-1000: #131009;
+  --dsw-static-neutral-bluish-100: #f4efe4;
+  --dsw-static-neutral-bluish-150: #ece4d1;
+  --dsw-static-neutral-bluish-200: #e3d9c2;
+  --dsw-static-neutral-bluish-250: #d9ceb3;
+  --dsw-static-neutral-bluish-300: #c7ba9c;
+  --dsw-static-neutral-bluish-400: #a2967a;
+  --dsw-static-neutral-bluish-500: #857a62;
+  --dsw-static-neutral-bluish-50: #f8f4ea;
+  --dsw-static-neutral-bluish-600: #675e4b;
+  --dsw-static-neutral-bluish-60: #f3eee1;
+  --dsw-static-neutral-bluish-700: #504838;
+  --dsw-static-neutral-bluish-750: #453e31;
+  --dsw-static-neutral-bluish-75: #efe8d6;
+  --dsw-static-neutral-bluish-800: #363028;
+  --dsw-static-neutral-bluish-850: #2f2a23;
+  --dsw-static-neutral-bluish-875: #28241e;
+  --dsw-static-neutral-bluish-900: #1f1c17;
+  --dsw-static-neutral-bluish-950: #161410;
+  --dsw-static-red-100: #f7d9d9;
+  --dsw-static-red-400: #e05c5c;
+  --dsw-static-red-500: #c00000;
+  --dsw-static-red-50: #fbecec;
+  --dsw-static-red-600: #a00000;
+  --dsw-static-red-900: #5c1010;
+}
+
+/* --- Static palette: dark (great-wall blue-gray + gold) -------------------- */
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] {
+  --dsw-static-amber-100: #4a3515;
+  --dsw-static-amber-400: #d9a94f;
+  --dsw-static-amber-500: #c8a24a;
+  --dsw-static-amber-600: #b08a36;
+  --dsw-static-amber-900: #4a3515;
+  --dsw-static-blue-100: #35415e;
+  --dsw-static-blue-300: #5d6f8d;
+  --dsw-static-blue-400: #7789a6;
+  --dsw-static-blue-450: #8fa2bf;
+  --dsw-static-blue-500: #c8a24a;
+  --dsw-static-blue-50: #20283a;
+  --dsw-static-blue-50p: #242e42;
+  --dsw-static-blue-600: #d9b768;
+  --dsw-static-blue-75: #252e43;
+  --dsw-static-blue-800: #e9d096;
+  --dsw-static-blue-950: #f5e6c0;
+  --dsw-static-deepseek-100: #35415e;
+  --dsw-static-deepseek-200: #40506f;
+  --dsw-static-deepseek-300: #5d6f8d;
+  --dsw-static-deepseek-400: #7789a6;
+  --dsw-static-deepseek-450: #8fa2bf;
+  --dsw-static-deepseek-500: #c8a24a;
+  --dsw-static-deepseek-50: #20283a;
+  --dsw-static-deepseek-600: #d9b768;
+  --dsw-static-deepseek-700-delete: #e2c47f;
+  --dsw-static-deepseek-800: #e9d096;
+  --dsw-static-deepseek-900: #f0dcac;
+  --dsw-static-green-100: #1e3f2c;
+  --dsw-static-green-400: #5cb877;
+  --dsw-static-green-500: #2e8e52;
+  --dsw-static-green-900: #1e3f2c;
+  --dsw-static-neutral-00: #12161f;
+  --dsw-static-neutral-1000: #eef1f6;
+  --dsw-static-neutral-100: #1a2130;
+  --dsw-static-neutral-150: #1f2738;
+  --dsw-static-neutral-200: #242e42;
+  --dsw-static-neutral-250: #29344b;
+  --dsw-static-neutral-300: #334056;
+  --dsw-static-neutral-400: #485873;
+  --dsw-static-neutral-500: #5d6f8d;
+  --dsw-static-neutral-50: #161b26;
+  --dsw-static-neutral-550: #687b99;
+  --dsw-static-neutral-600: #7789a6;
+  --dsw-static-neutral-700: #92a3bc;
+  --dsw-static-neutral-800: #b2c0d3;
+  --dsw-static-neutral-850: #c2cde0;
+  --dsw-static-neutral-900: #d2dae6;
+  --dsw-static-neutral-bluish-00: #12161f;
+  --dsw-static-neutral-bluish-1000: #eef1f6;
+  --dsw-static-neutral-bluish-100: #1a2130;
+  --dsw-static-neutral-bluish-150: #20283a;
+  --dsw-static-neutral-bluish-200: #252e43;
+  --dsw-static-neutral-bluish-250: #2a344c;
+  --dsw-static-neutral-bluish-300: #333f58;
+  --dsw-static-neutral-bluish-400: #485873;
+  --dsw-static-neutral-bluish-500: #5d6f8d;
+  --dsw-static-neutral-bluish-50: #171c27;
+  --dsw-static-neutral-bluish-600: #7789a6;
+  --dsw-static-neutral-bluish-60: #1a2030;
+  --dsw-static-neutral-bluish-700: #92a3bc;
+  --dsw-static-neutral-bluish-750: #9dacc5;
+  --dsw-static-neutral-bluish-75: #1d2433;
+  --dsw-static-neutral-bluish-800: #b2c0d3;
+  --dsw-static-neutral-bluish-850: #c2cde0;
+  --dsw-static-neutral-bluish-875: #cad4e4;
+  --dsw-static-neutral-bluish-900: #d2dae6;
+  --dsw-static-neutral-bluish-950: #dde3ec;
+  --dsw-static-red-100: #4a2222;
+  --dsw-static-red-400: #e07070;
+  --dsw-static-red-500: #d05050;
+  --dsw-static-red-50: #3a1c1c;
+  --dsw-static-red-600: #b84040;
+  --dsw-static-red-900: #5c1010;
+}
+
+/* --- Alias palette: light ---------------------------------------------------
+   The semantic surface the components actually read; every hue derives
+   from the paper/ink/vermilion families above. The big surfaces (bg-base,
+   the layer stack, sidebar fill) are translucent on purpose: the app rides
+   on the ink-wash art, so panels let it glow through instead of covering
+   it. */
+
+body[data-dsh-dragon-heir] {
+  --dsh-accent: #c3272b;
+  --dsw-alias-bg-base: rgba(250, 247, 240, 0.34);
+  --dsw-alias-bg-layer-1: rgba(244, 239, 228, 0.38);
+  --dsw-alias-bg-layer-2: rgba(237, 229, 213, 0.43);
+  --dsw-alias-bg-layer-3: rgba(229, 218, 198, 0.48);
+  --dsw-alias-bg-mask-1: rgba(38, 35, 25, 0.32);
+  --dsw-alias-bg-mask-2: rgba(38, 35, 25, 0.15);
+  --dsw-alias-bg-mask-3: rgba(38, 35, 25, 0.4);
+  --dsw-alias-bg-mask-photo: rgba(19, 16, 9, 0.8);
+  --dsw-alias-bg-module-platform: rgba(237, 229, 213, 0.43);
+  --dsw-alias-bg-multi-select: rgba(242, 205, 204, 0.8);
+  --dsw-alias-bg-overlay: rgba(248, 243, 232, 0.88);
+  --dsw-alias-bg-skeleton: rgba(38, 35, 25, 0.06);
+  --dsw-alias-border-inverted2: rgba(255, 255, 255, 0.6);
+  --dsw-alias-border-inverted: rgba(255, 255, 255, 0.4);
+  --dsw-alias-border-l1: rgba(84, 76, 60, 0.15);
+  --dsw-alias-border-l2-darkmode-thin: rgba(84, 76, 60, 0.2);
+  --dsw-alias-border-l2: rgba(84, 76, 60, 0.22);
+  --dsw-alias-border-l3: rgba(84, 76, 60, 0.32);
+  --dsw-alias-border-l4: rgba(84, 76, 60, 0.42);
+  --dsw-alias-brand-primary-invert: #ffffff;
+  --dsw-alias-brand-primary-new-colorprimary-new-color: #c3272b;
+  --dsw-alias-brand-primary: #c3272b;
+  --dsw-alias-brand-text: #4a1f1a;
+  --dsw-alias-button-contrast-fill: #a81f22;
+  --dsw-alias-button-elevated-fill: #ffffff;
+  --dsw-alias-button-floating-fill: #ffffff;
+  --dsw-alias-button-floating-hover: #f0e9d8;
+  --dsw-alias-button-ghost-active-border: #dd8f8c;
+  --dsw-alias-button-ghost-active-fill: #f2cdcc;
+  --dsw-alias-button-ghost-active-hover: #e9b3b1;
+  --dsw-alias-button-info-fill: #c3272b;
+  --dsw-alias-button-info-hover: #d33a3e;
+  --dsw-alias-button-primary-dimmed: #f2cdcc;
+  --dsw-alias-button-primary-fill: #c3272b;
+  --dsw-alias-button-primary-hover: #d33a3e;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(195, 39, 43, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(195, 39, 43, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(195, 39, 43, 0.6);
+  --dsw-alias-interactive-bg-active: rgba(195, 39, 43, 0.14);
+  --dsw-alias-interactive-bg-hover-accent: rgba(195, 39, 43, 0.18);
+  --dsw-alias-interactive-bg-hover-danger: rgba(192, 0, 0, 0.06);
+  --dsw-alias-interactive-bg-hover-solid: #f0e9d8;
+  --dsw-alias-interactive-bg-hover: rgba(195, 39, 43, 0.08);
+  --dsw-alias-label-caption: #8a7f68;
+  --dsw-alias-label-dimmed: #9c9179;
+  --dsw-alias-label-primary-dimmed: #4c4436;
+  --dsw-alias-label-primary-foreground: #ffffff;
+  --dsw-alias-label-primary-inverted: #ffffff;
+  --dsw-alias-label-primary: #262319;
+  --dsw-alias-label-secondary: #544c3c;
+  --dsw-alias-label-tertiary: #6b624e;
+  --dsw-alias-markdown-citation: rgba(237, 229, 213, 0.6);
+  --dsw-alias-markdown-code-block-banner: rgba(244, 239, 228, 0.5);
+  --dsw-alias-markdown-code-block: rgba(244, 239, 228, 0.5);
+  --dsw-alias-markdown-code-segment-selected: rgba(255, 255, 255, 0.8);
+  --dsw-alias-markdown-code-segment-unselected: rgba(248, 243, 232, 0.6);
+  --dsw-alias-markdown-inline-code: rgba(237, 229, 213, 0.6);
+  --dsw-alias-markdown-placeholder: rgba(244, 239, 228, 0.58);
+  --dsw-alias-markdown-tag: rgba(237, 229, 213, 0.6);
+  --dsw-alias-scrollbar-bg-l1: #e5dcc8;
+  --dsw-alias-scrollbar-bg-l2: #e5dcc8;
+  --dsw-alias-scrollbar-hover-l1: #b8ab90;
+  --dsw-alias-scrollbar-hover-l2: #b8ab90;
+  --dsw-alias-state-business-primary: #2e8e52;
+  --dsw-alias-state-business-tertiary: #dcefe2;
+  --dsw-alias-state-error-primary: #c00000;
+  --dsw-alias-state-error-secondary: #e05c5c;
+  --dsw-alias-state-success-primary: #2e8e52;
+  --dsw-alias-state-success-secondary: #58b058;
+  --dsw-alias-state-success-tertiary: #dcefe2;
+  --dsw-alias-state-warn-label: #8a5f1f;
+  --dsw-alias-state-warn-primary: #c8912f;
+  --dsw-alias-state-warn-secondary: #d9a94f;
+  --dsw-alias-state-warn-tertiary: #f7ecd8;
+  --dsw-alias-toast-bg: #a81f22;
+  --dsw-alias-tooltip-bg: #262319;
+  --dsw-specific-bubble-highlight: #e9b3b1;
+  --dsw-specific-bubble: #f2cdcc;
+  --dsw-specific-input-major: rgba(255, 255, 255, 0.6);
+  --dsw-specific-login-input: rgba(255, 255, 255, 0.6);
+  --dsw-specific-menu: rgba(248, 243, 232, 0.88);
+  --dsw-specific-selector: rgba(243, 235, 217, 0.8);
+  --dsw-specific-sidebar-fill: rgba(246, 241, 230, 0.32);
+  --dsw-specific-sidebar-nav-item-active-accent: #dd8f8c;
+  --dsw-specific-sidebar-nav-item-active: #f2cdcc;
+  --dsw-specific-sidebar-nav-item-hover: #f0e9d8;
+  --dsw-specific-tip: #f4efe4;
+}
+
+/* --- Alias palette: dark (great-wall blue-gray + gold) ---------------------- */
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] {
+  --dsh-accent: #c8a24a;
+  --dsw-alias-bg-base: rgba(18, 22, 31, 0.34);
+  --dsw-alias-bg-layer-1: rgba(26, 33, 48, 0.4);
+  --dsw-alias-bg-layer-2: rgba(33, 41, 60, 0.46);
+  --dsw-alias-bg-layer-3: rgba(40, 50, 71, 0.5);
+  --dsw-alias-bg-mask-1: rgba(0, 0, 0, 0.45);
+  --dsw-alias-bg-mask-2: rgba(0, 0, 0, 0.22);
+  --dsw-alias-bg-mask-3: rgba(0, 0, 0, 0.5);
+  --dsw-alias-bg-mask-photo: rgba(6, 8, 14, 0.82);
+  --dsw-alias-bg-module-platform: rgba(33, 41, 60, 0.46);
+  --dsw-alias-bg-multi-select: rgba(51, 64, 88, 0.8);
+  --dsw-alias-bg-overlay: rgba(24, 30, 44, 0.88);
+  --dsw-alias-bg-skeleton: rgba(255, 255, 255, 0.06);
+  --dsw-alias-border-inverted2: rgba(255, 255, 255, 0.6);
+  --dsw-alias-border-inverted: rgba(255, 255, 255, 0.4);
+  --dsw-alias-border-l1: rgba(147, 168, 197, 0.12);
+  --dsw-alias-border-l2-darkmode-thin: rgba(147, 168, 197, 0.15);
+  --dsw-alias-border-l2: rgba(147, 168, 197, 0.18);
+  --dsw-alias-border-l3: rgba(147, 168, 197, 0.26);
+  --dsw-alias-border-l4: rgba(147, 168, 197, 0.34);
+  --dsw-alias-brand-primary-invert: #12161f;
+  --dsw-alias-brand-primary-new-colorprimary-new-color: #c8a24a;
+  --dsw-alias-brand-primary: #c8a24a;
+  --dsw-alias-brand-text: #f0dcac;
+  --dsw-alias-button-contrast-fill: #96702a;
+  --dsw-alias-button-elevated-fill: #20283a;
+  --dsw-alias-button-floating-fill: #181e2b;
+  --dsw-alias-button-floating-hover: #2a344c;
+  --dsw-alias-button-ghost-active-border: #b08a36;
+  --dsw-alias-button-ghost-active-fill: #2a344c;
+  --dsw-alias-button-ghost-active-hover: #35415e;
+  --dsw-alias-button-info-fill: #96702a;
+  --dsw-alias-button-info-hover: #b08a36;
+  --dsw-alias-button-primary-dimmed: #4a3515;
+  --dsw-alias-button-primary-fill: #96702a;
+  --dsw-alias-button-primary-hover: #b08a36;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(200, 162, 74, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(200, 162, 74, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(200, 162, 74, 0.6);
+  --dsw-alias-interactive-bg-active: rgba(200, 162, 74, 0.14);
+  --dsw-alias-interactive-bg-hover-accent: rgba(200, 162, 74, 0.2);
+  --dsw-alias-interactive-bg-hover-danger: rgba(224, 112, 112, 0.12);
+  --dsw-alias-interactive-bg-hover-solid: #2a344c;
+  --dsw-alias-interactive-bg-hover: rgba(255, 255, 255, 0.07);
+  --dsw-alias-label-caption: #93a4bd;
+  --dsw-alias-label-dimmed: #7b8da9;
+  --dsw-alias-label-primary-dimmed: #c2cde0;
+  --dsw-alias-label-primary-foreground: #ffffff;
+  --dsw-alias-label-primary-inverted: #12161f;
+  --dsw-alias-label-primary: #eef1f6;
+  --dsw-alias-label-secondary: #d2dae6;
+  --dsw-alias-label-tertiary: #b2c0d3;
+  --dsw-alias-markdown-citation: rgba(33, 41, 60, 0.6);
+  --dsw-alias-markdown-code-block-banner: rgba(21, 27, 41, 0.6);
+  --dsw-alias-markdown-code-block: rgba(21, 27, 41, 0.6);
+  --dsw-alias-markdown-code-segment-selected: rgba(40, 50, 71, 0.75);
+  --dsw-alias-markdown-code-segment-unselected: rgba(26, 33, 48, 0.6);
+  --dsw-alias-markdown-inline-code: rgba(28, 35, 52, 0.62);
+  --dsw-alias-markdown-placeholder: rgba(26, 33, 48, 0.6);
+  --dsw-alias-markdown-tag: rgba(28, 35, 52, 0.62);
+  --dsw-alias-scrollbar-bg-l1: #2a344c;
+  --dsw-alias-scrollbar-bg-l2: #2a344c;
+  --dsw-alias-scrollbar-hover-l1: #5d6f8d;
+  --dsw-alias-scrollbar-hover-l2: #5d6f8d;
+  --dsw-alias-state-business-primary: #c8a24a;
+  --dsw-alias-state-business-tertiary: #2a344c;
+  --dsw-alias-state-error-primary: #e07070;
+  --dsw-alias-state-error-secondary: #e07070;
+  --dsw-alias-state-success-primary: #58b058;
+  --dsw-alias-state-success-secondary: #58b058;
+  --dsw-alias-state-success-tertiary: #1e3f2c;
+  --dsw-alias-state-warn-label: #d9a94f;
+  --dsw-alias-state-warn-primary: #d9a94f;
+  --dsw-alias-state-warn-secondary: #d9a94f;
+  --dsw-alias-state-warn-tertiary: #4a3515;
+  --dsw-alias-toast-bg: #96702a;
+  --dsw-alias-tooltip-bg: #eef1f6;
+  --dsw-specific-bubble-highlight: #35415e;
+  --dsw-specific-bubble: #2a344c;
+  --dsw-specific-input-major: rgba(21, 27, 41, 0.65);
+  --dsw-specific-login-input: rgba(21, 27, 41, 0.65);
+  --dsw-specific-menu: rgba(24, 30, 44, 0.88);
+  --dsw-specific-selector: rgba(28, 35, 52, 0.8);
+  --dsw-specific-sidebar-fill: rgba(22, 28, 41, 0.36);
+  --dsw-specific-sidebar-nav-item-active-accent: #35415e;
+  --dsw-specific-sidebar-nav-item-active: #2a344c;
+  --dsw-specific-sidebar-nav-item-hover: #20283a;
+  --dsw-specific-tip: #1a2130;
+}
+
+/* --- Ambient surfaces -------------------------------------------------------
+   No pane-level rules here: the app rides on the dragon art through the
+   translucent tokens above (bg-base, the layer stack, sidebar fill, menus,
+   inputs). backdrop-filter is deliberately unused — it would trap fixed
+   overlays (e.g. the settings panel) inside their ancestor's box. */
+
+body[data-dsh-dragon-heir] [id='root'] {
+  background: transparent;
+}
+
+/* --- Chrome details ---------------------------------------------------------
+   Scrollbars, selection, links, and focus rings in the paper/ink (light)
+   and gold-on-stone (dark) hues. */
+
+body[data-dsh-dragon-heir] {
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+}
+
+body[data-dsh-dragon-heir]::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+body[data-dsh-dragon-heir]::-webkit-scrollbar-track {
+  background: #efe8d6;
+}
+
+body[data-dsh-dragon-heir]::-webkit-scrollbar-thumb {
+  background: #cfc3a8;
+  border: 2px solid #efe8d6;
+  border-radius: 5px;
+}
+
+body[data-dsh-dragon-heir]::-webkit-scrollbar-thumb:hover {
+  background: #a2967a;
+}
+
+body[data-dsh-dragon-heir]::-webkit-scrollbar-corner {
+  background: #efe8d6;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme]::-webkit-scrollbar-track,
+body[data-dsh-dragon-heir][data-ds-dark-theme]::-webkit-scrollbar-corner {
+  background: #1a2130;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: #334056;
+  border-color: #1a2130;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: #5d6f8d;
+}
+
+body[data-dsh-dragon-heir]::selection {
+  background: #c3272b;
+  color: #ffffff;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme]::selection {
+  background: #c8a24a;
+  color: #12161f;
+}
+
+body[data-dsh-dragon-heir] a {
+  color: #a81f22;
+  transition: color 150ms ease;
+}
+
+body[data-dsh-dragon-heir] a:visited {
+  color: #8f3d5e;
+}
+
+body[data-dsh-dragon-heir] a:hover {
+  color: #c3272b;
+}
+
+body[data-dsh-dragon-heir] a:active {
+  color: #8f1a1d;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] a {
+  color: #d9b768;
+  transition: color 150ms ease;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] a:visited {
+  color: #e2c47f;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] a:hover {
+  color: #f0dcac;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] a:active {
+  color: #b08a36;
+}
+
+body[data-dsh-dragon-heir] :focus-visible {
+  outline: 2px solid rgba(195, 39, 43, 0.55);
+  outline-offset: 2px;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] :focus-visible {
+  outline: 2px solid rgba(200, 162, 74, 0.6);
+  outline-offset: 2px;
+}
+
+/* --- aionui 右侧面板适配（dsh-aionui-panel） -----------------------------
+   The Explorer / Changes / Preview side panels ride on the dragon backdrop
+   through the same translucent discipline as the rest of the skin. The
+   panel UI is fully driven by the --aion-* token system; the two rules below
+   remap the complete token table (light + dark), then a small set of
+   structural overrides owns the column / root layers and the interaction
+   chrome. Like the main interface, there is deliberately NO backdrop-filter:
+   the panels let the ink-wash / wall art glow through translucent surfaces
+   instead. Inner tab bars, tree rows and search boxes are CSS-module hashed
+   and are styled purely via the token remap. */
+
+/* --- Token remap: light (paper + ink + 朱砂 vermilion) -------------------- */
+
+body[data-dsh-dragon-heir] {
+  --aion-bg-base: rgba(250, 247, 240, 0.88);
+  --aion-bg-1: rgba(244, 239, 228, 0.45);
+  --aion-bg-2: rgba(237, 229, 213, 0.5);
+  --aion-bg-3: rgba(208, 198, 172, 0.55);
+  --aion-bg-4: rgba(208, 198, 172, 0.85);
+  --aion-bg-hover: rgba(195, 39, 43, 0.08);
+  --aion-bg-active: rgba(195, 39, 43, 0.14);
+  --aion-text-primary: #262319;
+  --aion-text-secondary: #544c3c;
+  --aion-text-tertiary: #6b624e;
+  --aion-text-disabled: #a89c82;
+  --aion-primary: #c3272b;
+  --aion-success: #2e8e52;
+  --aion-warning: #c8912f;
+  --aion-danger: #c00000;
+  --aion-brand: #c3272b;
+  --aion-aou-1: #fbeceb;
+  --aion-aou-2: #f2cdcc;
+  --aion-aou-3: #dd8f8c;
+  --aion-aou-4: #d2605c;
+  --aion-aou-5: #c9443f;
+  --aion-aou-6: #a81f22;
+  --aion-fill-2: rgba(195, 39, 43, 0.1);
+  --aion-fill-3: rgba(195, 39, 43, 0.16);
+  --aion-border-base: rgba(84, 76, 60, 0.22);
+  --aion-overlay-shadow: 0 8px 24px rgba(38, 35, 25, 0.16);
+  --aion-font-sans: -apple-system, "system-ui", "Segoe UI", Roboto, "Helvetica Neue",
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+  --aion-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+/* --- Token remap: dark (万里长城 青黛 + 金晖) ------------------------------ */
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] {
+  --aion-bg-base: rgba(24, 30, 44, 0.9);
+  --aion-bg-1: rgba(26, 33, 48, 0.5);
+  --aion-bg-2: rgba(40, 50, 71, 0.55);
+  --aion-bg-3: rgba(147, 168, 197, 0.28);
+  --aion-bg-4: rgba(147, 168, 197, 0.45);
+  --aion-bg-hover: rgba(255, 255, 255, 0.07);
+  --aion-bg-active: rgba(200, 162, 74, 0.16);
+  --aion-text-primary: #eef1f6;
+  --aion-text-secondary: #d2dae6;
+  --aion-text-tertiary: #b2c0d3;
+  --aion-text-disabled: #687b99;
+  --aion-primary: #c8a24a;
+  --aion-success: #58b058;
+  --aion-warning: #d9a94f;
+  --aion-danger: #e07070;
+  --aion-brand: #c8a24a;
+  --aion-aou-1: #20283a;
+  --aion-aou-2: #2a344c;
+  --aion-aou-3: #35415e;
+  --aion-aou-4: #5d6f8d;
+  --aion-aou-5: #8fa2bf;
+  --aion-aou-6: #c8a24a;
+  --aion-fill-2: rgba(255, 255, 255, 0.08);
+  --aion-fill-3: rgba(200, 162, 74, 0.18);
+  --aion-border-base: rgba(147, 168, 197, 0.26);
+  --aion-overlay-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --aion-font-sans: -apple-system, "system-ui", "Segoe UI", Roboto, "Helvetica Neue",
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+  --aion-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+/* --- Panel columns and roots ---------------------------------------------
+   The frame-level columns are DOM-created with their own inline border
+   reading var(--aion-bg-3); the remap above already colors that border and
+   the column background (var(--aion-bg-1)) with translucent paper / stone,
+   so the dragon art glows through. The .aionui-root sits on that background,
+   so we drop it to transparent to avoid double-layering the translucency. */
+
+body[data-dsh-dragon-heir] [data-aionui-explorer-col],
+body[data-dsh-dragon-heir] [data-aionui-preview-col] {
+  background-color: var(--aion-bg-1);
+}
+
+body[data-dsh-dragon-heir] :global(.aionui-root) {
+  background: transparent;
+}
+
+/* --- Interaction chrome --------------------------------------------------
+   Frosted overlays, warm vermilion scrim on light / deep dusk scrim on dark,
+   and a vermilion / gold accent on hoverable chrome that flows from the
+   remapped brand and state tokens. */
+
+body[data-dsh-dragon-heir] :global(.aionui-overlay) {
+  background: rgba(38, 35, 25, 0.34);
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] :global(.aionui-overlay) {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+body[data-dsh-dragon-heir] :global(.aionui-btn-primary) {
+  background: #c3272b;
+  border-color: #c3272b;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+body[data-dsh-dragon-heir] :global(.aionui-btn-primary):hover:not(:disabled) {
+  background: #d33a3e;
+  border-color: #d33a3e;
+}
+
+body[data-dsh-dragon-heir] :global(.aionui-btn-primary):active:not(:disabled) {
+  background: #a81f22;
+  border-color: #a81f22;
+}
+
+body[data-dsh-dragon-heir] :global(.aionui-btn-primary):disabled {
+  background: rgba(195, 39, 43, 0.42);
+  border-color: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] :global(.aionui-btn-primary) {
+  background: #96702a;
+  border-color: #96702a;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] :global(.aionui-btn-primary):hover:not(:disabled) {
+  background: #b08a36;
+  border-color: #b08a36;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] :global(.aionui-btn-primary):active:not(:disabled) {
+  background: #7d5b24;
+  border-color: #7d5b24;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] :global(.aionui-btn-primary):disabled {
+  background: rgba(150, 112, 42, 0.42);
+  border-color: transparent;
+  color: rgba(18, 22, 31, 0.72);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Floating expand / collapse chevron chrome: transitioned, with hover /
+   active / focus-visible and a disabled non-response guard. */
+body[data-dsh-dragon-heir] :global(.aionui-floating-expand),
+body[data-dsh-dragon-heir] :global(.aionui-collapse-chevron) {
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+body[data-dsh-dragon-heir] :global(.aionui-floating-expand):hover:not(:disabled),
+body[data-dsh-dragon-heir] :global(.aionui-collapse-chevron):hover:not(:disabled) {
+  color: #a81f22;
+  background-color: rgba(195, 39, 43, 0.12);
+}
+
+body[data-dsh-dragon-heir] :global(.aionui-floating-expand):active:not(:disabled),
+body[data-dsh-dragon-heir] :global(.aionui-collapse-chevron):active:not(:disabled) {
+  color: #8f1a1d;
+  background-color: rgba(195, 39, 43, 0.2);
+}
+
+body[data-dsh-dragon-heir] :global(.aionui-floating-expand):disabled,
+body[data-dsh-dragon-heir] :global(.aionui-collapse-chevron):disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] :global(.aionui-floating-expand),
+body[data-dsh-dragon-heir][data-ds-dark-theme] :global(.aionui-collapse-chevron) {
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] :global(.aionui-floating-expand):hover:not(:disabled),
+body[data-dsh-dragon-heir][data-ds-dark-theme] :global(.aionui-collapse-chevron):hover:not(:disabled) {
+  color: #f0dcac;
+  background-color: rgba(200, 162, 74, 0.18);
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] :global(.aionui-floating-expand):active:not(:disabled),
+body[data-dsh-dragon-heir][data-ds-dark-theme] :global(.aionui-collapse-chevron):active:not(:disabled) {
+  color: #d9a94f;
+  background-color: rgba(200, 162, 74, 0.26);
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] :global(.aionui-floating-expand):disabled,
+body[data-dsh-dragon-heir][data-ds-dark-theme] :global(.aionui-collapse-chevron):disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* --- Motion: reduced --------------------------------------------------
+   The skin ships no decorative animation (the dragon art is a live-swapped
+   static backdrop, so there is nothing to animate); every transition above
+   is interaction-chrome only and is fully neutralized for users who prefer
+   reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  body[data-dsh-dragon-heir] a,
+  body[data-dsh-dragon-heir] :global(.aionui-btn-primary),
+  body[data-dsh-dragon-heir] :global(.aionui-floating-expand),
+  body[data-dsh-dragon-heir] :global(.aionui-collapse-chevron) {
+    transition: none;
+  }
+}
+
+/* --- git-graph 提交图适配（dsh-git-graph） -----------------------------------
+   The git graph dialog / branch popover / selector chip read the shell's
+   --dsw-alias-* remap, so their surfaces already sit on the paper-and-ink
+   palette. These rules add the skin's own color voice to the commit
+   topology: each lane column gets a hue from the 朱砂 / 青黛 / 金晖 family
+   (pass lines stay muted; the current-branch badge keeps the brand fill),
+   and the dialog frame re-reads the vermilion / gold chrome. Hooks are the
+   presentation-neutral data-gitgraph-* attributes emitted by the
+   dsh-git-graph bundle — no hashed class names are involved. */
+
+/* Lane hue ramp: vermilion / jade / amber / gold, repeating every six
+   columns. Node and merge glyphs share the column hue; pass and gap cells
+   keep the muted lane color from the plugin's own tokens. */
+body[data-dsh-dragon-heir] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+1),
+body[data-dsh-dragon-heir] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+1) { color: #c3272b; }
+body[data-dsh-dragon-heir] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+2),
+body[data-dsh-dragon-heir] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+2) { color: #2e8e52; }
+body[data-dsh-dragon-heir] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+3),
+body[data-dsh-dragon-heir] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+3) { color: #a3732a; }
+body[data-dsh-dragon-heir] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+4),
+body[data-dsh-dragon-heir] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+4) { color: #c8a24a; }
+body[data-dsh-dragon-heir] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+5),
+body[data-dsh-dragon-heir] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+5) { color: #a81f22; }
+body[data-dsh-dragon-heir] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n),
+body[data-dsh-dragon-heir] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n) { color: #58b058; }
+
+/* Night variant: the same hue family, lifted for the dark stone sky. */
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+1),
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+1) { color: #e07070; }
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+2),
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+2) { color: #58b058; }
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+3),
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+3) { color: #d9a94f; }
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+4),
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+4) { color: #f0dcac; }
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+5),
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+5) { color: #c05050; }
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n),
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n) { color: #7cc97c; }
+
+/* Dialog frame: paper surface with a vermilion (light) / gold (dark) seam,
+   like the dragon art's seal-and-gilding chrome. */
+body[data-dsh-dragon-heir] [data-gitgraph-dialog] {
+  border-color: rgba(195, 39, 43, 0.35);
+  box-shadow: 0 12px 32px rgba(38, 35, 25, 0.22);
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-dialog] {
+  border-color: rgba(200, 162, 74, 0.4);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Ref badges (non-current): paper chips with a vermilion / gold hairline;
+   the current branch keeps the brand fill from the token remap. */
+body[data-dsh-dragon-heir] [data-gitgraph-ref]:not([data-gitgraph-ref-current]) {
+  border: 1px solid rgba(195, 39, 43, 0.28);
+  color: #544c3c;
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-ref]:not([data-gitgraph-ref-current]) {
+  border-color: rgba(200, 162, 74, 0.35);
+  color: #d2dae6;
+}
+
+
+/* --- 输入区选择器适配：工作区 + Git 分支胶囊（dsh-git-graph） -------------
+   The composer selector pills (official workspace picker + git-graph branch
+   chip) draw from --dsw-alias-button-tool-bar-fill / border-l2 /
+   label-secondary; the skin's global remap paints them with a heavy
+   50%-alpha vermilion fill that reads as a washed-out pink and loses its
+   fill on hover. This section re-scopes those tokens on the selector row
+   (located structurally through the git-graph chip hook data-gitgraph-chip)
+   so both pills become crisp paper chips: hairline fill, clear vermilion
+   border (gold at night), deep ink labels, tinted hover/active and an
+   open-state tint. Row-scoped values only reach the two chips; the rest of
+   the shell keeps the global remap. Light + dark. */
+
+body[data-dsh-dragon-heir] div:has(> div > [data-gitgraph-chip]) {
+  --dsw-alias-button-tool-bar-fill: rgba(195, 39, 43, 0.06);
+  --dsw-alias-border-l2: rgba(195, 39, 43, 0.4);
+  --dsw-alias-label-secondary: #8f1a1d;
+  --dsw-alias-label-tertiary: #a3732a;
+  --dsw-alias-interactive-bg-hover: rgba(195, 39, 43, 0.12);
+  --dsw-alias-interactive-bg-active: rgba(195, 39, 43, 0.2);
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] div:has(> div > [data-gitgraph-chip]) {
+  --dsw-alias-button-tool-bar-fill: rgba(255, 255, 255, 0.06);
+  --dsw-alias-border-l2: rgba(200, 162, 74, 0.42);
+  --dsw-alias-label-secondary: #f0dcac;
+  --dsw-alias-label-tertiary: #c8a24a;
+  --dsw-alias-interactive-bg-hover: rgba(200, 162, 74, 0.14);
+  --dsw-alias-interactive-bg-active: rgba(200, 162, 74, 0.22);
+}
+
+/* Open state: soft tint under the brand border (both chips toggle
+   aria-expanded). */
+body[data-dsh-dragon-heir] div:has(> div > [data-gitgraph-chip]) > button[aria-expanded='true'],
+body[data-dsh-dragon-heir] [data-gitgraph-chip][aria-expanded='true'] {
+  background-color: rgba(195, 39, 43, 0.14);
+}
+
+body[data-dsh-dragon-heir][data-ds-dark-theme] div:has(> div > [data-gitgraph-chip]) > button[aria-expanded='true'],
+body[data-dsh-dragon-heir][data-ds-dark-theme] [data-gitgraph-chip][aria-expanded='true'] {
+  background-color: rgba(200, 162, 74, 0.16);
+}
+

@@ -1,0 +1,104 @@
+#!/usr/bin/env node
+'use strict'
+
+/**
+ * embed-skin-art — compress a generated artwork to WebP and splice it into a
+ * skin's art.ts as a base64 data URL.
+ *
+ * The dsh skin contract bans static asset files: artworks must ship inline.
+ * This script re-encodes a bitmap (PNG/JPG/WebP from gpt-image-2 or friends)
+ * to WebP (quality 75) via headless Chromium's canvas encoder, resized to a
+ * sane UI-background width, then replaces
+ * `export const <NAME> = ...` (a single-line or multi-line literal ending in
+ * `)` at column 0) with `export const <NAME> = 'data:image/webp;base64,...'`.
+ *
+ * Usage:
+ *   node scripts/embed-skin-art <skin> <exportName> <imagePath> [maxWidth]
+ *     skin       — directory under packages/skins/, e.g. dragon-heir
+ *     exportName — art.ts constant to replace, e.g. DARK_ART
+ *     imagePath  — source image (PNG/JPG/WebP)
+ *     maxWidth   — resize target width in px (default 1600; 0 = keep native)
+ *
+ * Requires playwright + chromium (same as scripts/capture-previews).
+ */
+
+const fs = require('node:fs')
+const path = require('node:path')
+
+const ROOT = path.resolve(__dirname, '..')
+
+function loadPlaywright() {
+  try { return require('playwright') } catch (e) { /* fall through */ }
+  try { return require(path.join(ROOT, 'node_modules', 'playwright')) } catch (e) {
+    console.error('playwright not found. Install it:\n  npm i -D playwright && npx playwright install chromium')
+    process.exit(1)
+  }
+}
+
+async function main() {
+  const [skin, exportName, imagePath, maxWidthArg] = process.argv.slice(2)
+  if (!skin || !exportName || !imagePath) {
+    console.error('usage: node scripts/embed-skin-art <skin> <exportName> <imagePath> [maxWidth]')
+    process.exit(1)
+  }
+  const maxWidth = maxWidthArg ? Number(maxWidthArg) : 1600
+  const artFile = path.join(ROOT, 'packages', 'skins', skin, 'src', 'client', 'art.ts')
+  const src = fs.readFileSync(artFile, 'utf8')
+  // The current value is either a single-line `'data:...'` (already-embedded
+  // artwork) or a multi-line `svgUri(\n ... \n)` placeholder. Pick the
+  // matching pattern: single-line values are replaced line-scoped, multi-line
+  // placeholders match up to their closing `)` (tolerating indentation) —
+  // never past the next export.
+  const exportLine = src.split('\n').find((l) => l.startsWith(`export const ${exportName} = `))
+  const isSingleLine = !!exportLine && (exportLine.trimEnd().endsWith("'") || exportLine.trimEnd().endsWith('"'))
+  const pattern = isSingleLine
+    ? new RegExp(`export const ${exportName} = '[^']*'`)
+    : new RegExp(`export const ${exportName} = [\\s\\S]*?\\n[ \\t]*\\)`)
+  if (!pattern.test(src)) {
+    console.error(`art.ts: no replaceable export const ${exportName} found (single-line: ${isSingleLine})`)
+    process.exit(1)
+  }
+  const exportCountBefore = (src.match(/\nexport const /g) || []).length
+
+  const { chromium } = loadPlaywright()
+  const browser = await chromium.launch()
+  const page = await browser.newPage()
+  const absolute = path.resolve(imagePath)
+  await page.goto('file://' + encodeURI(absolute), { waitUntil: 'load' })
+
+  const { dataUrl, tw, th } = await page.evaluate(async (targetWidth) => {
+    const img = document.querySelector('img')
+    const w = img.naturalWidth
+    const h = img.naturalHeight
+    const tw = targetWidth > 0 ? Math.min(targetWidth, w) : w
+    const th = Math.round((h * tw) / w)
+    const c = document.createElement('canvas')
+    c.width = tw
+    c.height = th
+    const ctx = c.getContext('2d')
+    ctx.drawImage(img, 0, 0, tw, th)
+    return { dataUrl: c.toDataURL('image/webp', 0.75), tw, th }
+  }, maxWidth)
+  await browser.close()
+
+  const b64 = dataUrl.replace(/^data:image\/webp;base64,/, '')
+  const kb = Math.round((b64.length * 3) / 4 / 1024)
+  if (kb > 800) {
+    console.error(`refusing to embed: ${kb} KiB exceeds the 800 KiB budget; use a smaller maxWidth or pre-downscale`)
+    process.exit(1)
+  }
+
+  const out = src.replace(pattern, `export const ${exportName} = '${dataUrl}'`)
+  const exportCountAfter = (out.match(/\nexport const /g) || []).length
+  if (exportCountAfter < exportCountBefore) {
+    console.error(`replacement ate ${exportCountBefore - exportCountAfter} export(s) — aborting, art.ts untouched`)
+    process.exit(1)
+  }
+  fs.writeFileSync(artFile, out)
+  console.log(`embedded ${path.basename(imagePath)} -> packages/skins/${skin}/src/client/art.ts ${exportName} (${tw}px, ${kb} KiB WebP)`)
+}
+
+main().catch((err) => {
+  console.error(err)
+  process.exit(1)
+})

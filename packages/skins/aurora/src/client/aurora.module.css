@@ -1,0 +1,253 @@
+/* aurora 皮肤作用域样式：所有规则挂在 body[data-dsh-aurora] 下，不污染其它皮肤。 */
+
+/* ---- 深色模式（默认）：背景幕很透（图片清晰可见），面板中性暗色半透明 ---- */
+body[data-dsh-aurora] {
+  --dsw-alias-bg-base: rgba(5, 8, 26, 0.28);
+  --dsw-specific-sidebar-fill: rgba(5, 8, 26, 0.35);
+  --dsw-specific-input-major: rgba(8, 10, 22, 0.42);
+  --dsw-specific-sidebar-nav-item-hover: rgba(255, 255, 255, 0.08);
+  --dsw-specific-sidebar-nav-item-active: rgba(122, 162, 255, 0.18);
+  --dsw-alias-bg-layer-1: rgba(10, 12, 24, 0.6);
+  --dsw-alias-bg-layer-2: rgba(14, 17, 32, 0.52);
+  --dsw-alias-bg-layer-3: rgba(18, 22, 40, 0.45);
+  --dsw-alias-bg-overlay: rgba(3, 4, 10, 0.55);
+  --dsw-alias-bg-mask-1: rgba(3, 4, 10, 0.42);
+  --dsw-alias-fill-l2: rgba(255, 255, 255, 0.05);
+  --dsw-alias-interactive-bg-hover: rgba(122, 162, 255, 0.12);
+  --dsw-alias-interactive-bg-primary: rgba(122, 162, 255, 0.2);
+  --dsw-alias-border-l1: rgba(140, 160, 255, 0.14);
+  --dsw-alias-border-l2: rgba(140, 160, 255, 0.22);
+  --dsw-alias-label-primary: #eef1ff;
+  --dsw-alias-label-secondary: #b9c2e8;
+  --dsw-alias-label-tertiary: #8b95c4;
+  --dsw-alias-label-error: #ff7a8a;
+  --dsw-alias-brand-primary: #7aa2ff;
+  --dsw-alias-button-primary-fill: #4f6ef7;
+  --dsw-alias-button-primary-hover: #3d5be0;
+}
+
+/* ---- 浅色模式：背景幕很透，白色半透明面板 + 深色文字 ---- */
+body[data-dsh-aurora]:not([data-ds-dark-theme]) {
+  --dsw-alias-bg-base: rgba(250, 252, 255, 0.32);
+  --dsw-specific-sidebar-fill: rgba(250, 252, 255, 0.4);
+  --dsw-specific-input-major: rgba(250, 252, 255, 0.5);
+  --dsw-specific-sidebar-nav-item-hover: rgba(15, 20, 45, 0.06);
+  --dsw-specific-sidebar-nav-item-active: rgba(59, 91, 216, 0.14);
+  --dsw-alias-bg-layer-1: rgba(255, 255, 255, 0.6);
+  --dsw-alias-bg-layer-2: rgba(255, 255, 255, 0.5);
+  --dsw-alias-bg-layer-3: rgba(255, 255, 255, 0.42);
+  --dsw-alias-bg-overlay: rgba(250, 252, 255, 0.6);
+  --dsw-alias-bg-mask-1: rgba(250, 252, 255, 0.55);
+  --dsw-alias-fill-l2: rgba(15, 20, 45, 0.05);
+  --dsw-alias-interactive-bg-hover: rgba(59, 91, 216, 0.1);
+  --dsw-alias-interactive-bg-primary: rgba(59, 91, 216, 0.16);
+  --dsw-alias-border-l1: rgba(20, 30, 80, 0.12);
+  --dsw-alias-border-l2: rgba(20, 30, 80, 0.2);
+  --dsw-alias-label-primary: #232842;
+  --dsw-alias-label-secondary: #5a6180;
+  --dsw-alias-label-tertiary: #8b92ad;
+  --dsw-alias-label-error: #c62828;
+  --dsw-alias-brand-primary: #3b5bd8;
+  --dsw-alias-button-primary-fill: #3b5bd8;
+  --dsw-alias-button-primary-hover: #2f4ac4;
+}
+
+/* ---- 右侧面板（aionui 文件/变更）tokens：表面值与左侧边栏一致 ---- */
+body[data-dsh-aurora][data-ds-dark-theme] {
+  --aion-bg-base: rgba(5, 8, 26, 0.3);
+  --aion-bg-1: rgba(5, 8, 26, 0.35);
+  --aion-bg-2: rgba(5, 8, 26, 0.3);
+  --aion-bg-3: rgba(140, 160, 255, 0.16);
+  --aion-bg-hover: rgba(255, 255, 255, 0.06);
+  --aion-bg-active: rgba(255, 255, 255, 0.1);
+  --aion-fill-2: rgba(255, 255, 255, 0.06);
+  --aion-fill-3: rgba(255, 255, 255, 0.1);
+  --aion-border-base: rgba(140, 160, 255, 0.16);
+}
+body[data-dsh-aurora]:not([data-ds-dark-theme]) {
+  --aion-bg-base: rgba(250, 252, 255, 0.35);
+  --aion-bg-1: rgba(250, 252, 255, 0.4);
+  --aion-bg-2: rgba(250, 252, 255, 0.35);
+  --aion-bg-3: rgba(20, 30, 80, 0.12);
+  --aion-bg-hover: rgba(15, 20, 45, 0.06);
+  --aion-bg-active: rgba(15, 20, 45, 0.1);
+  --aion-fill-2: rgba(15, 20, 45, 0.05);
+  --aion-fill-3: rgba(15, 20, 45, 0.08);
+  --aion-border-base: rgba(20, 30, 80, 0.14);
+}
+
+/* ---- 背景层：固定铺满、位于内容之下、不拦截指针 ---- */
+.auroraBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* ---- 侧边栏注入入口（任务看板 / SSH）：全透明透出背景 + 间距 ---- */
+body[data-dsh-aurora] [data-dsh-taskboard-entry],
+body[data-dsh-aurora] [data-dsh-ssh-entry] {
+  background: transparent !important;
+  margin-top: 4px;
+}
+body[data-dsh-aurora] [data-dsh-taskboard-entry] + [data-dsh-ssh-entry],
+body[data-dsh-aurora] [data-dsh-ssh-entry] + [data-dsh-taskboard-entry] {
+  margin-top: 6px;
+}
+
+/* ---- 新对话按钮：透明透出背景，保留边框，hover 半透明 ---- */
+body[data-dsh-aurora] button[class*="newSession"] {
+  background: transparent;
+  border-color: var(--dsw-alias-border-l2);
+}
+body[data-dsh-aurora] button[class*="newSession"]:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+/* ---- 输入框毛玻璃：参考登录弹窗玻璃卡片（blur 30px + 半透明底 + 细边框 + 内高光） ---- */
+body[data-dsh-aurora] [data-composer-card] {
+  background: rgba(16, 25, 38, 0.42);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px rgba(255, 255, 255, 0.06);
+}
+body[data-dsh-aurora]:not([data-ds-dark-theme]) [data-composer-card] {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 32px rgba(20, 30, 80, 0.14), inset 0 1px rgba(255, 255, 255, 0.8);
+}
+
+/* ---- 模型 trigger：模型名后显示推理等级，格式「模型名 · 等级」 ---- */
+body[data-dsh-aurora] [class*="triggerEffort"]::before {
+  content: '· ';
+  margin-right: 1px;
+}
+body[data-dsh-aurora] [class*="triggerEffort"] {
+  font-weight: 600;
+  color: var(--dsw-alias-label-secondary, #b9c2e8);
+}
+
+/* ---- 用户消息气泡：毛玻璃透明（替换官方实色底） ---- */
+body[data-dsh-aurora] [class*="userRow"] [class*="bubble"] {
+  background: rgba(94, 124, 255, 0.24);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(140, 160, 255, 0.18);
+}
+body[data-dsh-aurora]:not([data-ds-dark-theme]) [class*="userRow"] [class*="bubble"] {
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(20, 30, 80, 0.14);
+}
+
+/* ---- 设置卡片（插件配置中心） ---- */
+.auroraCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 0;
+}
+.auroraCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.auroraCardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary, #eee);
+}
+.auroraCardDesc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary, #888);
+}
+.auroraCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.auroraField {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary, #999);
+}
+.auroraField input[type='text'] {
+  border: 1px solid var(--dsw-alias-border-l2, rgba(128, 128, 128, 0.35));
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-2, rgba(128, 128, 128, 0.15));
+  color: var(--dsw-alias-label-primary, #eee);
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.auroraField input[type='range'] {
+  accent-color: var(--dsw-alias-brand-primary, #7aa2ff);
+}
+.auroraSwitch {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  border: 0;
+  border-radius: 999px;
+  flex: none;
+  background: var(--dsw-alias-fill-l2, #333);
+  cursor: pointer;
+  transition: background 0.15s;
+  padding: 0;
+}
+.auroraSwitchOn {
+  background: var(--dsw-alias-brand-primary, #7aa2ff);
+}
+.auroraSwitchThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+.auroraSwitchOn .auroraSwitchThumb {
+  transform: translateX(16px);
+}
+.auroraLocal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.auroraLocalLabel {
+  color: var(--dsw-alias-label-secondary, #999);
+}
+.auroraLocalThumb {
+  width: 64px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid var(--dsw-alias-border-l2, rgba(128, 128, 128, 0.35));
+  background-size: cover;
+  background-position: center;
+  flex: none;
+}
+.auroraBtn {
+  border: 1px solid var(--dsw-alias-border-l2, rgba(128, 128, 128, 0.35));
+  background: var(--dsw-alias-bg-layer-2, rgba(128, 128, 128, 0.15));
+  color: var(--dsw-alias-label-secondary, #bbb);
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.auroraBtn:hover {
+  background: var(--dsw-alias-interactive-bg-hover, rgba(128, 128, 128, 0.2));
+  color: var(--dsw-alias-label-primary, #eee);
+}

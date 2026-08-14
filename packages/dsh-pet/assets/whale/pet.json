@@ -1,0 +1,7 @@
+{
+  "id": "whale-girl",
+  "displayName": "DeepSeek 娘",
+  "description": "蓝发鲸鱼女孩——DeepSeek 的非官方同人看板娘，温柔认真，用鲸鱼尾巴表达情绪。",
+  "spritesheetPath": "spritesheet.webp",
+  "frames": [7, 8, 8, 4, 5, 8, 6, 6, 6]
+}

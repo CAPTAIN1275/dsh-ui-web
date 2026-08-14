@@ -1,0 +1,283 @@
+?#!/usr/bin/env node
+'use strict'
+
+/**
+ * dsh-skin â€?one-command skin switching for the DSH web GUI.
+ *
+ * Every skin in this repo is a standalone plugin package in the official
+ * turtle-ui shape: `dsh.bundle` manifest + cordis.patch.yml + self-contained
+ * `prepare` build, so the canonical install is
+ *
+ *     dsh plugin --profile <name> add /path/to/dsh-web-ui/packages/skins/<skin>
+ *     dsh-skin install <skin>        # same thing, profile auto-detected
+ *
+ * `use` then maintains the mutually-exclusive skin section of
+ * ~/.dsh/cordis.patch.yml (hot-reloaded by the config watcher, so switching
+ * takes effect in seconds without a restart) and the profile node_modules
+ * symlink that makes the chosen package resolvable from the web profile
+ * (pnpm's `link:` installs are symlinks too, so both paths coexist).
+ *
+ * Switch = rewrite the managed patch section â†?HMR re-scans â†?refresh the
+ * page. Only ONE skin row is ever enabled: every non-active skin gets an
+ * id-target `disabled: true` row (which also neutralizes skins wired at
+ * the bundle layer, e.g. ui-skin-xp), and the active skin gets its insert
+ * row (xp needs none â€?the bundle layer already carries it).
+ */
+
+const fs = require('node:fs')
+const path = require('node:path')
+const os = require('node:os')
+const { execFileSync } = require('node:child_process')
+
+/** Harness home: `$DSH_HOME` (set by the dsh launcher), else `~/.dsh`. */
+const DSH_HOME = process.env.DSH_HOME || path.join(os.homedir(), '.dsh')
+const PATCH = path.join(DSH_HOME, 'cordis.patch.yml')
+const PROFILE_MODULES = path.join(DSH_HOME, 'profiles', 'node_modules')
+/** The GUI profile this machine runs (dsh web); overridable via DSH_SKIN_PROFILE. */
+const DEFAULT_PROFILE = process.env.DSH_SKIN_PROFILE || 'web'
+/** The dsh-web-ui checkout. Derived from this script's own location so any
+ * clone path works; overridable via DSH_SKIN_REPO. */
+const REPO = process.env.DSH_SKIN_REPO || path.resolve(__dirname, '..')
+
+/** Skin registry: name -> package, cordis row id, symlink resolve target (all repo dirs). */
+const SKINS = {
+  qq98: { pkg: '@captain1275/dsh-client-ui-skin-qq98', id: 'ui-skin-qq98', dir: `${REPO}/packages/skins/qq98` },
+  ths: { pkg: '@captain1275/dsh-client-ui-skin-ths', id: 'ui-skin-ths', dir: `${REPO}/packages/skins/ths` },
+  xp: { pkg: '@captain1275/dsh-client-ui-skin-xp', id: 'ui-skin-xp', dir: `${REPO}/packages/skins/xp` },
+  'blue-fantasy': { pkg: '@captain1275/dsh-client-ui-skin-blue-fantasy', id: 'ui-skin-blue-fantasy', dir: `${REPO}/packages/skins/blue-fantasy` },
+  'dragon-heir': { pkg: '@captain1275/dsh-client-ui-skin-dragon-heir', id: 'ui-skin-dragon-heir', dir: `${REPO}/packages/skins/dragon-heir` },
+  minecraft: { pkg: '@captain1275/dsh-client-ui-skin-minecraft', id: 'ui-skin-minecraft', dir: `${REPO}/packages/skins/minecraft` },
+  'whale-song': { pkg: '@captain1275/dsh-client-ui-skin-whale-song', id: 'ui-skin-whale-song', dir: `${REPO}/packages/skins/whale-song` },
+  trading: { pkg: '@captain1275/dsh-client-ui-skin-trading', id: 'ui-skin-trading', dir: `${REPO}/packages/skins/trading` },
+  miku: { pkg: '@captain1275/dsh-client-ui-skin-miku', id: 'ui-skin-miku', dir: `${REPO}/packages/skins/miku` },
+  aurora: { pkg: '@captain1275/dsh-client-ui-skin-aurora', id: 'ui-skin-aurora', dir: `${REPO}/packages/skins/aurora` },
+}
+/** Skin wired at the bundle layer already (no insert row needed here). */
+const BUNDLE_WIRED = new Set(['xp', 'aurora'])
+
+/** The profile manifest path (`$DSH_HOME/profiles/<profile>/package.json`). */
+function profileManifestPath() {
+  return path.join(DSH_HOME, 'profiles', DEFAULT_PROFILE, 'package.json')
+}
+
+/**
+ * Skins whose patch row the profile bundle layer already provides (installed
+ * via `dsh-skin install` = `dsh plugin add`, which reconciles the package
+ * into the profile's `dsh.profile.bundles`). `use` must not insert those rows
+ * again â€?a duplicate id fails the boot. Detected dynamically so installing
+ * new skins never requires editing this script.
+ */
+function bundleWiredFromProfile() {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(profileManifestPath(), 'utf8'))
+    const bundles = manifest.dsh?.profile?.bundles ?? []
+    return new Set(
+      Object.entries(SKINS)
+        .filter(([, skin]) => bundles.includes(skin.pkg))
+        .map(([name]) => name),
+    )
+  } catch {
+    return new Set()
+  }
+}
+
+/** Warn (not fail) when a skin package is not resolvable from the web profile. */
+function checkInstalled(name) {
+  const target = `${PROFILE_MODULES}/${SKINS[name].pkg}`
+  let ok = false
+  try {
+    ok = fs.lstatSync(target).isSymbolicLink()
+  } catch { /* absent */ }
+  if (!ok) {
+    console.warn(`${SKINS[name].pkg} æœªå®‰è£…åˆ° profileï¼›å…ˆè¿è¡Œ dsh-skin install ${name}ï¼ˆæˆ– dsh plugin --profile ${DEFAULT_PROFILE} add ${SKINS[name].dir}ï¼‰ï¼Œå¦åˆ™åŠ è½½ä¼šå¤±è´¥ã€‚`)
+  }
+}
+
+/** Install a skin into the web profile the official way (dsh plugin add). */
+function cmdInstall(name) {
+  if (!SKINS[name]) {
+    console.error(`unknown skin "${name}". Known: ${Object.keys(SKINS).join(', ')}`)
+    process.exit(1)
+  }
+  if (!fs.existsSync(SKINS[name].dir)) {
+    console.error(`skin source dir missing: ${SKINS[name].dir}`)
+    process.exit(1)
+  }
+  console.log(`dsh plugin --profile ${DEFAULT_PROFILE} add ${SKINS[name].dir}`)
+  execFileSync('dsh', ['plugin', '--profile', DEFAULT_PROFILE, 'add', SKINS[name].dir], { stdio: 'inherit' })
+  console.log(`installed ${SKINS[name].pkg} into profile "${DEFAULT_PROFILE}" â€?the dshClient row comes from the bundle's cordis.patch.yml.`)
+}
+
+const MANAGED_START = '# --- dsh-skin managed (auto-generated; do not edit) ---'
+const MANAGED_END = '# --- end dsh-skin managed ---'
+
+// --- patch file helpers -------------------------------------------------------
+
+function readPatch() {
+  if (!fs.existsSync(PATCH)) return ''
+  return fs.readFileSync(PATCH, 'utf8')
+}
+
+/** Drop legacy hand-written skin rows (insert rows with a name) and old touch comments. */
+function stripLegacySkinRows(patch) {
+  return patch
+    // insert rows for any ui-skin-* package, with their optional comment line
+    .replace(/^    # [^\n]*\n    - id: ui-skin-[^\n]+\n      name: '@deepseek-ai\/dsh-client-ui-skin-[^\n]+'\n/gm, '')
+    .replace(/^# \(touch\)[^\n]*\n?/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+}
+
+function stripManaged(patch) {
+  const start = patch.indexOf(MANAGED_START)
+  if (start === -1) return patch
+  const end = patch.indexOf(MANAGED_END, start)
+  if (end === -1) throw new Error('managed skin section is unterminated; fix ~/.dsh/cordis.patch.yml')
+  return patch.slice(0, start) + patch.slice(end + MANAGED_END.length)
+}
+
+function renderManaged(active) {
+  const wired = new Set([...BUNDLE_WIRED, ...bundleWiredFromProfile()])
+  const lines = [MANAGED_START]
+  for (const name of Object.keys(SKINS)) {
+    if (name === active) continue
+    lines.push(`- id: ${SKINS[name].id}`, '  disabled: true')
+  }
+  // `official` (active === null) = every skin disabled, no insert row â€?the
+  // stock look. A wired active skin also needs no insert row.
+  if (active !== null && !wired.has(active)) {
+    lines.push('- insert:', `    - id: ${SKINS[active].id}`, `      name: '${SKINS[active].pkg}'`)
+  }
+  lines.push(MANAGED_END)
+  return lines.join('\n')
+}
+
+/**
+ * Which skin is currently enabled. With bundle-wired skins the active skin
+ * carries no insert row (the bundle layer provides it), so the answer is the
+ * bundle-wired skin that the patch does NOT disable; the legacy reading
+ * (last non-disabled skin row in the patch) remains for pre-bundle layouts.
+ */
+function currentActive(patch) {
+  const disabled = new Set()
+  for (const m of patch.matchAll(/^- id: (ui-skin-[a-z0-9-]+)\n  disabled: true/gm)) {
+    disabled.add(m[1])
+  }
+  const wired = new Set([...BUNDLE_WIRED, ...bundleWiredFromProfile()])
+  for (const [name, skin] of Object.entries(SKINS)) {
+    if (wired.has(name) && !disabled.has(skin.id)) return name
+  }
+  const rows = [...patch.matchAll(/(?:^|\n) *- id: (ui-skin-[a-z0-9-]+)(\n *disabled: (true))?/g)]
+  const enabled = []
+  for (const m of rows) if (!m[3]) enabled.push(m[1])
+  return enabled.length ? enabled[enabled.length - 1].replace('ui-skin-', '') : null
+}
+
+// --- symlinks ------------------------------------------------------------------
+
+function ensureSymlink(name) {
+  const { pkg, dir } = SKINS[name]
+  if (!fs.existsSync(dir)) throw new Error(`skin source dir missing: ${dir}`)
+  const target = `${PROFILE_MODULES}/${pkg}`
+  let stat = null
+  try { stat = fs.lstatSync(target) } catch { /* absent */ }
+  if (stat) {
+    if (!stat.isSymbolicLink()) {
+      throw new Error(`${target} exists and is not a symlink â€?refusing to touch it`)
+    }
+    const cur = fs.readlinkSync(target)
+    if (cur === dir) return false
+    fs.unlinkSync(target)
+  }
+  // The link's parent scoped dir may not exist on a fresh machine (the
+  // profiles/node_modules/@deepseek-ai tree is created incrementally).
+  fs.mkdirSync(path.dirname(target), { recursive: true })
+  fs.symlinkSync(dir, target)
+  return true
+}
+
+// --- commands ------------------------------------------------------------------
+
+function cmdUse(name) {
+  const official = name === 'official'
+  if (!official && !SKINS[name]) {
+    console.error(`unknown skin "${name}". Known: ${Object.keys(SKINS).join(', ')} (or "official" for the stock look)`)
+    process.exit(1)
+  }
+  if (!official) {
+    const linked = ensureSymlink(name)
+    if (linked) console.log(`linked ${SKINS[name].pkg} -> ${SKINS[name].dir}`)
+    checkInstalled(name)
+  }
+
+  const patch = stripLegacySkinRows(stripManaged(readPatch()))
+  const next = `${patch.replace(/\s+$/, '')}\n\n${renderManaged(official ? null : name)}\n`
+  // Atomic replace: write a sibling temp file then rename over the target, so
+  // a crash mid-write can never leave a half-written boot patch, and the
+  // config watcher only ever sees complete content.
+  const tmp = `${PATCH}.tmp-${process.pid}`
+  fs.writeFileSync(tmp, next)
+  fs.renameSync(tmp, PATCH)
+  console.log(`wrote ${PATCH}`)
+  console.log(official
+    ? 'restored the official stock look â€?the config watcher applies it within seconds; refresh the page to see it.'
+    : `skin switched to "${name}" â€?the config watcher applies it within seconds; refresh the page (or the manifest re-fetches) to see it.`)
+}
+
+function cmdList() {
+  const patch = readPatch()
+  const active = currentActive(patch)
+  for (const name of Object.keys(SKINS)) {
+    const { pkg, dir } = SKINS[name]
+    const target = `${PROFILE_MODULES}/${pkg}`
+    let linkState = 'no symlink'
+    try {
+      const cur = fs.readlinkSync(target)
+      linkState = cur === dir ? 'linked' : `links elsewhere: ${cur}`
+    } catch { /* absent */ }
+    console.log(`${name.padEnd(13)} ${active === name ? '[ACTIVE] ' : '        '}${pkg}  (${linkState})`)
+    if (active === name) checkInstalled(name)
+  }
+  if (!active) console.log('\nno skin enabled (stock look)')
+}
+
+function cmdCurrent() {
+  const active = currentActive(readPatch())
+  console.log(active ?? 'none')
+}
+
+// Pure helpers exported so tests can assert the managed-section rendering
+// and parsing without touching the real ~/.dsh (the entry-script guard below
+// keeps an import side-effect free).
+module.exports = {
+  SKINS,
+  MANAGED_START,
+  MANAGED_END,
+  renderManaged,
+  stripManaged,
+  stripLegacySkinRows,
+  currentActive,
+}
+
+// Run only when invoked as the entry script (as a CLI), so the module can be
+// imported by tests without executing any command.
+if (require.main === module) {
+  const [,, cmd, arg] = process.argv
+  switch (cmd) {
+    case 'use': cmdUse(arg); break
+    case 'install': cmdInstall(arg); break
+    case 'list': cmdList(); break
+    case 'current': cmdCurrent(); break
+    default:
+      console.log('dsh-skin â€?one-command skin switching for the DSH web GUI')
+      console.log('')
+      console.log('usage:')
+      console.log('  dsh-skin install <name>   install a skin into the web profile the official way (dsh plugin add)')
+      console.log('  dsh-skin use <name>       switch skins (writes the hot-reloaded patch + symlink)')
+      console.log('  dsh-skin use official     restore the official stock look (disable every skin)')
+      console.log('  dsh-skin list             show skins, the active one, and symlink state')
+      console.log('  dsh-skin current          print the active skin name (or "none")')
+      console.log('')
+      console.log(`skins: ${Object.keys(SKINS).join(', ')}`)
+      process.exit(cmd ? 1 : 0)
+  }
+}

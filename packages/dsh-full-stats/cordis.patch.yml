@@ -1,0 +1,4 @@
+# dsh-full-stats 插件补丁：
+- insert:
+    - id: ui-full-stats
+      name: '@captain1275/dsh-full-stats'

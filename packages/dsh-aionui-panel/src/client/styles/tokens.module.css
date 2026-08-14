@@ -1,0 +1,421 @@
+/**
+ * The panel design system: AionUi's measured tokens (light/dark), scoped to
+ * the plugin's own root elements so they never leak into the shell. Light
+ * values are the defaults; the controller flips `data-aionui-dark` on every
+ * root element when the GUI theme is dark (the shell's theme service emits
+ * theme/change; the controller mirrors it).
+ *
+ * The two rules at the top are intentionally GLOBAL (hence the :global()
+ * wrapper): the token variables must be readable by DOM-created chrome — the
+ * panel columns and drag handles are appended by the layout controller outside
+ * any React subtree — so they live on :root. Every other rule below is still
+ * scoped to `.aionui-root` / the plugin's own class names.
+ *
+ * Values are the browser-measured ones from the research report (section 5.2)
+ * — including the aou ramp reversal in dark mode and the missing --bg-7.
+ */
+:global(:root) {
+  --aion-bg-base: #ffffff;
+  --aion-bg-1: #f9fafb;
+  --aion-bg-2: #f2f3f5;
+  --aion-bg-3: #e5e6eb;
+  --aion-bg-hover: #f3f4f6;
+  --aion-bg-active: #e5e6eb;
+  --aion-text-primary: #000000;
+  --aion-text-secondary: #454d5f;
+  --aion-text-tertiary: #86909c;
+  --aion-text-disabled: #c9cdd4;
+  --aion-primary: #165dff;
+  --aion-success: #00b42a;
+  --aion-warning: #ff7d00;
+  --aion-danger: #f53f3f;
+  --aion-brand: #7583b2;
+  --aion-aou-1: #eff0f6;
+  --aion-aou-2: #e5e7f0;
+  --aion-aou-3: #d1d5e5;
+  --aion-aou-4: #b5bcd6;
+  --aion-aou-5: #97a0c5;
+  --aion-aou-6: #7583b2;
+  --aion-fill-2: #f2f3f5;
+  --aion-fill-3: #e5e6eb;
+  --aion-border-base: #e5e6eb;
+  --aion-overlay-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  --aion-font-sans: -apple-system, "system-ui", "Segoe UI", Roboto, "Helvetica Neue",
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+  --aion-font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+/* The shell marks dark mode with body[data-ds-dark-theme]; the panel tokens
+   follow it with zero JS wiring (the theme service toggles the attribute).
+   Scoped to body so third-party themes cannot override them from :root.
+   Global by intent (tokens reach the DOM-added columns/handles); the dark
+   color-scheme is only asserted here so the host's own light default wins. */
+:global(body[data-ds-dark-theme]) {
+  --aion-bg-base: #0e0e0e;
+  --aion-bg-1: #1a1a1a;
+  --aion-bg-2: #262626;
+  --aion-bg-3: #333333;
+  --aion-bg-hover: #1f1f1f;
+  --aion-bg-active: #2d2d2d;
+  --aion-text-primary: #ffffff;
+  --aion-text-secondary: #ced3da;
+  --aion-text-tertiary: #737373;
+  --aion-text-disabled: #737373;
+  --aion-primary: #4d9fff;
+  --aion-success: #23c343;
+  --aion-warning: #ff9a2e;
+  --aion-danger: #f76560;
+  --aion-brand: #a1aacb;
+  --aion-aou-1: #2a2a2a;
+  --aion-aou-2: #3d4150;
+  --aion-aou-3: #525a77;
+  --aion-aou-4: #6a749b;
+  --aion-aou-5: #838fba;
+  --aion-aou-6: #a1aacb;
+  --aion-fill-2: rgba(255, 255, 255, 0.08);
+  --aion-fill-3: rgba(255, 255, 255, 0.12);
+  --aion-border-base: #333333;
+  --aion-overlay-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+
+/* Shared base for every plugin-owned surface. */
+:global(.aionui-root) {
+  font-family: var(--aion-font-sans);
+  font-size: 13px;
+  color: var(--aion-text-primary);
+  background-color: var(--aion-bg-1);
+}
+
+:global(.aionui-root *),
+:global(.aionui-root *::before),
+:global(.aionui-root *::after) {
+  box-sizing: border-box;
+}
+
+/* Thin scrollbars matching the shell look. */
+:global(.aionui-root ::-webkit-scrollbar) {
+  width: 8px;
+  height: 8px;
+}
+:global(.aionui-root ::-webkit-scrollbar-thumb) {
+  background: var(--aion-bg-3);
+  border-radius: 4px;
+}
+:global(.aionui-root ::-webkit-scrollbar-thumb:hover) {
+  background: var(--aion-bg-4, #c9cdd4);
+}
+:global(.aionui-root ::-webkit-scrollbar-track) {
+  background: transparent;
+}
+
+/* prefers-reduced-motion: kill every panel animation globally. */
+@media (prefers-reduced-motion: reduce) {
+  :global(.aionui-root *),
+  :global(.aionui-root *::before),
+  :global(.aionui-root *::after) {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ── frame-level chrome (created by the layout controller) ──────────────── */
+
+/* The shell frame's grid transition must not animate panel width changes. */
+:global([data-dsh-frame][data-aionui-instant]) {
+  transition: none !important;
+}
+
+/* Panel columns are plain grid items; overflow hidden so width 0 clips. */
+:global(.aionui-preview-col),
+:global(.aionui-explorer-col) {
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--aion-bg-1);
+}
+
+:global(.aionui-preview-col) {
+  /* 1px left border only — no outer margins (AionUi contract). */
+  border-left: 1px solid var(--aion-bg-3);
+}
+
+:global(.aionui-explorer-col) {
+  border-left: 1px solid var(--aion-bg-3);
+}
+
+/* Preview region enter animation (0.25s, translateX(20px) + fade). */
+:global(.aionui-preview-col.aionui-preview-enter) {
+  animation: aionui-preview-enter 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes aionui-preview-enter {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Drag handles: 2px visual line, 6px + brand on hover/active. */
+:global(.aionui-explorer-handle),
+:global(.aionui-preview-handle) {
+  touch-action: none;
+}
+:global(.aionui-explorer-handle::after),
+:global(.aionui-preview-handle::after) {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  border-radius: 9999px;
+  background-color: var(--aion-bg-3);
+  opacity: 0.9;
+  transition: width 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+:global(.aionui-explorer-handle:hover::after),
+:global(.aionui-explorer-handle:active::after),
+:global(.aionui-preview-handle:hover::after),
+:global(.aionui-preview-handle:active::after) {
+  width: 6px;
+  background-color: var(--aion-brand);
+}
+/* The preview handle's line sits at its right edge (its hit zone extends
+   left); the explorer's at its left edge. */
+:global(.aionui-preview-handle::after) {
+  left: auto;
+  right: 0;
+  opacity: 0.3;
+}
+:global(.aionui-preview-handle:hover::after),
+:global(.aionui-preview-handle:active::after) {
+  opacity: 1;
+}
+
+/* Floating expand button (explorer collapsed). */
+:global(.aionui-floating-expand) {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 64px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+  background-color: var(--aion-bg-2);
+  color: var(--aion-text-secondary);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  z-index: 100;
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+:global(.aionui-floating-expand:hover) {
+  background-color: var(--aion-bg-3);
+  color: var(--aion-text-primary);
+}
+:global(.aionui-floating-expand:active) {
+  background-color: var(--aion-bg-active);
+}
+:global(.aionui-floating-expand:focus-visible) {
+  outline: 2px solid var(--aion-primary);
+  outline-offset: 2px;
+}
+
+/* The collapse chevron inside the explorer tab bar (top-right). */
+:global(.aionui-collapse-chevron) {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 30;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--aion-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+:global(.aionui-collapse-chevron:hover) {
+  background-color: var(--aion-bg-3);
+  color: var(--aion-text-primary);
+}
+:global(.aionui-collapse-chevron:active) {
+  background-color: var(--aion-bg-active);
+}
+:global(.aionui-collapse-chevron:focus-visible) {
+  outline: 2px solid var(--aion-primary);
+  outline-offset: 2px;
+}
+
+/* Confirm dialog backdrop + card. */
+:global(.aionui-overlay) {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+:global(.aionui-dialog) {
+  width: 400px;
+  max-width: calc(100vw - 48px);
+  border-radius: 16px;
+  background: var(--aion-bg-base);
+  box-shadow: var(--aion-overlay-shadow);
+  overflow: hidden;
+  font-family: var(--aion-font-sans);
+}
+:global(.aionui-dialog-title) {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--aion-text-primary);
+  padding: 16px 20px 8px;
+}
+:global(.aionui-dialog-body) {
+  font-size: 13px;
+  color: var(--aion-text-secondary);
+  padding: 0 20px;
+  line-height: 1.6;
+}
+:global(.aionui-dialog-actions) {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 20px 20px;
+}
+:global(.aionui-btn) {
+  height: 28px;
+  padding: 0 14px;
+  border: 1px solid var(--aion-bg-3);
+  border-radius: 4px;
+  background: var(--aion-bg-base);
+  color: var(--aion-text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+:global(.aionui-btn:hover) {
+  background: var(--aion-bg-hover);
+}
+:global(.aionui-btn:active) {
+  background: var(--aion-bg-active);
+}
+:global(.aionui-btn:focus-visible) {
+  outline: 2px solid var(--aion-primary);
+  outline-offset: 2px;
+}
+:global(.aionui-btn-primary) {
+  background: var(--aion-primary);
+  border-color: var(--aion-primary);
+  color: #ffffff;
+}
+:global(.aionui-btn-primary:hover) {
+  background: var(--aion-primary);
+  opacity: 0.9;
+}
+:global(.aionui-btn-primary:active) {
+  opacity: 0.75;
+  filter: saturate(0.9);
+}
+:global(.aionui-btn-danger) {
+  background: var(--aion-danger);
+  border-color: var(--aion-danger);
+  color: #ffffff;
+}
+:global(.aionui-btn-danger:hover) {
+  opacity: 0.9;
+}
+:global(.aionui-btn-danger:active) {
+  opacity: 0.75;
+}
+
+/* Context menu (tab right-click / tree right-click). */
+:global(.aionui-menu) {
+  position: fixed;
+  z-index: 1100;
+  min-width: 160px;
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--aion-bg-base);
+  box-shadow: var(--aion-overlay-shadow);
+  border: 1px solid var(--aion-bg-3);
+  font-family: var(--aion-font-sans);
+}
+:global(.aionui-menu-item) {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--aion-text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+:global(.aionui-menu-item:hover) {
+  background: var(--aion-fill-2);
+}
+:global(.aionui-menu-item:focus-visible) {
+  outline: 2px solid var(--aion-primary);
+  outline-offset: -2px;
+}
+:global(.aionui-menu-item-disabled) {
+  color: var(--aion-text-disabled);
+  cursor: default;
+}
+:global(.aionui-menu-item-disabled:hover) {
+  background: transparent;
+}
+:global(.aionui-menu-sep) {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--aion-bg-3);
+}
+
+/* Toast. */
+:global(.aionui-toast) {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200;
+  max-width: 70vw;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: var(--aion-bg-base);
+  color: var(--aion-text-primary);
+  font-size: 13px;
+  font-family: var(--aion-font-sans);
+  box-shadow: var(--aion-overlay-shadow);
+  border: 1px solid var(--aion-bg-3);
+  animation: aionui-toast-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes aionui-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

@@ -1,0 +1,257 @@
+.float {
+  position: fixed;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sprite {
+  position: relative;
+  image-rendering: auto;
+  touch-action: none;
+}
+
+.bubble {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: pet-bubble-pop 2.6s ease-out forwards;
+  pointer-events: none;
+}
+
+.bubblePet {
+  background: rgba(244, 114, 182, 0.45);
+  border: 1px solid rgba(244, 114, 182, 0.55);
+  color: #ffe0f0;
+}
+
+.bubbleFeed {
+  background: rgba(56, 189, 248, 0.45);
+  border: 1px solid rgba(56, 189, 248, 0.55);
+  color: #dff4ff;
+}
+
+@keyframes pet-bubble-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.85);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.05);
+  }
+  25% {
+    transform: translateY(0) scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+}
+
+.panel {
+  position: absolute;
+  bottom: 100%;
+  background: linear-gradient(165deg, rgba(24, 31, 62, 0.92), rgba(12, 16, 38, 0.95));
+  border: 1px solid rgba(99, 130, 255, 0.35);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: #e2e8f0;
+  font-size: 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(99, 130, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 150px;
+}
+
+/* 面板底边与图标顶边之间的 hover 桥接（issue #49）：
+   面板绝对定位在图标上方（bottom: 100%），若两者之间存在哪怕几个
+   像素的间隙，指针滑过间隙时会触发容器的 pointerleave，面板在指针
+   抵达按钮前就收起。这段透明伪元素把命中区向下延伸、覆盖图标顶部，
+   使指针在图标与按钮之间始终停留在 hover 区域内。 */
+.panel::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 14px;
+}
+
+.rankRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.rankLabel {
+  color: #8fa3d8;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.nameCell {
+  font-weight: 700;
+  font-size: 13px;
+  color: #cdd8ff;
+}
+
+.rankBar {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(99, 130, 255, 0.18);
+  overflow: hidden;
+}
+
+.rankBarFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #7aa2ff, #c084fc);
+  transition: width 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.renameRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.nameInput {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid rgba(125, 211, 252, 0.5);
+  border-radius: 6px;
+  background: rgba(30, 41, 59, 0.9);
+  color: #e2e8f0;
+  font-size: 12px;
+  padding: 3px 6px;
+  outline: none;
+}
+
+.nameInput:focus {
+  border-color: #38bdf8;
+  /* 2px accent ring (theme-agnostic) replacing the removed default outline. */
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.45);
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.action {
+  flex: 1;
+  border: none;
+  border-radius: 7px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: filter 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.actionFeed {
+  color: #0f172a;
+  background: linear-gradient(180deg, #7dd3fc, #38bdf8);
+}
+
+.actionNeutral {
+  color: #dbe4ff;
+  background: rgba(99, 130, 255, 0.14);
+  border: 1px solid rgba(99, 130, 255, 0.3);
+}
+
+.actionHide {
+  color: #fca5a5;
+  background: transparent;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+.action:hover {
+  filter: brightness(1.1);
+}
+
+.action:active {
+  filter: brightness(0.92);
+}
+
+.action:focus-visible {
+  outline: none;
+  /* 2px accent ring on the pet's own palette; stays visible on the dark
+     glass panel regardless of the GUI theme (theme-agnostic). */
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.85);
+}
+
+.summon {
+  /* live2d-widget toggle style: orange tab pinned to the right edge, mostly
+     hidden, sliding out on hover. */
+  position: fixed;
+  right: 0;
+  background-color: #fa0;
+  border: none;
+  border-radius: 5px 0 0 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  padding: 6px;
+  z-index: 2147483000;
+  /* 默认露出 10px 边缘（可 hover），hover 滑出更多；同 live2d waifu-toggle-active */
+  margin-right: -50px;
+  transition: margin-right 1s;
+}
+
+.summon:hover {
+  margin-right: -30px;
+}
+
+.summon:active {
+  background-color: #e09600;
+}
+
+.summon:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 170, 0, 0.6);
+}
+
+.summon svg {
+  fill: #fff;
+  height: 25px;
+  width: auto;
+  display: block;
+}
+
+/* Reduced motion: freeze the reaction bubble and kill the overlay transitions
+   so the pet's motion is static or minimal without hiding interaction. */
+@media (prefers-reduced-motion: reduce) {
+  .bubble {
+    animation: none;
+    opacity: 1;
+  }
+
+  .action,
+  .summon {
+    transition: none;
+  }
+}

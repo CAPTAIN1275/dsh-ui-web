@@ -1,0 +1,102 @@
+.groupCard {
+  list-style: none;
+  border: 1px solid var(--dsw-alias-border-l2);
+  /* 与官方设置卡片（如 DeepSeek 搜索提供方）保持一致 */
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-2);
+  overflow: hidden;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.header:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.header:active {
+  background: var(--dsw-alias-interactive-bg-hover-solid);
+}
+
+.header:focus-visible {
+  outline: none;
+  /* Clear inset ring (2px, ~1px offset) so it is not clipped by the card's
+     overflow:hidden; token-driven so it follows the active skin and theme. */
+  box-shadow: inset 0 0 0 2px var(--dsw-alias-button-info-fill);
+}
+
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.name,
+.description {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.name {
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+
+.description {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.chevron,
+.chevronOpen {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 13px;
+  flex: none;
+  margin-left: 10px;
+  transition: transform 120ms ease, color 120ms ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.body {
+  padding: 2px 12px 12px;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+}
+
+.subcards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+/* Reduced motion: drop the header/chevron transitions (no gating animation).
+   Token colors and the focus ring stay, so usable states remain visible. */
+@media (prefers-reduced-motion: reduce) {
+  .groupCard,
+  .header,
+  .chevron,
+  .chevronOpen {
+    transition: none;
+  }
+}

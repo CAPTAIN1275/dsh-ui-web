@@ -1,0 +1,380 @@
+/**
+ * SCM (Changes) panel styles: VS Code-like section headers (24px), change
+ * rows with A/M/D state badges, stage/unstage/discard icon buttons.
+ */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Section: header + body. */
+.section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex-shrink: 0;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  background: var(--aion-bg-1);
+}
+
+.sectionHeader:hover {
+  background: var(--aion-bg-hover);
+}
+
+.sectionHeader:active {
+  background: var(--aion-bg-active);
+}
+
+.sectionHeader:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--aion-primary);
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--aion-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.sectionChevron {
+  display: flex;
+  align-items: center;
+  color: var(--aion-text-secondary);
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sectionChevronOpen {
+  transform: rotate(90deg);
+}
+
+.sectionAction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--aion-text-secondary);
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.sectionAction:hover {
+  background: var(--aion-bg-3);
+  color: var(--aion-text-primary);
+}
+
+.sectionAction:active {
+  background: var(--aion-bg-active);
+}
+
+.sectionAction:focus-visible {
+  outline: 2px solid var(--aion-primary);
+  outline-offset: 2px;
+}
+
+.sectionAction:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.sectionAction:disabled:hover {
+  background: transparent;
+  color: var(--aion-text-secondary);
+}
+
+.sectionBody {
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  flex-shrink: 1;
+}
+
+/* Branch row inside the repositories section. */
+.branchRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 8px 0 12px;
+  font-size: 13px;
+  color: var(--aion-text-primary);
+}
+
+.branchName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* One change row. */
+.changeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 8px 0 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.12s ease;
+}
+
+.changeRow:hover {
+  background: var(--aion-fill-2);
+}
+
+.changeRow:active {
+  background: var(--aion-bg-active);
+}
+
+.changeRow:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--aion-primary);
+}
+
+.changeRowSelected {
+  background: var(--aion-fill-3);
+}
+
+.changeRowSelected:hover {
+  background: var(--aion-fill-3);
+}
+
+.badge {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 3px;
+  flex-shrink: 0;
+  font-family: var(--aion-font-mono);
+}
+
+.badgeCreated {
+  color: var(--aion-success);
+  background: color-mix(in srgb, var(--aion-success) 14%, transparent);
+}
+
+.badgeModified {
+  color: var(--aion-warning);
+  background: color-mix(in srgb, var(--aion-warning) 14%, transparent);
+}
+
+.badgeDeleted {
+  color: var(--aion-danger);
+  background: color-mix(in srgb, var(--aion-danger) 14%, transparent);
+}
+
+.badgeConflicted {
+  color: var(--aion-danger);
+  background: color-mix(in srgb, var(--aion-danger) 18%, transparent);
+  border: 1px solid var(--aion-danger);
+}
+
+.badgeUntracked {
+  color: var(--aion-text-tertiary);
+  background: var(--aion-fill-2);
+}
+
+.changeName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--aion-text-primary);
+  flex: 1;
+  min-width: 0;
+}
+
+.changeDir {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--aion-text-tertiary);
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.changeRow:hover .rowActions,
+.changeRow:focus-within .rowActions,
+.rowActionsVisible {
+  opacity: 1;
+}
+
+.rowAction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--aion-text-secondary);
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rowAction:hover {
+  background: var(--aion-bg-3);
+  color: var(--aion-text-primary);
+}
+
+.rowAction:active {
+  background: var(--aion-bg-active);
+}
+
+.rowAction:focus-visible {
+  outline: 2px solid var(--aion-primary);
+  outline-offset: 2px;
+}
+
+.rowAction:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.rowAction:disabled:hover {
+  background: transparent;
+  color: var(--aion-text-secondary);
+}
+
+.rowFailed {
+  color: var(--aion-danger);
+}
+
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--aion-text-tertiary);
+  background: var(--aion-bg-2);
+  flex-shrink: 0;
+}
+
+.groupAction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--aion-text-secondary);
+  cursor: pointer;
+  padding: 0;
+}
+
+.groupAction:hover {
+  background: var(--aion-bg-3);
+  color: var(--aion-text-primary);
+}
+
+.groupAction:active {
+  background: var(--aion-bg-active);
+}
+
+.groupAction:focus-visible {
+  outline: 2px solid var(--aion-primary);
+  outline-offset: 2px;
+}
+
+.groupAction:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.groupAction:disabled:hover {
+  background: transparent;
+  color: var(--aion-text-secondary);
+}
+
+/* Tree-view directory rows (display-only regrouping). */
+.dirRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.12s ease;
+}
+
+.dirRow:hover {
+  background: var(--aion-fill-2);
+}
+
+.dirRow:active {
+  background: var(--aion-bg-active);
+}
+
+.dirRow:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--aion-primary);
+}
+
+.dirArrow {
+  display: flex;
+  align-items: center;
+  color: var(--aion-text-tertiary);
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dirArrowOpen {
+  transform: rotate(90deg);
+}
+
+.empty {
+  padding: 16px 12px;
+  font-size: 12px;
+  color: var(--aion-text-tertiary);
+}
+
+.loading {
+  padding: 16px 12px;
+  font-size: 12px;
+  color: var(--aion-text-tertiary);
+}
+
+.notRepo {
+  padding: 16px 12px;
+  font-size: 12px;
+  color: var(--aion-text-tertiary);
+  line-height: 1.6;
+}

@@ -1,0 +1,1404 @@
+/* Windows XP (Luna) skin for the dsh web GUI. A trip back to the XP desktop:
+   the blue gradient window chrome with glossy caption bars, the cream (Luna)
+   surfaces, the green Start button on a taskbar-blue footer strip, beveled
+   status-bar cells, and square corners everywhere. Everything is scoped
+   under body[data-dsh-xp], which the plugin's apply() sets (and retracts on
+   dispose), so the skin is fully hot-pluggable: load the bundle, set the
+   attribute, remove the attribute. The dark palette
+   (`body[data-dsh-xp][data-ds-dark-theme]`) is the Zune/Media-Center black
+   variant. Classes are consumed by the plugin's chrome through the module
+   class map; global selectors pass through the CSS-modules transform
+   untouched. Scrollbar aliases are deliberately left on the base theme so
+   the stock scrollbar contract keeps holding under the skin. */
+
+/* --- Desktop, fonts ---------------------------------------------------------- */
+
+body[data-dsh-xp] {
+  --dsw-font-family: Tahoma, 'Microsoft YaHei', 'PingFang SC', 'SimSun', '宋体', sans-serif;
+  --ds-font-family-code: 'Courier New', 'SimSun', monospace;
+  color: #000;
+  background-color: #2c66b8;
+  /* The Bliss-style sky over the window; the hill reads through the frame gap. */
+  background-image:
+    radial-gradient(130% 90% at 50% 120%, #4f9e46 0%, #2e6b34 38%, rgba(46, 107, 52, 0) 70%),
+    linear-gradient(180deg, #8fc3f2 0%, #5d9be0 45%, #2c66b8 78%, #1e4f96 100%);
+  background-attachment: fixed;
+  /* The fixed title/status bars reserve room; #root becomes the window. */
+  padding: 30px 10px 26px;
+  box-sizing: border-box;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] {
+  color: #e8eaed;
+  background-color: #0b1019;
+  background-image: linear-gradient(180deg, #17233a 0%, #0d1526 55%, #070c16 100%);
+}
+
+/* #root is the window: white interior behind an XP active-window frame. */
+body[data-dsh-xp] [id='root'] {
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #0831d9;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [id='root'] {
+  background: #0d0f12;
+  border-color: #000;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65);
+}
+
+/* --- Static palette: light -----------------------------------------------------
+   Luna has no rounded corners anywhere: the window chrome is square. */
+
+body[data-dsh-xp] * {
+  border-radius: 0 !important;
+}
+
+body[data-dsh-xp] {
+  --dsw-static-amber-100: #ffe38e;
+  --dsw-static-amber-400: #d69a3a;
+  --dsw-static-amber-500: #b07600;
+  --dsw-static-amber-600: #966300;
+  --dsw-static-amber-900: #3f2f10;
+  --dsw-static-blue-100: #dbe9fc;
+  --dsw-static-blue-300: #a8c8f0;
+  --dsw-static-blue-400: #7fa9e0;
+  --dsw-static-blue-450: #5f8fd6;
+  --dsw-static-blue-500: #316ac5;
+  --dsw-static-blue-50: #f0f6fd;
+  --dsw-static-blue-50p: #e9f1fb;
+  --dsw-static-blue-600: #2558a8;
+  --dsw-static-blue-75: #edf4fc;
+  --dsw-static-blue-800: #0a246a;
+  --dsw-static-blue-950: #051236;
+  --dsw-static-deepseek-100: #dbe9fc;
+  --dsw-static-deepseek-200: #c2daf8;
+  --dsw-static-deepseek-300: #a8c8f0;
+  --dsw-static-deepseek-400: #7fa9e0;
+  --dsw-static-deepseek-450: #5f8fd6;
+  --dsw-static-deepseek-500: #316ac5;
+  --dsw-static-deepseek-50: #f0f6fd;
+  --dsw-static-deepseek-600: #2558a8;
+  --dsw-static-deepseek-700-delete: #1e4a90;
+  --dsw-static-deepseek-800: #0a246a;
+  --dsw-static-deepseek-900: #081d55;
+  --dsw-static-green-100: #dff0e0;
+  --dsw-static-green-400: #4baf4d;
+  --dsw-static-green-500: #3d9f43;
+  --dsw-static-green-900: #14402a;
+  --dsw-static-neutral-00: #fff;
+  --dsw-static-neutral-1000: #10141a;
+  --dsw-static-neutral-100: #f1efe9;
+  --dsw-static-neutral-150: #ece9d8;
+  --dsw-static-neutral-200: #dbe2ea;
+  --dsw-static-neutral-250: #d0d8e2;
+  --dsw-static-neutral-300: #bcc8d6;
+  --dsw-static-neutral-400: #9aa8ba;
+  --dsw-static-neutral-500: #7f8d9f;
+  --dsw-static-neutral-50: #f7f6f0;
+  --dsw-static-neutral-550: #6a788a;
+  --dsw-static-neutral-600: #5d6b7e;
+  --dsw-static-neutral-700: #4a5668;
+  --dsw-static-neutral-800: #39434f;
+  --dsw-static-neutral-850: #2d3540;
+  --dsw-static-neutral-900: #20262e;
+  --dsw-static-neutral-bluish-00: #fff;
+  --dsw-static-neutral-bluish-1000: #10141a;
+  --dsw-static-neutral-bluish-100: #f1efe9;
+  --dsw-static-neutral-bluish-150: #ece9d8;
+  --dsw-static-neutral-bluish-200: #dbe2ea;
+  --dsw-static-neutral-bluish-300: #bcc8d6;
+  --dsw-static-neutral-bluish-400: #9aa8ba;
+  --dsw-static-neutral-bluish-500: #7f8d9f;
+  --dsw-static-neutral-bluish-50: #f7f6f0;
+  --dsw-static-neutral-bluish-600: #5d6b7e;
+  --dsw-static-neutral-bluish-60: #f5f3ea;
+  --dsw-static-neutral-bluish-700: #4a5668;
+  --dsw-static-neutral-bluish-750: #3e4957;
+  --dsw-static-neutral-bluish-75: #f0eee2;
+  --dsw-static-neutral-bluish-800: #39434f;
+  --dsw-static-neutral-bluish-850: #2d3540;
+  --dsw-static-neutral-bluish-875: #272e37;
+  --dsw-static-neutral-bluish-900: #20262e;
+  --dsw-static-neutral-bluish-950: #181d24;
+  --dsw-static-red-100: #fadcd9;
+  --dsw-static-red-400: #e6544a;
+  --dsw-static-red-500: #e33e2b;
+  --dsw-static-red-50: #fdf0ef;
+  --dsw-static-red-600: #b3291c;
+  --dsw-static-red-900: #5c0f0a;
+}
+
+/* --- Static palette: dark ------------------------------------------------------ */
+
+body[data-dsh-xp][data-ds-dark-theme] {
+  --dsw-static-amber-100: #4a3f14;
+  --dsw-static-amber-400: #d69a3a;
+  --dsw-static-amber-500: #b07600;
+  --dsw-static-amber-600: #966300;
+  --dsw-static-amber-900: #3f2f10;
+  --dsw-static-blue-100: #1f2d3d;
+  --dsw-static-blue-300: #2f445c;
+  --dsw-static-blue-400: #3d5875;
+  --dsw-static-blue-450: #4b6a8b;
+  --dsw-static-blue-500: #5f81a4;
+  --dsw-static-blue-50: #17222f;
+  --dsw-static-blue-50p: #192531;
+  --dsw-static-blue-600: #7398bb;
+  --dsw-static-blue-75: #1b2735;
+  --dsw-static-blue-800: #97b3cf;
+  --dsw-static-blue-950: #b9cddf;
+  --dsw-static-deepseek-100: #1f2d3d;
+  --dsw-static-deepseek-200: #26374b;
+  --dsw-static-deepseek-300: #2f445c;
+  --dsw-static-deepseek-400: #3d5875;
+  --dsw-static-deepseek-450: #4b6a8b;
+  --dsw-static-deepseek-500: #5f81a4;
+  --dsw-static-deepseek-50: #17222f;
+  --dsw-static-deepseek-600: #7398bb;
+  --dsw-static-deepseek-700-delete: #86a6c6;
+  --dsw-static-deepseek-800: #97b3cf;
+  --dsw-static-deepseek-900: #a8c0d8;
+  --dsw-static-green-100: #1c3a2a;
+  --dsw-static-green-400: #35b26d;
+  --dsw-static-green-500: #2fbf71;
+  --dsw-static-green-900: #14402a;
+  --dsw-static-neutral-00: #0d0f12;
+  --dsw-static-neutral-1000: #e8eaed;
+  --dsw-static-neutral-100: #1b1d21;
+  --dsw-static-neutral-150: #202227;
+  --dsw-static-neutral-200: #26282d;
+  --dsw-static-neutral-250: #2b2e34;
+  --dsw-static-neutral-300: #33363d;
+  --dsw-static-neutral-400: #43474f;
+  --dsw-static-neutral-500: #565b64;
+  --dsw-static-neutral-50: #15171b;
+  --dsw-static-neutral-550: #636872;
+  --dsw-static-neutral-600: #6f747e;
+  --dsw-static-neutral-700: #8a8f98;
+  --dsw-static-neutral-800: #a8acb3;
+  --dsw-static-neutral-850: #b6bac0;
+  --dsw-static-neutral-900: #c8ccd2;
+  --dsw-static-neutral-bluish-00: #0d0f12;
+  --dsw-static-neutral-bluish-1000: #e8eaed;
+  --dsw-static-neutral-bluish-100: #1b1d21;
+  --dsw-static-neutral-bluish-150: #202227;
+  --dsw-static-neutral-bluish-200: #26282d;
+  --dsw-static-neutral-bluish-300: #33363d;
+  --dsw-static-neutral-bluish-400: #43474f;
+  --dsw-static-neutral-bluish-500: #565b64;
+  --dsw-static-neutral-bluish-50: #15171b;
+  --dsw-static-neutral-bluish-600: #6f747e;
+  --dsw-static-neutral-bluish-60: #181a1e;
+  --dsw-static-neutral-bluish-700: #8a8f98;
+  --dsw-static-neutral-bluish-750: #969ba3;
+  --dsw-static-neutral-bluish-75: #191b1f;
+  --dsw-static-neutral-bluish-800: #a8acb3;
+  --dsw-static-neutral-bluish-850: #b6bac0;
+  --dsw-static-neutral-bluish-875: #c0c4ca;
+  --dsw-static-neutral-bluish-900: #c8ccd2;
+  --dsw-static-neutral-bluish-950: #d5d8dd;
+  --dsw-static-red-100: #4a2224;
+  --dsw-static-red-400: #e6544a;
+  --dsw-static-red-500: #ff5252;
+  --dsw-static-red-50: #3a1c1e;
+  --dsw-static-red-600: #d64040;
+  --dsw-static-red-900: #5c1010;
+}
+
+/* --- Alias layer: light --------------------------------------------------------- */
+
+body[data-dsh-xp] {
+  --dsw-alias-bg-base: #fff;
+  --dsw-alias-bg-layer-1: #f6f4ec;
+  --dsw-alias-bg-layer-2: #ece9d8;
+  --dsw-alias-bg-layer-3: #e2dfcb;
+  --dsw-alias-bg-mask-1: rgba(16, 24, 36, 0.42);
+  --dsw-alias-bg-mask-2: rgba(16, 24, 36, 0.22);
+  --dsw-alias-bg-mask-3: rgba(16, 24, 36, 0.55);
+  --dsw-alias-bg-mask-photo: rgba(16, 24, 36, 0.88);
+  --dsw-alias-bg-module-platform: #ece9d8;
+  --dsw-alias-bg-multi-select: #dbe9fc;
+  --dsw-alias-bg-overlay: #ece9d8;
+  --dsw-alias-bg-skeleton: rgba(16, 24, 36, 0.06);
+  --dsw-alias-border-inverted2: rgba(255, 255, 255, 0.6);
+  --dsw-alias-border-inverted: rgba(255, 255, 255, 0.4);
+  --dsw-alias-border-l1: rgba(0, 0, 0, 0.06);
+  --dsw-alias-border-l2-darkmode-thin: rgba(0, 0, 0, 0.1);
+  --dsw-alias-border-l2: rgba(0, 0, 0, 0.12);
+  --dsw-alias-border-l3: rgba(0, 0, 0, 0.2);
+  --dsw-alias-border-l4: rgba(0, 0, 0, 0.32);
+  --dsw-alias-brand-primary-invert: #fff;
+  --dsw-alias-brand-primary-new-colorprimary-new-color: #316ac5;
+  --dsw-alias-brand-primary: #316ac5;
+  --dsw-alias-brand-text: #316ac5;
+  --dsw-alias-button-contrast-fill: #0a246a;
+  --dsw-alias-button-elevated-fill: #f1efe9;
+  --dsw-alias-button-floating-fill: #ece9d8;
+  --dsw-alias-button-floating-hover: #e2dfcb;
+  --dsw-alias-button-ghost-active-border: #7f9db9;
+  --dsw-alias-button-ghost-active-fill: #ece9d8;
+  --dsw-alias-button-ghost-active-hover: #e2dfcb;
+  --dsw-alias-button-info-fill: #316ac5;
+  --dsw-alias-button-info-hover: #2558a8;
+  --dsw-alias-button-primary-dimmed: #9db9e0;
+  --dsw-alias-button-primary-fill: #316ac5;
+  --dsw-alias-button-primary-hover: #2558a8;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(49, 106, 197, 0.3);
+  --dsw-alias-button-tool-bar-fill: rgba(49, 106, 197, 0.42);
+  --dsw-alias-button-tool-bar-hover: rgba(49, 106, 197, 0.58);
+  --dsw-alias-interactive-bg-active: rgba(49, 106, 197, 0.1);
+  --dsw-alias-interactive-bg-hover-accent: rgba(49, 106, 197, 0.15);
+  --dsw-alias-interactive-bg-hover-danger: rgba(196, 0, 15, 0.07);
+  --dsw-alias-interactive-bg-hover-solid: #ece9d8;
+  --dsw-alias-interactive-bg-hover: rgba(49, 106, 197, 0.08);
+  --dsw-alias-label-caption: #7f8d9f;
+  --dsw-alias-label-dimmed: #8a97a8;
+  --dsw-alias-label-primary-dimmed: #3d4a5c;
+  --dsw-alias-label-primary-foreground: #fff;
+  --dsw-alias-label-primary-inverted: #fff;
+  --dsw-alias-label-primary: #000;
+  --dsw-alias-label-secondary: #3d4a5c;
+  --dsw-alias-label-tertiary: #5d6b7e;
+  --dsw-alias-markdown-citation: #ece9d8;
+  --dsw-alias-markdown-code-block-banner: #f1efe9;
+  --dsw-alias-markdown-code-block: #f6f4ec;
+  --dsw-alias-markdown-code-segment-selected: #fff;
+  --dsw-alias-markdown-code-segment-unselected: #f1efe9;
+  --dsw-alias-markdown-inline-code: #f1efe9;
+  --dsw-alias-markdown-placeholder: #f1efe9;
+  --dsw-alias-markdown-tag: #ece9d8;
+  --dsw-alias-state-business-primary: #316ac5;
+  --dsw-alias-state-business-tertiary: #dbe9fc;
+  --dsw-alias-state-error-primary: #e33e2b;
+  --dsw-alias-state-error-secondary: #e6544a;
+  --dsw-alias-state-success-primary: #3d9f43;
+  --dsw-alias-state-success-secondary: #4baf4d;
+  --dsw-alias-state-success-tertiary: #dff0e0;
+  --dsw-alias-state-warn-primary: #b07600;
+  --dsw-alias-toast-bg: #0f2d5c;
+  --dsw-specific-bubble-highlight: #dbe9fc;
+  --dsw-specific-bubble: #eef3fb;
+  --dsw-specific-input-major: #fff;
+  --dsw-specific-login-input: #fff;
+  --dsw-specific-menu: #ece9d8;
+  --dsw-specific-selector: #e9f0fa;
+  --dsw-specific-sidebar-fill: #ece9d8;
+  --dsw-specific-sidebar-nav-item-active-accent: #316ac5;
+  --dsw-specific-sidebar-nav-item-active: #dbe9fc;
+  --dsw-specific-sidebar-nav-item-hover: #e9f1fb;
+  --dsw-specific-tip: #f1efe9;
+}
+
+/* --- Alias layer: dark ---------------------------------------------------------- */
+
+body[data-dsh-xp][data-ds-dark-theme] {
+  --dsw-alias-bg-base: #0d0f12;
+  --dsw-alias-bg-layer-1: #15171b;
+  --dsw-alias-bg-layer-2: #1b1d21;
+  --dsw-alias-bg-layer-3: #202227;
+  --dsw-alias-bg-mask-1: rgba(0, 0, 0, 0.5);
+  --dsw-alias-bg-mask-2: rgba(0, 0, 0, 0.25);
+  --dsw-alias-bg-mask-3: rgba(0, 0, 0, 0.55);
+  --dsw-alias-bg-mask-photo: rgba(0, 0, 0, 0.88);
+  --dsw-alias-bg-module-platform: #1b1d21;
+  --dsw-alias-bg-multi-select: #232a36;
+  --dsw-alias-bg-overlay: #1b1d21;
+  --dsw-alias-bg-skeleton: rgba(255, 255, 255, 0.06);
+  --dsw-alias-border-inverted2: rgba(255, 255, 255, 0.6);
+  --dsw-alias-border-inverted: rgba(255, 255, 255, 0.4);
+  --dsw-alias-border-l1: rgba(255, 255, 255, 0.08);
+  --dsw-alias-border-l2-darkmode-thin: rgba(255, 255, 255, 0.12);
+  --dsw-alias-border-l2: rgba(255, 255, 255, 0.16);
+  --dsw-alias-border-l3: rgba(255, 255, 255, 0.24);
+  --dsw-alias-border-l4: rgba(255, 255, 255, 0.32);
+  --dsw-alias-brand-primary-invert: #0d0f12;
+  --dsw-alias-brand-primary-new-colorprimary-new-color: #6da8e8;
+  --dsw-alias-brand-primary: #6da8e8;
+  --dsw-alias-brand-text: #6da8e8;
+  --dsw-alias-button-contrast-fill: #c8ccd2;
+  --dsw-alias-button-elevated-fill: #202227;
+  --dsw-alias-button-floating-fill: #1b1d21;
+  --dsw-alias-button-floating-hover: #23262b;
+  --dsw-alias-button-ghost-active-border: #7e8c9c;
+  --dsw-alias-button-ghost-active-fill: #202227;
+  --dsw-alias-button-ghost-active-hover: #26292e;
+  --dsw-alias-button-info-fill: #316ac5;
+  --dsw-alias-button-info-hover: #3d7ad8;
+  --dsw-alias-button-primary-dimmed: #3d5875;
+  --dsw-alias-button-primary-fill: #316ac5;
+  --dsw-alias-button-primary-hover: #3d7ad8;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(109, 168, 232, 0.3);
+  --dsw-alias-button-tool-bar-fill: rgba(109, 168, 232, 0.42);
+  --dsw-alias-button-tool-bar-hover: rgba(109, 168, 232, 0.58);
+  --dsw-alias-interactive-bg-active: rgba(109, 168, 232, 0.16);
+  --dsw-alias-interactive-bg-hover-accent: rgba(109, 168, 232, 0.22);
+  --dsw-alias-interactive-bg-hover-danger: rgba(255, 82, 82, 0.14);
+  --dsw-alias-interactive-bg-hover-solid: #23262b;
+  --dsw-alias-interactive-bg-hover: rgba(109, 168, 232, 0.1);
+  --dsw-alias-label-caption: #8a8f98;
+  --dsw-alias-label-dimmed: #6f747e;
+  --dsw-alias-label-primary-dimmed: #b6bac0;
+  --dsw-alias-label-primary-foreground: #fff;
+  --dsw-alias-label-primary-inverted: #fff;
+  --dsw-alias-label-primary: #e8eaed;
+  --dsw-alias-label-secondary: #c8ccd2;
+  --dsw-alias-label-tertiary: #9aa0a8;
+  --dsw-alias-markdown-citation: #1b1d21;
+  --dsw-alias-markdown-code-block-banner: #15171b;
+  --dsw-alias-markdown-code-block: #15171b;
+  --dsw-alias-markdown-code-segment-selected: #202227;
+  --dsw-alias-markdown-code-segment-unselected: #1b1d21;
+  --dsw-alias-markdown-inline-code: #1b1d21;
+  --dsw-alias-markdown-placeholder: #15171b;
+  --dsw-alias-markdown-tag: #1b1d21;
+  --dsw-alias-state-business-primary: #6da8e8;
+  --dsw-alias-state-business-tertiary: #1f2d3d;
+  --dsw-alias-state-error-primary: #ff5252;
+  --dsw-alias-state-error-secondary: #e6544a;
+  --dsw-alias-state-success-primary: #2fbf71;
+  --dsw-alias-state-success-secondary: #35b26d;
+  --dsw-alias-state-success-tertiary: #1c3a2a;
+  --dsw-alias-state-warn-primary: #d69a3a;
+  --dsw-alias-toast-bg: #2b2e33;
+  --dsw-specific-bubble-highlight: #223042;
+  --dsw-specific-bubble: #1b2027;
+  --dsw-specific-input-major: #0d0f12;
+  --dsw-specific-login-input: #0d0f12;
+  --dsw-specific-menu: #202227;
+  --dsw-specific-selector: #202227;
+  --dsw-specific-sidebar-fill: #17191d;
+  --dsw-specific-sidebar-nav-item-active-accent: #6da8e8;
+  --dsw-specific-sidebar-nav-item-active: #232a36;
+  --dsw-specific-sidebar-nav-item-hover: #1f242c;
+  --dsw-specific-tip: #1b1d21;
+}
+
+/* --- Selection ---------------------------------------------------------------- */
+
+body[data-dsh-xp] ::selection {
+  background: #316ac5;
+  color: #fff;
+}
+
+/* --- Window chrome: title bar and status bar ------------------------------------
+   Fixed strips above/below #root (the plugin renders them; #root itself is
+   the window body via the rules above). */
+
+.xpTitlebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 5px;
+  /* The Luna active title bar: glossy blue gradient. */
+  background: linear-gradient(180deg, #0a5bc4 0%, #1a6fd0 45%, #3a8fe0 100%);
+  border-bottom: 1px solid #0a3a8f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  color: #fff;
+  font: 700 12px/30px Tahoma, 'Microsoft YaHei', 'PingFang SC', 'SimSun', sans-serif;
+  user-select: none;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] .xpTitlebar {
+  background: linear-gradient(180deg, #3a3f45 0%, #22262b 55%, #101216 100%);
+  border-bottom-color: #000;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.xpTitlebarTitle {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xpTitlebarIcon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Caption buttons: small beveled plates; the close button goes red on hover. */
+.xpTitlebarBtn,
+.xpTitlebarBtnClose {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 19px;
+  margin-left: 1px;
+  background: linear-gradient(180deg, #4f8fe0 0%, #1e5fd0 100%);
+  border: 1px solid #0831d9;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] .xpTitlebarBtn,
+body[data-dsh-xp][data-ds-dark-theme] .xpTitlebarBtnClose {
+  background: linear-gradient(180deg, #4a4e55 0%, #26292e 100%);
+  border-color: #000;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.xpTitlebarBtn:hover {
+  background: linear-gradient(180deg, #7fb0ec 0%, #3f84e0 100%);
+}
+
+.xpTitlebarBtnClose:hover {
+  background: linear-gradient(180deg, #ff9d8a 0%, #e83b2b 100%);
+}
+
+/* Status bar: the classic cream strip with beveled cell dividers and sunken
+   CAPS/NUM/SCRL key indicators on the right. */
+.xpStatusbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000000;
+  display: flex;
+  align-items: stretch;
+  height: 24px;
+  background: #ece9d8;
+  border-top: 1px solid #b3ad95;
+  color: #000;
+  font: 11px/24px Tahoma, 'Microsoft YaHei', 'PingFang SC', 'SimSun', sans-serif;
+  user-select: none;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] .xpStatusbar {
+  background: #1c1e22;
+  border-top-color: #000;
+  color: #c8ccd2;
+}
+
+.xpStatusbarCell {
+  flex: none;
+  padding: 0 10px;
+  border-right: 1px solid #b3ad95;
+  /* The raised divider: light edge right of the dark line. */
+  box-shadow: 1px 0 0 #fff;
+  white-space: nowrap;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] .xpStatusbarCell {
+  border-right-color: #3a3d42;
+  box-shadow: 1px 0 0 #0b0c0e;
+}
+
+.xpStatusbarKey {
+  flex: none;
+  min-width: 32px;
+  padding: 0 6px;
+  margin: 2px 2px 2px 0;
+  text-align: center;
+  white-space: nowrap;
+  /* Sunken recessed indicator. */
+  background: #e2dfcb;
+  box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.28), inset -1px -1px 1px rgba(255, 255, 255, 0.6);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] .xpStatusbarKey {
+  background: #14161a;
+  box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.7), inset -1px -1px 1px rgba(255, 255, 255, 0.08);
+}
+
+.xpStatusbarSpacer {
+  flex: 1;
+}
+
+/* --- Pane chrome --------------------------------------------------------------
+   The AppFrame columns carry data-pane hooks (ui-layout); give each the XP
+   surface. The sidebar is the Explorer window: cream body, blue title band
+   on top, a taskbar-blue footer strip with the green Start button. Without
+   the hooks these rules simply do not match. */
+
+body[data-dsh-xp] [data-pane='sidebar'] > div {
+  background: #ece9d8;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] > div {
+  background: #17191d;
+}
+
+/* Sidebar header band: the first child (logo row) becomes the Luna caption
+   bar; everything inside renders white. */
+body[data-dsh-xp] [data-pane='sidebar'] > div > :first-child,
+body[data-dsh-xp] [data-pane='sidebar'] > div > :first-child * {
+  color: #fff;
+}
+
+body[data-dsh-xp] [data-pane='sidebar'] > div > :first-child {
+  background: linear-gradient(180deg, #0a5bc4 0%, #1a6fd0 45%, #3a8fe0 100%);
+  border-bottom: 1px solid #0a3a8f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] > div > :first-child {
+  background: linear-gradient(180deg, #3a3f45 0%, #22262b 55%, #101216 100%);
+  border-bottom-color: #000;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* Header-band buttons stay flat and transparent on the blue strip. */
+body[data-dsh-xp] [data-pane='sidebar'] > div > :first-child button {
+  background: transparent;
+  color: #fff;
+}
+
+body[data-dsh-xp] [data-pane='sidebar'] > div > :first-child button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* The brand lockup is vector text: "DeepSeek" + a "HARNESS" badge pill. The
+   pill follows currentColor (white here) while the badge letters use the
+   inverted-primary token — white on white. Pin the pill to the light
+   highlight plate and force the letters navy, so the badge reads like a
+   beveled window label on the caption bar. */
+body[data-dsh-xp] [data-pane='sidebar'] > div > :first-child svg rect[fill='currentColor'] {
+  fill: #eaf3fe;
+}
+
+body[data-dsh-xp] [data-pane='sidebar'] > div > :first-child svg [fill='var(--dsw-alias-label-primary-inverted)'] {
+  fill: #0a246a;
+}
+
+/* The "New session" action reads as a Luna command button: cream beveled
+   plate with the blue XP border, gold hot-tint on hover. */
+body[data-dsh-xp] [data-pane='sidebar'] > div > button {
+  background: linear-gradient(180deg, #fdfdfd 0%, #f1efe9 45%, #d8d7cf 100%);
+  border: 1px solid #003c74;
+  box-shadow: inset 0 1px 0 #fff;
+  color: #000;
+  font-weight: 600;
+}
+
+body[data-dsh-xp] [data-pane='sidebar'] > div > button:hover {
+  background: linear-gradient(180deg, #fff3d6 0%, #ffe38e 100%);
+}
+
+body[data-dsh-xp] [data-pane='sidebar'] > div > button:active {
+  background: linear-gradient(180deg, #d8d7cf 0%, #f1efe9 55%, #fdfdfd 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] > div > button {
+  background: linear-gradient(180deg, #3f444b 0%, #23262b 100%);
+  border-color: #000;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] > div > button:hover {
+  background: linear-gradient(180deg, #4a5058 0%, #2c3036 100%);
+}
+
+/* --- Explorer rows -----------------------------------------------------------
+   The session/project tree items become Explorer rows: cream body, a light
+   blue hover, and the classic blue selection. */
+
+body[data-dsh-xp] [data-pane='sidebar'] [role='treeitem'] {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+body[data-dsh-xp] [data-pane='sidebar'] [role='treeitem']:hover {
+  background: #dbe9fc;
+}
+
+body[data-dsh-xp] [data-pane='sidebar'] [role='treeitem'][aria-selected='true'],
+body[data-dsh-xp] [data-pane='sidebar'] [role='treeitem'][aria-selected='true'] * {
+  background: #316ac5;
+  color: #fff;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] [role='treeitem'] {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] [role='treeitem']:hover {
+  background: #232a36;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] [role='treeitem'][aria-selected='true'],
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] [role='treeitem'][aria-selected='true'] * {
+  background: #316ac5;
+  color: #fff;
+}
+
+/* The search box: white text field with the XP blue-gray border; the focus
+   ring is the navy XP focus color. */
+body[data-dsh-xp] [data-pane='sidebar'] input {
+  background: #fff;
+  border: 1px solid #7f9db9;
+  color: #000;
+}
+
+body[data-dsh-xp] [data-pane='sidebar'] input:focus {
+  border-color: #0a246a;
+  box-shadow: 0 0 0 1px #0a246a;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] input {
+  background: #14161a;
+  border-color: #4a4e55;
+  color: #e8eaed;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] input:focus {
+  border-color: #6da8e8;
+  box-shadow: 0 0 0 1px #6da8e8;
+}
+
+/* The footer strip (settings entry) becomes the taskbar: Luna blue gradient
+   with the green Start button on the left and the settings trigger on the
+   right (Start renders first, so margin-right:auto parks it left). The strip
+   is anchored by the xpTaskbar class apply() puts on the foot area: the
+   settings dialog portals into the sidebar column, so a :last-child anchor
+   would paint the portal container and spill the white button color into
+   every dialog control. */
+.xpTaskbar {
+  background: linear-gradient(180deg, #245edb 0%, #3f8cf3 9%, #3778e7 18%, #245edb 100%);
+  border-top: 1px solid #16409c;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] .xpTaskbar {
+  background: linear-gradient(180deg, #26292e 0%, #3a3f45 12%, #2b2e33 24%, #1b1d21 100%);
+  border-top-color: #000;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.xpTaskbar > button:not(.xpStart) {
+  background: transparent;
+  color: #fff;
+}
+
+.xpTaskbar > button:not(.xpStart):hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* The Start button: green gradient plate with the four-color flag. */
+.xpStart {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 12px;
+  margin-right: auto;
+  background: linear-gradient(180deg, #7bc04b 0%, #5aa72f 45%, #3c9212 100%);
+  border: 1px solid #2d6e0e;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 1px 1px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font: 700 11px/1 Tahoma, 'Microsoft YaHei', 'PingFang SC', 'SimSun', sans-serif;
+}
+
+.xpStart:hover {
+  background: linear-gradient(180deg, #8fd25c 0%, #4aa01a 100%);
+}
+
+.xpStart:active {
+  background: linear-gradient(180deg, #3c9212 0%, #5aa72f 55%, #7bc04b 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.xpStartIcon {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Conversation: white window body with a Luna caption-bar header. */
+body[data-dsh-xp] [data-pane='conversation'] {
+  background: #fff;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='conversation'] {
+  background: #0d0f12;
+}
+
+body[data-dsh-xp] [data-pane='conversation'] > div > header {
+  background: linear-gradient(180deg, #0a5bc4 0%, #1a6fd0 45%, #3a8fe0 100%);
+  border-bottom: 1px solid #0a3a8f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  color: #fff;
+}
+
+body[data-dsh-xp] [data-pane='conversation'] > div > header * {
+  color: #fff;
+}
+
+body[data-dsh-xp] [data-pane='conversation'] > div > header input {
+  background: #fff;
+  border: 1px solid #7f9db9;
+  color: #000;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='conversation'] > div > header {
+  background: linear-gradient(180deg, #3a3f45 0%, #22262b 55%, #101216 100%);
+  border-bottom-color: #000;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='conversation'] > div > header input {
+  background: #14161a;
+  border-color: #4a4e55;
+  color: #e8eaed;
+}
+
+body[data-dsh-xp] [data-pane='details'] {
+  background: #ece9d8;
+  /* Beveled divider without shifting layout. */
+  box-shadow: -1px 0 0 rgba(0, 0, 0, 0.15);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='details'] {
+  background: #1b1d21;
+  box-shadow: -1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+/* --- Settings panel -----------------------------------------------------------
+   The settings dialog becomes an XP window: Luna caption-bar title, cream
+   nav rail with the classic blue selection, white content plate. */
+
+body[data-dsh-xp] [role='dialog'] {
+  border: 1px solid #0831d9;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [role='dialog'] {
+  border-color: #000;
+}
+
+body[data-dsh-xp] [role='dialog'] > nav {
+  background: #ece9d8;
+  border-right: 1px solid #b3ad95;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [role='dialog'] > nav {
+  background: #1b1d21;
+  border-right-color: #3a3d42;
+}
+
+body[data-dsh-xp] [role='dialog'] > nav > div:first-child {
+  background: linear-gradient(180deg, #0a5bc4 0%, #1a6fd0 45%, #3a8fe0 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  color: #fff;
+  font-weight: 600;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [role='dialog'] > nav > div:first-child {
+  background: linear-gradient(180deg, #3a3f45 0%, #22262b 55%, #101216 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+body[data-dsh-xp] [role='dialog'] > nav button:hover {
+  background: #dbe9fc;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [role='dialog'] > nav button:hover {
+  background: #232a36;
+}
+
+body[data-dsh-xp] [role='dialog'] > nav button[aria-current='true'],
+body[data-dsh-xp] [role='dialog'] > nav button[aria-current='true'] * {
+  background: #316ac5;
+  color: #fff;
+  font-weight: 600;
+}
+
+body[data-dsh-xp] [role='dialog'] > div {
+  background: #fff;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [role='dialog'] > div {
+  background: #0d0f12;
+}
+
+body[data-dsh-xp] [role='dialog'] > div > div:first-child {
+  background: #f1efe9;
+  border-bottom: 1px solid #d8d7cf;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [role='dialog'] > div > div:first-child {
+  background: #1b1d21;
+  border-bottom-color: #3a3d42;
+}
+
+/* --- aionui 右侧面板适配（dsh-aionui-panel） ----------------------------------
+   The right-side Preview / Files panel system (Explorer tree + SCM + Preview)
+   is driven entirely by its own --aion-* token set, defined globally on
+   :root (light) and body[data-ds-dark-theme] (dark). We re-map those tokens
+   inside the skin's own body scope so the panel surfaces read as XP Luna
+   内容区：cream window bodies, the XP blue #316ac5 as the focus/active/primary
+   color, XP button gradients, beveled borders, and square corners everywhere
+   (the global border-radius:0 !important already squares the panel chrome).
+   Because every rule below is keyed to body[data-dsh-xp] with higher
+   specificity than the host's :root definitions, the panel follows the skin
+   with no panel code changes. Diff red/green/amber semantics are preserved.
+   ---------------------------------------------------------------------------- */
+
+/* --- Token remap: light -------------------------------------------------------
+   Cream panel surface (matches the sidebar / status bar), XP border brown,
+   XP blue primary. The aou ramp re-lights the blue-purple brand gradient into
+   the Luna blue scale. */
+body[data-dsh-xp] {
+  --aion-bg-base: #ece9d8;
+  --aion-bg-1: #f6f4ec;
+  --aion-bg-2: #ece9d8;
+  --aion-bg-3: #b3ad95;
+  --aion-bg-4: #9db9e0;
+  --aion-bg-hover: #dbe9fc;
+  --aion-bg-active: #dbe9fc;
+  --aion-text-primary: #000;
+  --aion-text-secondary: #3d4a5c;
+  --aion-text-tertiary: #5d6b7e;
+  --aion-text-disabled: #7f8d9f;
+  --aion-primary: #316ac5;
+  --aion-success: #3d9f43;
+  --aion-warning: #b07600;
+  --aion-danger: #e33e2b;
+  --aion-brand: #316ac5;
+  --aion-aou-1: #fff;
+  --aion-aou-2: #dbe9fc;
+  --aion-aou-3: #a8c8f0;
+  --aion-aou-4: #7fa9e0;
+  --aion-aou-5: #2558a8;
+  --aion-aou-6: #0a246a;
+  --aion-fill-2: #dbe9fc;
+  --aion-fill-3: #9db9e0;
+  --aion-border-base: #b3ad95;
+  --aion-overlay-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --aion-font-sans: Tahoma, 'Microsoft YaHei', 'PingFang SC', 'SimSun', '宋体', sans-serif;
+  --aion-font-mono: 'Courier New', 'SimSun', monospace;
+}
+
+/* --- Token remap: dark --------------------------------------------------------
+   Zune variant: black panel body with the skin's own dark surfaces and the
+   lighter Zune-blue accent. */
+body[data-dsh-xp][data-ds-dark-theme] {
+  --aion-bg-base: #1b1d21;
+  --aion-bg-1: #17191d;
+  --aion-bg-2: #202227;
+  --aion-bg-3: #3a3d42;
+  --aion-bg-4: #4a4e55;
+  --aion-bg-hover: #232a36;
+  --aion-bg-active: #232a36;
+  --aion-text-primary: #e8eaed;
+  --aion-text-secondary: #c8ccd2;
+  --aion-text-tertiary: #9aa0a8;
+  --aion-text-disabled: #6f747e;
+  --aion-primary: #6da8e8;
+  --aion-success: #2fbf71;
+  --aion-warning: #b07600;
+  --aion-danger: #ff5252;
+  --aion-brand: #6da8e8;
+  --aion-aou-1: #1f2d3d;
+  --aion-aou-2: #26374b;
+  --aion-aou-3: #2f445c;
+  --aion-aou-4: #3d5875;
+  --aion-aou-5: #4b6a8b;
+  --aion-aou-6: #6da8e8;
+  --aion-fill-2: #232a36;
+  --aion-fill-3: #3d5875;
+  --aion-border-base: #3a3d42;
+  --aion-overlay-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  --aion-font-sans: Tahoma, 'Microsoft YaHei', 'PingFang SC', 'SimSun', '宋体', sans-serif;
+  --aion-font-mono: 'Courier New', 'SimSun', monospace;
+}
+
+/* --- Columns and roots --------------------------------------------------------
+   The two panel columns are frame grid items with a 1px left divider (drawn
+   from --aion-bg-3 by the panel). Keep the XP content surface and hint a
+   beveled divider: a light inner edge beside the brown border line. */
+body[data-dsh-xp] [data-aionui-preview-col] {
+  background-color: var(--aion-bg-1);
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.55);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-aionui-preview-col] {
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.06);
+}
+
+body[data-dsh-xp] [data-aionui-explorer-col] {
+  background-color: var(--aion-bg-1);
+}
+
+/* The panel React root inherits the skin font and the cream/dark surface. */
+body[data-dsh-xp] :global(.aionui-root) {
+  font-family: var(--aion-font-sans);
+  font-size: 13px;
+}
+
+/* Drag handles stay square (global radius reset) and glint XP blue on
+   hover/active instead of the default lilac brand. */
+body[data-dsh-xp] :global(.aionui-explorer-handle:hover)::after,
+body[data-dsh-xp] :global(.aionui-explorer-handle:active)::after,
+body[data-dsh-xp] :global(.aionui-preview-handle:hover)::after,
+body[data-dsh-xp] :global(.aionui-preview-handle:active)::after {
+  background-color: var(--aion-brand);
+  box-shadow: 0 0 0 1px var(--aion-primary);
+}
+
+/* The floating re-expand chip reads as a small XP toolbar plate. */
+body[data-dsh-xp] :global(.aionui-floating-expand) {
+  background: linear-gradient(180deg, #fdfdfd 0%, #f1efe9 45%, #d8d7cf 100%);
+  border: 1px solid #b3ad95;
+  border-right: none;
+  color: var(--aion-text-secondary);
+}
+
+body[data-dsh-xp] :global(.aionui-floating-expand:hover) {
+  background: linear-gradient(180deg, #fff3d6 0%, #ffe38e 100%);
+  color: var(--aion-text-primary);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-floating-expand) {
+  background: linear-gradient(180deg, #3f444b 0%, #23262b 100%);
+  border-color: #000;
+  color: #fff;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-floating-expand:hover) {
+  background: linear-gradient(180deg, #4a5058 0%, #2c3036 100%);
+}
+
+/* --- Interactive controls ------------------------------------------------------
+   Buttons become XP command buttons: beveled cream plate with the navy
+   border and white top highlight; primary is the XP blue plate, danger the
+   red plate. Hover tints gold like the skin's own command buttons. */
+body[data-dsh-xp] :global(.aionui-btn) {
+  background: linear-gradient(180deg, #fdfdfd 0%, #f1efe9 45%, #d8d7cf 100%);
+  border: 1px solid #003c74;
+  box-shadow: inset 0 1px 0 #fff;
+  color: #000;
+}
+
+body[data-dsh-xp] :global(.aionui-btn:hover) {
+  background: linear-gradient(180deg, #fff3d6 0%, #ffe38e 100%);
+}
+
+body[data-dsh-xp] :global(.aionui-btn:active) {
+  background: linear-gradient(180deg, #d8d7cf 0%, #f1efe9 55%, #fdfdfd 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-btn) {
+  background: linear-gradient(180deg, #3f444b 0%, #23262b 100%);
+  border-color: #000;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-btn:hover) {
+  background: linear-gradient(180deg, #4a5058 0%, #2c3036 100%);
+}
+
+body[data-dsh-xp] :global(.aionui-btn-primary),
+body[data-dsh-xp] :global(.aionui-btn-primary:hover) {
+  background: linear-gradient(180deg, #4f8fe0 0%, #1e5fd0 100%);
+  border-color: #0831d9;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  color: #fff;
+  opacity: 1;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-btn-primary),
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-btn-primary:hover) {
+  background: linear-gradient(180deg, #4a7fd0 0%, #316ac5 100%);
+  border-color: #000;
+}
+
+body[data-dsh-xp] :global(.aionui-btn-danger),
+body[data-dsh-xp] :global(.aionui-btn-danger:hover) {
+  background: linear-gradient(180deg, #ff9d8a 0%, #e83b2b 100%);
+  border-color: #b3291c;
+  color: #fff;
+  opacity: 1;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-btn-danger),
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-btn-danger:hover) {
+  background: linear-gradient(180deg, #ff8a80 0%, #c62828 100%);
+  border-color: #000;
+}
+
+/* Confirm dialog: an XP window with the navy frame and deep drop shadow. The
+   overlay keeps the panel's dimming scrim; the cream card comes from the
+   --aion-bg-base remap plus the XP border. */
+body[data-dsh-xp] :global(.aionui-dialog) {
+  border: 1px solid #0831d9;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-dialog) {
+  border-color: #000;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* Context menu: the classic cream drop-down with the brown border. */
+body[data-dsh-xp] :global(.aionui-menu) {
+  background: #ece9d8;
+  border: 1px solid #b3ad95;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+body[data-dsh-xp] :global(.aionui-menu-item:hover) {
+  background: #dbe9fc;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-menu) {
+  background: #1b1d21;
+  border-color: #3a3d42;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-menu-item:hover) {
+  background: #232a36;
+}
+
+/* Toast: a navy info plate with white text (matches the skin's toast color),
+   or the dark Zune surface at night. */
+body[data-dsh-xp] :global(.aionui-toast) {
+  background: #0f2d5c;
+  border: 1px solid #0831d9;
+  color: #fff;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-toast) {
+  background: #2b2e33;
+  border-color: #000;
+}
+
+/* --- Interaction polish --------------------------------------------------------
+   Compose the skin's interaction feel without touching the palette: XP-style
+   focus (a square inset outline, never a modern rounded ring), beveled
+   active-press feedback (gradient reversal + inner shadow), and a visible
+   disabled state that stays inert to hover. Motion is uniform at 120ms and
+   dropped entirely under prefers-reduced-motion. Every rule is keyed to the
+   skin's own body scope; nothing leaks outside it.
+   ----------------------------------------------------------------------------- */
+
+/* Motion: one shared easing for the whole interactive family. This is an
+   interaction-state change only — resting appearance is unchanged. */
+body[data-dsh-xp] .xpTitlebarBtn,
+body[data-dsh-xp] .xpTitlebarBtnClose,
+body[data-dsh-xp] .xpStart,
+body[data-dsh-xp] .xpTaskbar > button,
+body[data-dsh-xp] [data-pane='sidebar'] > div > :first-child button,
+body[data-dsh-xp] [data-pane='sidebar'] > div > button,
+body[data-dsh-xp] [role='dialog'] > nav button,
+body[data-dsh-xp] :global(.aionui-btn),
+body[data-dsh-xp] :global(.aionui-floating-expand),
+body[data-dsh-xp] :global(.aionui-menu-item),
+body[data-dsh-xp] :global(.aionui-explorer-handle),
+body[data-dsh-xp] :global(.aionui-preview-handle) {
+  transition:
+    background 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    color 120ms ease,
+    opacity 120ms ease;
+}
+
+/* --- XP focus ------------------------------------------------------------
+   A square inset outline (Luna navy by day, Zune azure by night). No outline
+   drop to the default UA ring; no rounded ring either. */
+body[data-dsh-xp] .xpTitlebarBtn:focus-visible,
+body[data-dsh-xp] .xpTitlebarBtnClose:focus-visible,
+body[data-dsh-xp] .xpStart:focus-visible,
+body[data-dsh-xp] .xpTaskbar > button:focus-visible,
+body[data-dsh-xp] [data-pane='sidebar'] > div > :first-child button:focus-visible,
+body[data-dsh-xp] [data-pane='sidebar'] > div > button:focus-visible,
+body[data-dsh-xp] :global(.aionui-btn:focus-visible),
+body[data-dsh-xp] :global(.aionui-floating-expand:focus-visible) {
+  outline: none;
+  box-shadow: inset 0 0 0 2px #0a246a, inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] .xpTitlebarBtn:focus-visible,
+body[data-dsh-xp][data-ds-dark-theme] .xpTitlebarBtnClose:focus-visible,
+body[data-dsh-xp][data-ds-dark-theme] .xpStart:focus-visible,
+body[data-dsh-xp][data-ds-dark-theme] .xpTaskbar > button:focus-visible,
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] > div > :first-child button:focus-visible,
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] > div > button:focus-visible,
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-btn:focus-visible),
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-floating-expand:focus-visible) {
+  box-shadow: inset 0 0 0 2px #6da8e8, inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+body[data-dsh-xp] :global(.aionui-menu-item:focus-visible) {
+  outline: none;
+  background: #dbe9fc;
+  box-shadow: inset 0 0 0 2px #0a246a;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-menu-item:focus-visible) {
+  background: #232a36;
+  box-shadow: inset 0 0 0 2px #6da8e8;
+}
+
+/* Drag handles: keyboard focus draws a sharp outline around the grab line. */
+body[data-dsh-xp] :global(.aionui-explorer-handle:focus-visible)::after,
+body[data-dsh-xp] :global(.aionui-preview-handle:focus-visible)::after {
+  background-color: var(--aion-brand);
+  box-shadow: 0 0 0 1px var(--aion-primary), 0 0 0 3px #0a246a;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-explorer-handle:focus-visible)::after,
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-preview-handle:focus-visible)::after {
+  box-shadow: 0 0 0 1px var(--aion-primary), 0 0 0 3px #6da8e8;
+}
+
+/* --- Active press: beveled plates depress ---------------------------------------
+   Gradient reversal plus an inner shadow reads as the classic XP pressed
+   bevel. Complements the light hover tints already present; every active rule
+   also gets its Zune dark twin. */
+
+/* Caption buttons (were hover-only until now). */
+body[data-dsh-xp] .xpTitlebarBtn:active,
+body[data-dsh-xp] .xpTitlebarBtnClose:active {
+  background: linear-gradient(180deg, #1e5fd0 0%, #4f8fe0 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] .xpTitlebarBtn:hover {
+  background: linear-gradient(180deg, #5a5f68 0%, #2f3339 100%);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] .xpTitlebarBtnClose:hover {
+  background: linear-gradient(180deg, #e05252 0%, #a02520 100%);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] .xpTitlebarBtn:active,
+body[data-dsh-xp][data-ds-dark-theme] .xpTitlebarBtnClose:active {
+  background: linear-gradient(180deg, #26292e 0%, #4a4e55 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Start button dark press and hover. */
+body[data-dsh-xp][data-ds-dark-theme] .xpStart:hover {
+  background: linear-gradient(180deg, #8fd25c 0%, #4aa01a 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] .xpStart:active {
+  background: linear-gradient(180deg, #3c9212 0%, #5aa72f 55%, #7bc04b 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Taskbar footer settings button: dark hover. */
+body[data-dsh-xp][data-ds-dark-theme] .xpTaskbar > button:not(.xpStart):hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* Sidebar caption-band buttons: active on both, dark hover twin. */
+body[data-dsh-xp] [data-pane='sidebar'] > div > :first-child button:active {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] > div > :first-child button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] > div > :first-child button:active {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+/* New-session command button: dark active. */
+body[data-dsh-xp][data-ds-dark-theme] [data-pane='sidebar'] > div > button:active {
+  background: linear-gradient(180deg, #23262b 0%, #3f444b 55%, #4a5058 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Settings dialog nav rail: active press. */
+body[data-dsh-xp] [role='dialog'] > nav button:active {
+  background: #a8c8f0;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [role='dialog'] > nav button:active {
+  background: #2f445c;
+}
+
+/* aionui panel primary/danger/floating buttons already tint on hover; add the
+   pressed bevel for both palettes. */
+body[data-dsh-xp] :global(.aionui-btn-primary:active) {
+  background: linear-gradient(180deg, #1e5fd0 0%, #4f8fe0 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-btn-primary:active) {
+  background: linear-gradient(180deg, #316ac5 0%, #4a7fd0 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+body[data-dsh-xp] :global(.aionui-btn-danger:active) {
+  background: linear-gradient(180deg, #e83b2b 0%, #ff9d8a 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-btn-danger:active) {
+  background: linear-gradient(180deg, #c62828 0%, #ff8a80 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-btn:active) {
+  background: linear-gradient(180deg, #23262b 0%, #3f444b 55%, #4a5058 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+body[data-dsh-xp] :global(.aionui-floating-expand:active) {
+  background: linear-gradient(180deg, #d8d7cf 0%, #f1efe9 55%, #fdfdfd 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] :global(.aionui-floating-expand:active) {
+  background: linear-gradient(180deg, #23262b 0%, #3f444b 55%, #4a5058 100%);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* --- Disabled ---------------------------------------------------------------
+   A visible mute plus pointer-events:none so a disabled control neither shifts
+   on hover nor swallows clicks. Scoped to the skin's own interactive buttons
+   and the panel controls. */
+body[data-dsh-xp] button:disabled,
+body[data-dsh-xp] :global(.aionui-btn:disabled),
+body[data-dsh-xp] :global(.aionui-btn-primary:disabled),
+body[data-dsh-xp] :global(.aionui-btn-danger:disabled),
+body[data-dsh-xp] :global(.aionui-floating-expand:disabled),
+body[data-dsh-xp] :global(.aionui-menu-item:disabled) {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: default;
+}
+
+/* --- Reduced motion ----------------------------------------------------------
+   The skin is an instant-response surface; under prefers-reduced-motion we
+   drop every transition entirely (including any the panel supplies within the
+   skin scope). */
+@media (prefers-reduced-motion: reduce) {
+  body[data-dsh-xp] * {
+    transition: none !important;
+  }
+}
+
+/* --- git-graph 提交图适配（dsh-git-graph） -----------------------------------
+   The git graph dialog / branch popover / selector chip read the shell's
+   --dsw-alias-* remap, so their surfaces already wear the Luna cream / Zune
+   black. These rules add the skin's own color voice to the commit topology:
+   each lane column gets a hue from the XP palette (pass lines stay muted;
+   the current-branch badge keeps the brand fill), and the dialog frame
+   re-reads the navy XP window chrome. Hooks are the presentation-neutral
+   data-gitgraph-* attributes emitted by the dsh-git-graph bundle — no
+   hashed class names are involved. */
+
+/* Lane hue ramp: Luna blue / green / amber / red, repeating every six
+   columns. Node and merge glyphs share the column hue; pass and gap cells
+   keep the muted lane color from the plugin's own tokens. */
+body[data-dsh-xp] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+1),
+body[data-dsh-xp] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+1) { color: #316ac5; }
+body[data-dsh-xp] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+2),
+body[data-dsh-xp] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+2) { color: #3d9f43; }
+body[data-dsh-xp] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+3),
+body[data-dsh-xp] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+3) { color: #b07600; }
+body[data-dsh-xp] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+4),
+body[data-dsh-xp] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+4) { color: #e33e2b; }
+body[data-dsh-xp] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+5),
+body[data-dsh-xp] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+5) { color: #2558a8; }
+body[data-dsh-xp] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n),
+body[data-dsh-xp] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n) { color: #4f8fe0; }
+
+/* Zune night variant: the same hue family, lifted for the black media
+   center. */
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+1),
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+1) { color: #6da8e8; }
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+2),
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+2) { color: #2fbf71; }
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+3),
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+3) { color: #d69a3a; }
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+4),
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+4) { color: #ff5252; }
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+5),
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+5) { color: #4a7fd0; }
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n),
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n) { color: #4cc98a; }
+
+/* Dialog frame: an XP window with the navy frame and deep drop shadow (the
+   global radius reset already squares the corners). */
+body[data-dsh-xp] [data-gitgraph-dialog] {
+  border: 1px solid #0831d9;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-dialog] {
+  border-color: #000;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* Ref badges (non-current): classic cream chips with the brown border; the
+   current branch keeps the XP-blue brand fill from the token remap. */
+body[data-dsh-xp] [data-gitgraph-ref]:not([data-gitgraph-ref-current]) {
+
+/* --- 输入区选择器适配：工作区 + Git 分支胶囊（dsh-git-graph） -------------
+   The composer selector pills (official workspace picker + git-graph branch
+   chip) draw from --dsw-alias-button-tool-bar-fill / border-l2 /
+   label-secondary; the skin's global remap paints them with a translucent
+   Luna-blue fill that reads washed-out and loses its fill on hover. This
+   section re-scopes those tokens on the selector row (located structurally
+   through the git-graph chip hook data-gitgraph-chip) so both pills become
+   crisp Luna command pills: hairline fill, clear blue border, deep blue
+   labels, tinted hover/active and an open-state tint. Row-scoped values only
+   reach the two chips; the rest of the shell keeps the global remap. Light +
+   dark. */
+
+body[data-dsh-xp] div:has(> div > [data-gitgraph-chip]) {
+  --dsw-alias-button-tool-bar-fill: rgba(49, 106, 197, 0.08);
+  --dsw-alias-border-l2: rgba(49, 106, 197, 0.45);
+  --dsw-alias-label-secondary: #2558a8;
+  --dsw-alias-label-tertiary: #5d6b7e;
+  --dsw-alias-interactive-bg-hover: rgba(49, 106, 197, 0.12);
+  --dsw-alias-interactive-bg-active: rgba(49, 106, 197, 0.2);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] div:has(> div > [data-gitgraph-chip]) {
+  --dsw-alias-button-tool-bar-fill: rgba(255, 255, 255, 0.06);
+  --dsw-alias-border-l2: rgba(109, 168, 232, 0.45);
+  --dsw-alias-label-secondary: #9fc3ee;
+  --dsw-alias-label-tertiary: #9aa0a8;
+  --dsw-alias-interactive-bg-hover: rgba(109, 168, 232, 0.14);
+  --dsw-alias-interactive-bg-active: rgba(109, 168, 232, 0.22);
+}
+
+/* Open state: soft blue tint under the brand border (both chips toggle
+   aria-expanded). */
+body[data-dsh-xp] div:has(> div > [data-gitgraph-chip]) > button[aria-expanded='true'],
+body[data-dsh-xp] [data-gitgraph-chip][aria-expanded='true'] {
+  background-color: rgba(49, 106, 197, 0.14);
+}
+
+body[data-dsh-xp][data-ds-dark-theme] div:has(> div > [data-gitgraph-chip]) > button[aria-expanded='true'],
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-chip][aria-expanded='true'] {
+  background-color: rgba(109, 168, 232, 0.16);
+}
+
+  background: #ece9d8;
+  border: 1px solid #b3ad95;
+  color: #3d4a5c;
+}
+
+body[data-dsh-xp][data-ds-dark-theme] [data-gitgraph-ref]:not([data-gitgraph-ref-current]) {
+  background: #23262b;
+  border-color: #3a3d42;
+  color: #c8ccd2;
+}
+

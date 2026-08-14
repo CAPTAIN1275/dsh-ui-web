@@ -1,0 +1,1012 @@
+/* Minecraft skin — a voxel take on the dsh web GUI. Everything is scoped
+   under body[data-dsh-minecraft], which the plugin's apply() sets (and
+   retracts on dispose), so the skin stays fully hot-pluggable. The surface:
+   a panorama skybox behind the app (a CSS 3-D cube with procedurally drawn
+   pixel-art faces, slowly rotating like the Minecraft main menu), a dimming
+   scrim, stone-and-plank panel surfaces, blocky MC-style buttons, sign-post
+   inputs (wooden plank with corner nails), pixel scrollbars, and a
+   Minecraft-flavoured static palette. The dark variant
+   (`body[data-dsh-minecraft][data-ds-dark-theme]`) deepens the scrim and
+   the panels into a night take of the same look, so the base theme system
+   keeps working. Classes are consumed by the plugin's chrome through the
+   module class map; global selectors pass through the CSS-modules
+   transform untouched. */
+
+/* --- Base: fonts, fallback backdrop -------------------------------------------- */
+
+body[data-dsh-minecraft] {
+  --dsw-font-family: 'Courier New', 'PingFang SC', 'Microsoft YaHei', 'SimSun', monospace;
+  --ds-font-family-code: 'Courier New', 'Consolas', monospace;
+  color: #e7ead7;
+  /* Fallback backdrop: sky-coloured, so any skybox seam still reads as
+     sky instead of black. */
+  background: linear-gradient(180deg, #84d0f6 0%, #b4e3f9 62%, #f0faf3 100%);
+}
+
+/* --- Panorama skybox ------------------------------------------------------------
+   The camera sits at the stage center inside a 140vmax cube; the cube
+   rotates slowly around Y, scrolling the horizon exactly like the MC
+   main menu. Faces are positioned by the apply() side (background images
+   are data-URI SVGs injected per face). */
+
+.mcStage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  /* Wide FOV (≈71°) like the game's title screen: at 60vmax faces the
+     whole side scene fits in view, not a magnified centre sliver. */
+  perspective: 70vmax;
+  /* Fallback backdrop the colour of the sky: if a seam ever peeks
+     through between cube faces it reads as sky, never as black. */
+  background: linear-gradient(180deg, #84d0f6 0%, #b4e3f9 62%, #f0faf3 100%);
+  pointer-events: none;
+}
+
+.mcSkybox {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  /* Promote to its own compositor layer: the cube rotates continuously,
+     so hint the browser to keep it off the main thread. */
+  will-change: transform;
+  /* One panorama revolution in 90s — the same unhurried drift as the
+     Minecraft main menu. */
+  animation: mc-pan 90s linear infinite;
+}
+
+@keyframes mc-pan {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+
+/* Motion-sensitivity: freeze the panorama and drop the haze so the app
+   stays calm for prefers-reduced-motion users. Widget interaction
+   transitions are removed too so no surface animates for those users. */
+@media (prefers-reduced-motion: reduce) {
+  .mcSkybox {
+    animation: none;
+  }
+  .mcScrim {
+    background: rgba(6, 10, 7, 0.3);
+  }
+  body[data-dsh-minecraft] button,
+  body[data-dsh-minecraft] input:not([type='checkbox']):not([type='radio']),
+  body[data-dsh-minecraft] textarea,
+  body[data-dsh-minecraft] a,
+  :global(body[data-dsh-minecraft] .aionui-btn),
+  :global(body[data-dsh-minecraft] .aionui-collapse-chevron),
+  :global(body[data-dsh-minecraft] .aionui-floating-expand),
+  :global(body[data-dsh-minecraft] .aionui-explorer-handle::after),
+  :global(body[data-dsh-minecraft] .aionui-preview-handle::after) {
+    transition: none;
+  }
+}
+
+.mcFace {
+  position: absolute;
+  /* 0.3vmax of overlap on every side hides the classic 3-D cube seam
+     artifacts along the face edges while rotating. The camera sits
+     inside the cube, so faces are always seen from the front and
+     backface rendering can be disabled entirely. */
+  left: -30.3vmax;
+  top: -30.3vmax;
+  width: 60.6vmax;
+  height: 60.6vmax;
+  background-size: cover;
+  image-rendering: pixelated;
+  backface-visibility: hidden;
+}
+
+.mcFace1 { transform: translateZ(30vmax); }
+.mcFace2 { transform: rotateY(180deg) translateZ(30vmax); }
+.mcFace3 { transform: rotateY(-90deg) translateZ(30vmax); }
+.mcFace4 { transform: rotateY(90deg) translateZ(30vmax); }
+.mcFaceTop { transform: rotateX(90deg) translateZ(30vmax); }
+.mcFaceBottom { transform: rotateX(-90deg) translateZ(30vmax); }
+
+/* Dimming scrim so the app stays readable over the bright sky. Painted
+   after the skybox (same z-index, later in DOM order). Kept faint so the
+   green meadow stays the star of the show. */
+.mcScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: rgba(6, 10, 7, 0.12);
+  pointer-events: none;
+}
+
+body[data-dsh-minecraft][data-ds-dark-theme] .mcScrim {
+  background: rgba(3, 6, 4, 0.35);
+}
+
+/* --- App panels: floating stone slabs over the panorama ------------------------ */
+
+body[data-dsh-minecraft] [id='root'] {
+  position: relative;
+  z-index: 1;
+  background: rgba(13, 24, 16, 0.42);
+  border: 2px solid #0b0f14;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 10px 42px rgba(0, 0, 0, 0.55);
+}
+
+/* The official layout paints an opaque panel (the .frame layer) as the
+   first child of #root; it must become translucent or the panorama behind
+   the app never shows through. Targeted at the frame (the direct child
+   that holds the data-pane columns) so future unrelated direct children
+   of #root are not affected. */
+body[data-dsh-minecraft] [id='root'] > div:has([data-pane]) {
+  background: transparent;
+}
+
+body[data-dsh-minecraft][data-ds-dark-theme] [id='root'] {
+  background: rgba(6, 10, 7, 0.66);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 10px 42px rgba(0, 0, 0, 0.7);
+}
+
+body[data-dsh-minecraft][data-ds-dark-theme] [id='root'] > div:has([data-pane]) {
+  background: transparent;
+}
+
+body[data-dsh-minecraft] [data-pane='sidebar'] > div,
+body[data-dsh-minecraft] [data-pane='conversation'],
+body[data-dsh-minecraft] [data-pane='details'] {
+  background: rgba(14, 28, 17, 0.28);
+}
+
+/* The sidebar column itself paints an opaque light panel in the light
+   theme; let it fall through to the translucent surface. */
+body[data-dsh-minecraft] [data-pane='sidebar'] {
+  background: transparent;
+}
+
+/* The official layout paints an opaque panel inside each pane; let the
+   panorama show through to the pane's translucent surface. */
+body[data-dsh-minecraft] [data-pane='conversation'] > div {
+  background: transparent;
+}
+
+body[data-dsh-minecraft][data-ds-dark-theme] [data-pane='sidebar'] > div,
+body[data-dsh-minecraft][data-ds-dark-theme] [data-pane='conversation'],
+body[data-dsh-minecraft][data-ds-dark-theme] [data-pane='details'] {
+  background: rgba(5, 9, 6, 0.5);
+}
+
+body[data-dsh-minecraft][data-ds-dark-theme] [data-pane='conversation'] > div {
+  background: transparent;
+}
+
+/* --- Buttons: the MC widget sprite ----------------------------------------------
+   Blocky gray slab: black outline, light top bevel, dark bottom bevel, a
+   faint noisy fill; hover turns the label yellow (like the menu buttons),
+   active presses the slab down one pixel. */
+
+body[data-dsh-minecraft] button {
+  font-family: var(--dsw-font-family);
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+  background-color: #8b8b8b;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 4px);
+  border: 2px solid #101418;
+  border-radius: 0;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    inset 2px 0 0 rgba(255, 255, 255, 0.28),
+    inset -2px 0 0 rgba(0, 0, 0, 0.3),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.45);
+  /* Voxel snap: the slab moves in a short flash, not a lazy ease. */
+  transition:
+    background-color 90ms ease,
+    color 90ms ease,
+    box-shadow 90ms ease,
+    transform 90ms ease,
+    filter 90ms ease;
+}
+
+/* Focus: keep the pixel vocabulary — a thick square border, never a
+   rounded ring. */
+body[data-dsh-minecraft] button:focus-visible {
+  outline: 3px solid #ffffa0;
+  outline-offset: 2px;
+}
+
+body[data-dsh-minecraft] button:hover:not(:disabled) {
+  color: #ffffa0;
+  background-color: #a8b9d2;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.55),
+    inset 2px 0 0 rgba(255, 255, 255, 0.38),
+    inset -2px 0 0 rgba(0, 0, 0, 0.25),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.35);
+}
+
+body[data-dsh-minecraft] button:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.25),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.55);
+}
+
+body[data-dsh-minecraft] button:disabled {
+  cursor: not-allowed;
+  color: rgba(255, 255, 255, 0.45);
+  background-color: #6b6b6b;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Disabled must not react to hover (guard the :not(:disabled) hover above). */
+body[data-dsh-minecraft] button:disabled:hover {
+  color: rgba(255, 255, 255, 0.45);
+  background-color: #6b6b6b;
+}
+
+/* --- Inputs: the sign post ------------------------------------------------------
+   Wooden plank with corner nails, wood grain, dark frame; focus brightens
+   the frame and the carved text. */
+
+body[data-dsh-minecraft] input:not([type='checkbox']):not([type='radio']),
+body[data-dsh-minecraft] textarea,
+body[data-dsh-minecraft] select {
+  font-family: var(--dsw-font-family);
+  font-weight: 600;
+  color: #f5ecd8;
+  background-color: #9a6238;
+  background-image:
+    radial-gradient(circle 3px at 10px 9px, rgba(38, 26, 14, 0.95) 2px, transparent 2.5px),
+    radial-gradient(circle 3px at calc(100% - 10px) 9px, rgba(38, 26, 14, 0.95) 2px, transparent 2.5px),
+    radial-gradient(circle 3px at 10px calc(100% - 9px), rgba(38, 26, 14, 0.95) 2px, transparent 2.5px),
+    radial-gradient(circle 3px at calc(100% - 10px) calc(100% - 9px), rgba(38, 26, 14, 0.95) 2px, transparent 2.5px),
+    repeating-linear-gradient(0deg, rgba(58, 36, 16, 0.22) 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, #b5794a 0%, #96603a 100%);
+  border: 3px solid #4a2f14;
+  border-radius: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+body[data-dsh-minecraft] input:not([type='checkbox']):not([type='radio']):focus,
+body[data-dsh-minecraft] textarea:focus,
+body[data-dsh-minecraft] select:focus {
+  color: #fff;
+  border-color: #f2ead4;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 0 0 2px rgba(242, 234, 212, 0.35);
+}
+
+body[data-dsh-minecraft] input::placeholder,
+body[data-dsh-minecraft] textarea::placeholder {
+  color: rgba(245, 236, 216, 0.55);
+  opacity: 1;
+}
+
+/* Disabled fields look planed: faded plank, flat bevel, no cursor. */
+body[data-dsh-minecraft] input:disabled,
+body[data-dsh-minecraft] textarea:disabled,
+body[data-dsh-minecraft] select:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  color: rgba(245, 236, 216, 0.6);
+  box-shadow: none;
+}
+
+/* The sign-post frame shifts color on focus/hover in a short snap. */
+body[data-dsh-minecraft] input:not([type='checkbox']):not([type='radio']),
+body[data-dsh-minecraft] textarea {
+  transition:
+    border-color 90ms ease,
+    color 90ms ease;
+}
+
+body[data-dsh-minecraft] select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 26px;
+  background-image:
+    radial-gradient(circle 3px at 10px 9px, rgba(38, 26, 14, 0.95) 2px, transparent 2.5px),
+    radial-gradient(circle 3px at calc(100% - 10px) 9px, rgba(38, 26, 14, 0.95) 2px, transparent 2.5px),
+    radial-gradient(circle 3px at 10px calc(100% - 9px), rgba(38, 26, 14, 0.95) 2px, transparent 2.5px),
+    radial-gradient(circle 3px at calc(100% - 10px) calc(100% - 9px), rgba(38, 26, 14, 0.95) 2px, transparent 2.5px),
+    repeating-linear-gradient(0deg, rgba(58, 36, 16, 0.22) 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, #b5794a 0%, #96603a 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6'%3E%3Cpath d='M0 0h8L4 6z' fill='%23362a1c'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 10px) center;
+}
+
+/* --- Scrollbars: pixel slabs ---------------------------------------------------- */
+
+body[data-dsh-minecraft] ::-webkit-scrollbar {
+  width: 13px;
+  height: 13px;
+}
+
+body[data-dsh-minecraft] ::-webkit-scrollbar-track {
+  background: rgba(13, 22, 16, 0.6);
+  border-left: 2px solid #0b0f14;
+}
+
+body[data-dsh-minecraft] ::-webkit-scrollbar-thumb {
+  background: #7d7d7d;
+  border: 2px solid #101418;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.35);
+}
+
+body[data-dsh-minecraft] ::-webkit-scrollbar-thumb:hover {
+  background: #a8b9d2;
+}
+
+body[data-dsh-minecraft] ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* --- Selection, focus rings, links ---------------------------------------------- */
+
+body[data-dsh-minecraft] ::selection {
+  background: #ffffa0;
+  color: #000;
+}
+
+body[data-dsh-minecraft] :focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+body[data-dsh-minecraft] a {
+  color: #ffffa0;
+  transition: color 90ms ease;
+}
+
+body[data-dsh-minecraft] a:visited {
+  color: #d6d69a;
+}
+
+body[data-dsh-minecraft] a:hover {
+  color: #fff;
+}
+
+/* Linked pixels keep the global focus outline; no static change. */
+
+/* --- Static palette: blocky remap ------------------------------------------------
+   Remap the deepseek/blue families to lapis-lazuli blues, neutral families
+   to stone grays, green to grass, amber to gold sand, so components that
+   read --dsw-static-* directly still land in the blocky world. */
+
+body[data-dsh-minecraft] {
+  --dsw-static-amber-100: #f3e7c8;
+  --dsw-static-amber-400: #d9a53c;
+  --dsw-static-amber-500: #b57e1e;
+  --dsw-static-amber-600: #9a6a17;
+  --dsw-static-amber-900: #4a3512;
+  --dsw-static-blue-100: #cfe0ef;
+  --dsw-static-blue-300: #9fb9d8;
+  --dsw-static-blue-400: #6f95c4;
+  --dsw-static-blue-450: #557faf;
+  --dsw-static-blue-500: #38628f;
+  --dsw-static-blue-50: #e8eff7;
+  --dsw-static-blue-50p: #dce8f4;
+  --dsw-static-blue-600: #2b4f78;
+  --dsw-static-blue-75: #d4e2f0;
+  --dsw-static-blue-800: #1d3a5c;
+  --dsw-static-blue-950: #122940;
+  --dsw-static-deepseek-100: #cfe0ef;
+  --dsw-static-deepseek-200: #b6cde3;
+  --dsw-static-deepseek-300: #9fb9d8;
+  --dsw-static-deepseek-400: #6f95c4;
+  --dsw-static-deepseek-450: #557faf;
+  --dsw-static-deepseek-500: #38628f;
+  --dsw-static-deepseek-50: #e8eff7;
+  --dsw-static-deepseek-600: #2b4f78;
+  --dsw-static-deepseek-700-delete: #1d3a5c;
+  --dsw-static-deepseek-800: #1d3a5c;
+  --dsw-static-deepseek-900: #1a3350;
+  --dsw-static-green-100: #d8e8c8;
+  --dsw-static-green-400: #83c94e;
+  --dsw-static-green-500: #5a9e38;
+  --dsw-static-green-900: #24381c;
+  --dsw-static-neutral-00: #fff;
+  --dsw-static-neutral-1000: #000;
+  --dsw-static-neutral-100: #d6d6d6;
+  --dsw-static-neutral-150: #cbcbcb;
+  --dsw-static-neutral-200: #c0c0c0;
+  --dsw-static-neutral-250: #b5b5b5;
+  --dsw-static-neutral-300: #a8a8a8;
+  --dsw-static-neutral-400: #8f8f8f;
+  --dsw-static-neutral-500: #767676;
+  --dsw-static-neutral-50: #e6e6e6;
+  --dsw-static-neutral-550: #6a6a6a;
+  --dsw-static-neutral-600: #5c5c5c;
+  --dsw-static-neutral-700: #4a4a4a;
+  --dsw-static-neutral-800: #383838;
+  --dsw-static-neutral-850: #2e2e2e;
+  --dsw-static-neutral-900: #242424;
+  --dsw-static-neutral-bluish-00: #fff;
+  --dsw-static-neutral-bluish-1000: #000;
+  --dsw-static-neutral-bluish-100: #d4d8de;
+  --dsw-static-neutral-bluish-150: #c8cdd5;
+  --dsw-static-neutral-bluish-200: #bcc2cc;
+  --dsw-static-neutral-bluish-300: #9ea7b4;
+  --dsw-static-neutral-bluish-400: #848f9f;
+  --dsw-static-neutral-bluish-500: #6b7788;
+  --dsw-static-neutral-bluish-50: #e8eaee;
+  --dsw-static-neutral-bluish-600: #586475;
+  --dsw-static-neutral-bluish-60: #e2e5ea;
+  --dsw-static-neutral-bluish-700: #3d4654;
+  --dsw-static-neutral-bluish-75: #dde1e7;
+  --dsw-static-neutral-bluish-750: #333b47;
+  --dsw-static-neutral-bluish-800: #2a313b;
+  --dsw-static-neutral-bluish-850: #22282f;
+  --dsw-static-neutral-bluish-875: #1f252c;
+  --dsw-static-neutral-bluish-900: #1c2127;
+  --dsw-static-neutral-bluish-950: #14181d;
+}
+
+/* --- Alias remap: the dark voxel reading surface --------------------------------
+   Components read --dsw-alias-* for their concrete fills and labels; in the
+   light theme those resolve to light panels with dark text, which would
+   clash with the panorama panels. Force the night-slate surface (light
+   labels on dark slabs) in both themes, keeping the official dark theme's
+   values as the base. */
+
+body[data-dsh-minecraft] {
+  --dsw-alias-label-primary: #e7ead7;
+  --dsw-alias-label-primary-bluish: #d4e4d4;
+  --dsw-alias-label-primary-dimmed: #c4cbb2;
+  /* Foreground of solid fills (primary buttons, error labels): those fills
+     are dark slate/lapis here, so the on-fill text must stay light. */
+  --dsw-alias-label-primary-foreground: #eef4fb;
+  /* Inverted-surface label (brand icons): surfaces are dark slate in both
+     themes here, so keep it light. */
+  --dsw-alias-label-primary-inverted: #eef4fb;
+  --dsw-alias-label-secondary: #b3bda3;
+  --dsw-alias-label-tertiary: #8b9680;
+  --dsw-alias-label-quaternary: #6b7561;
+  --dsw-alias-label-caption: #a0ab92;
+  --dsw-alias-label-dimmed: #8b9680;
+  --dsw-alias-separator-primary: rgba(255, 255, 255, 0.09);
+  --dsw-alias-line-secondary: rgba(255, 255, 255, 0.11);
+  --dsw-alias-interactive-bg-hover: rgba(255, 255, 255, 0.07);
+  --dsw-alias-interactive-bg-active: rgba(255, 255, 255, 0.11);
+  --dsw-alias-interactive-bg-hover-solid: #2b4f78;
+  --dsw-alias-interactive-bg-hover-accent: rgba(131, 201, 78, 0.18);
+  --dsw-alias-interactive-bg-hover-danger: rgba(212, 90, 90, 0.16);
+  --dsw-alias-bg-base: #18221b;
+  --dsw-alias-bg-layer-1: #1a251d;
+  --dsw-alias-bg-layer-2: #1d2920;
+  --dsw-alias-bg-layer-3: #212e24;
+  --dsw-alias-bg-overlay: rgba(6, 9, 7, 0.72);
+  --dsw-alias-bg-mask-1: rgba(6, 9, 7, 0.4);
+  --dsw-alias-bg-mask-2: rgba(6, 9, 7, 0.22);
+  --dsw-alias-bg-mask-3: rgba(6, 9, 7, 0.55);
+  --dsw-alias-border-l1: rgba(255, 255, 255, 0.06);
+  --dsw-alias-border-l2-darkmode-thin: rgba(255, 255, 255, 0.08);
+  --dsw-alias-border-l2: rgba(255, 255, 255, 0.12);
+  --dsw-alias-border-l3: rgba(255, 255, 255, 0.16);
+  --dsw-alias-border-l4: rgba(255, 255, 255, 0.2);
+  --dsw-alias-bg-skeleton: #273128;
+  --dsw-alias-toast-bg: #212d26;
+  --dsw-alias-tooltip-bg: #212d26;
+  --dsw-alias-markdown-code-block: #1e2620;
+  --dsw-alias-markdown-code-block-banner: #273128;
+  --dsw-alias-markdown-inline-code: #2a352c;
+  --dsw-alias-markdown-tag: #2b4f78;
+  --dsw-alias-markdown-placeholder: #8b9680;
+  --dsw-alias-markdown-citation: #212d26;
+  --dsw-alias-scrollbar-bg-l1: rgba(13, 22, 16, 0.5);
+  --dsw-alias-scrollbar-bg-l2: rgba(13, 22, 16, 0.5);
+  --dsw-alias-scrollbar-hover-l1: #a8b9d2;
+  --dsw-alias-scrollbar-hover-l2: #a8b9d2;
+  --dsw-alias-button-primary-fill: #2b4f78;
+  --dsw-alias-button-primary-hover: #38628f;
+  --dsw-alias-button-primary-dimmed: rgba(43, 79, 120, 0.55);
+  --dsw-alias-button-ghost-active-fill: rgba(255, 255, 255, 0.08);
+  --dsw-alias-button-ghost-active-hover: rgba(255, 255, 255, 0.12);
+  /* On-fill text for the grass brand and the stone toolbar slab: dark ink,
+     so the git-graph current-branch badge / chip labels stay readable. */
+  --dsw-alias-button-contrast-fill: #1a2413;
+  --dsw-alias-button-tool-bar-fill: rgba(139, 139, 139, 0.5);
+  --dsw-alias-brand-primary: #83c94e;
+  --dsw-alias-brand-primary-invert: #1a2413;
+  --dsw-alias-brand-text: #83c94e;
+  --dsw-alias-state-business-primary: #83c94e;
+  --dsw-alias-state-business-subtle: rgba(131, 201, 78, 0.18);
+  --dsw-alias-state-business-tertiary: rgba(131, 201, 78, 0.1);
+  --dsw-alias-state-success-primary: #4f8a33;
+  --dsw-alias-state-success-secondary: rgba(79, 138, 51, 0.16);
+  --dsw-alias-state-success-tertiary: rgba(79, 138, 51, 0.09);
+  --dsw-alias-state-warn-primary: #d9a53c;
+  --dsw-alias-state-warn-label: #f3d9a0;
+  --dsw-alias-state-warn-secondary: rgba(217, 165, 60, 0.16);
+  --dsw-alias-state-warn-tertiary: rgba(217, 165, 60, 0.09);
+  --dsw-alias-state-error-primary: #d45a5a;
+  --dsw-alias-state-error-secondary: rgba(212, 90, 90, 0.16);
+  --dsw-alias-state-warning-primary: #d9a53c;
+}
+
+/* --- Specific surfaces: bubbles, sidebar nav, menus ----------------------------- */
+
+body[data-dsh-minecraft] {
+  --dsw-specific-bubble: #26332a;
+  --dsw-specific-bubble-highlight: #2e3d32;
+  --dsw-specific-sidebar-fill: rgba(12, 22, 15, 0.55);
+  --dsw-specific-sidebar-nav-item-active: #2b4f78;
+  --dsw-specific-sidebar-nav-item-active-accent: #83c94e;
+  --dsw-specific-sidebar-nav-item-hover: rgba(38, 50, 42, 0.85);
+  --dsw-specific-menu: #212d26;
+  --dsw-specific-selector: #212d26;
+  --dsw-specific-tip: #212d26;
+  --dsw-specific-input-major: rgba(15, 24, 17, 0.9);
+  --dsw-specific-login-input: rgba(15, 24, 17, 0.9);
+}
+
+/* ---------------------------------------------------------------------------
+   aionui 右侧面板适配（dsh-aionui-panel）
+   ---------------------------------------------------------------------------
+   The aionui panel system drives every surface through its own --aion-* token
+   ramp, defined by the host plugin at :root (light) and body[data-ds-dark-theme]
+   (dark). The plugin appends the explorer/preview columns as grid items on the
+   frame, so remapping the tokens on body[data-dsh-minecraft] makes the whole
+   panel system land in the voxel world without touching a single panel class:
+   the light slate becomes a day-lit stone slab, the dark night-slate becomes
+   the same evening grey slab as the app panels, and diff/danger/success keep
+   their green/red semantics while tuning toward the blocky palette.
+   Structural chrome (columns, handles, floating expand, chevron, context menu,
+   confirm dialog, toast) is restyled below with MC stone / plank / pixel
+   treatments. Class selectors are wrapped in :global() so CSS modules pass
+   them through untouched; the [data-aionui-*] attribute selectors are global
+   to the DOM already and need no wrapper. */
+
+/* --- token remap: day-lit stone (light) -------------------------------- */
+
+body[data-dsh-minecraft] {
+  --aion-bg-base: #e8eadf;
+  --aion-bg-1: #d9ddd1;
+  --aion-bg-2: #cdd2c3;
+  --aion-bg-3: #a7af9d;
+  --aion-bg-4: #8b9680;
+  --aion-bg-hover: #e2e6da;
+  --aion-bg-active: #c2c8b6;
+  --aion-text-primary: #1d2521;
+  --aion-text-secondary: #3f4a43;
+  --aion-text-tertiary: #6b7561;
+  --aion-text-disabled: #9ba497;
+  --aion-primary: #38628f;
+  --aion-success: #5a8f2c;
+  --aion-warning: #b57e1e;
+  --aion-danger: #b6442e;
+  --aion-brand: #78896c;
+  --aion-aou-1: #eef0e9;
+  --aion-aou-2: #dfe3d8;
+  --aion-aou-3: #c6cdbd;
+  --aion-aou-4: #a4b0a0;
+  --aion-aou-5: #7f917c;
+  --aion-aou-6: #5c7057;
+  --aion-fill-2: #e2e6da;
+  --aion-fill-3: #cdd2c3;
+  --aion-border-base: #a7af9d;
+  --aion-overlay-shadow:
+    0 8px 22px rgba(20, 30, 22, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  --aion-font-sans: var(--dsw-font-family);
+  --aion-font-mono: var(--ds-font-family-code);
+}
+
+/* --- token remap: night slate (dark) ------------------------------------ */
+
+body[data-dsh-minecraft][data-ds-dark-theme] {
+  --aion-bg-base: #16201a;
+  --aion-bg-1: #1a251d;
+  --aion-bg-2: #212e24;
+  --aion-bg-3: #2d3b31;
+  --aion-bg-4: #3a4a3e;
+  --aion-bg-hover: #223026;
+  --aion-bg-active: #26352a;
+  --aion-text-primary: #e7ead7;
+  --aion-text-secondary: #b3bda3;
+  --aion-text-tertiary: #8b9680;
+  --aion-text-disabled: #5c665c;
+  --aion-primary: #2b4f78;
+  --aion-success: #5a9e38;
+  --aion-warning: #d9a53c;
+  --aion-danger: #d45a5a;
+  --aion-brand: #83c94e;
+  --aion-aou-1: #1c2620;
+  --aion-aou-2: #27452c;
+  --aion-aou-3: #39624a;
+  --aion-aou-4: #52742e;
+  --aion-aou-5: #83c94e;
+  --aion-aou-6: #aed08a;
+  --aion-fill-2: rgba(255, 255, 255, 0.06);
+  --aion-fill-3: rgba(255, 255, 255, 0.12);
+  --aion-border-base: #2d3b31;
+  --aion-overlay-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --aion-font-sans: var(--dsw-font-family);
+  --aion-font-mono: var(--ds-font-family-code);
+}
+
+/* --- columns & root: floating stone slabs -------------------------------- */
+
+/* The panel columns jut from the right of the frame grid as adjacent stone
+   slabs; give them the same 2px dark outline as the app panels and lay the
+   pixel border on every side so the slab reads as a floating block. */
+body[data-dsh-minecraft] [data-aionui-explorer-col],
+body[data-dsh-minecraft] [data-aionui-preview-col] {
+  border-left: 2px solid #0b0f14;
+  background-color: var(--aion-bg-1);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 8px 26px rgba(0, 0, 0, 0.35);
+}
+
+body[data-dsh-minecraft][data-ds-dark-theme] [data-aionui-explorer-col],
+body[data-dsh-minecraft][data-ds-dark-theme] [data-aionui-preview-col] {
+  border-left: 2px solid #0b0f14;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 8px 26px rgba(0, 0, 0, 0.5);
+}
+
+/* The React root inside each column inherits the token surface and the
+   Minecraft uprightness. */
+:global(body[data-dsh-minecraft] .aionui-root),
+body[data-dsh-minecraft] [data-aionui-explorer-col] > div,
+body[data-dsh-minecraft] [data-aionui-preview-col] > div {
+  background-color: transparent;
+  font-family: var(--dsw-font-family);
+}
+
+:global(body[data-dsh-minecraft] .aionui-root) {
+  color: var(--aion-text-primary);
+}
+
+/* Blocky pixel scrollbars inside the panel roots (inherits the slab scheme). */
+:global(body[data-dsh-minecraft] .aionui-root ::-webkit-scrollbar) {
+  width: 10px;
+  height: 10px;
+}
+:global(body[data-dsh-minecraft] .aionui-root ::-webkit-scrollbar-track) {
+  background: rgba(13, 22, 16, 0.55);
+  border-left: 2px solid #0b0f14;
+}
+:global(body[data-dsh-minecraft] .aionui-root ::-webkit-scrollbar-thumb) {
+  background: #7d7d7d;
+  border: 2px solid #101418;
+  border-radius: 0;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.35);
+}
+:global(body[data-dsh-minecraft] .aionui-root ::-webkit-scrollbar-thumb:hover) {
+  background: #a8b9d2;
+}
+:global(body[data-dsh-minecraft] .aionui-root ::-webkit-scrollbar-corner) {
+  background: transparent;
+}
+
+/* Tree rows: hover and selection tint the slab with lighter stone instead of
+   the flat blue fill (rows are module-hashed classes, driven by the fill
+   tokens above, so this is only the accent ring on top). */
+
+/* Widget state transitions: every interactive control in the panel shares
+   one crisp, voxel-snappy flash (see the widget sections below for the
+   actual transition declarations). No wildcard sweep — only the controls
+   that opt in below animate, so lists and tooltips stay snap-flat. */
+
+/* --- interactive controls: MC widget sprite ------------------------------- */
+
+/* aionui buttons become the same blocky menu slabs as the app buttons:
+   gray stone, straight corners, black outline, light top bevel; hover turns
+   the slab/label yellow like a menu button and active presses it down. */
+:global(body[data-dsh-minecraft] .aionui-btn) {
+  height: 30px;
+  padding: 0 14px;
+  border: 2px solid #101418;
+  border-radius: 0;
+  background-color: #8b8b8b;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 4px);
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    inset 2px 0 0 rgba(255, 255, 255, 0.28),
+    inset -2px 0 0 rgba(0, 0, 0, 0.3),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.45);
+  /* Voxel widgets snap: state changes are a short flash, not a lazy ease,
+     so the blocky slab still reads as it moves. */
+  transition:
+    background-color 90ms ease,
+    color 90ms ease,
+    box-shadow 90ms ease,
+    transform 90ms ease,
+    filter 90ms ease,
+    opacity 90ms ease;
+}
+:global(body[data-dsh-minecraft] .aionui-btn:hover:not(:disabled)) {
+  background-color: #a8b9d2;
+  color: #ffffa0;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.55),
+    inset 2px 0 0 rgba(255, 255, 255, 0.38),
+    inset -2px 0 0 rgba(0, 0, 0, 0.25),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.35);
+}
+:global(body[data-dsh-minecraft] .aionui-btn:active:not(:disabled)) {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.25),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.55);
+}
+/* Focus: the blocky slab keeps a square, thick-bordered focus so the
+   reading focus never borrows the rounded-ring vocabulary. */
+:global(body[data-dsh-minecraft] .aionui-btn:focus-visible) {
+  outline: 3px solid #ffffa0;
+  outline-offset: 2px;
+}
+:global(body[data-dsh-minecraft] .aionui-btn:disabled),
+:global(body[data-dsh-minecraft] .aionui-btn:disabled:hover) {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+  background-color: #6b6b6b;
+  color: rgba(255, 255, 255, 0.5);
+  text-shadow: none;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Primary / danger keep their semantic fills but get the blocky slab frame;
+   the token ramp already lands the stone/lapis fills in this scope. */
+:global(body[data-dsh-minecraft] .aionui-btn-primary) {
+  border-color: #101418;
+  border-bottom-width: 3px;
+  color: #fff;
+}
+:global(body[data-dsh-minecraft] .aionui-btn-primary:hover:not(:disabled)) {
+  opacity: 1;
+  filter: brightness(1.12);
+}
+:global(body[data-dsh-minecraft] .aionui-btn-danger) {
+  border-color: #101418;
+  border-bottom-width: 3px;
+  color: #fff;
+}
+:global(body[data-dsh-minecraft] .aionui-btn-danger:hover:not(:disabled)) {
+  opacity: 1;
+  filter: brightness(1.15);
+}
+
+/* The collapse chevron is a tiny floating slab button; keep it stone-flat. */
+:global(body[data-dsh-minecraft] .aionui-collapse-chevron) {
+  width: 26px;
+  height: 26px;
+  border: 2px solid #101418;
+  border-radius: 0;
+  background-color: #8b8b8b;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0 2px, transparent 2px 4px);
+  color: #fff;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.45);
+  transition:
+    background-color 90ms ease,
+    color 90ms ease,
+    transform 90ms ease;
+}
+:global(body[data-dsh-minecraft] .aionui-collapse-chevron:hover:not(:disabled)) {
+  background-color: #a8b9d2;
+  color: #ffffa0;
+}
+:global(body[data-dsh-minecraft] .aionui-collapse-chevron:active:not(:disabled)) {
+  transform: translateY(1px);
+}
+:global(body[data-dsh-minecraft] .aionui-collapse-chevron:focus-visible) {
+  outline: 3px solid #ffffa0;
+  outline-offset: 2px;
+}
+:global(body[data-dsh-minecraft] .aionui-collapse-chevron:disabled),
+:global(body[data-dsh-minecraft] .aionui-collapse-chevron:disabled:hover) {
+  cursor: not-allowed;
+  opacity: 0.4;
+  transform: none;
+  background-color: #6b6b6b;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Drag handles: blocky pixel thumbs; hover/active sweep to the grass brand. */
+:global(body[data-dsh-minecraft] .aionui-explorer-handle::after),
+:global(body[data-dsh-minecraft] .aionui-preview-handle::after) {
+  border-radius: 0;
+  background-color: #6b7561;
+  transition: background-color 90ms ease;
+}
+:global(body[data-dsh-minecraft] .aionui-explorer-handle:hover::after),
+:global(body[data-dsh-minecraft] .aionui-explorer-handle:active::after),
+:global(body[data-dsh-minecraft] .aionui-preview-handle:hover::after),
+:global(body[data-dsh-minecraft] .aionui-preview-handle:active::after) {
+  background-color: #83c94e;
+}
+:global(body[data-dsh-minecraft] .aionui-explorer-handle:focus-visible),
+:global(body[data-dsh-minecraft] .aionui-preview-handle:focus-visible) {
+  outline: 3px solid #ffffa0;
+  outline-offset: 2px;
+}
+
+/* The floating expand button (explorer collapsed) is a small vertical slab. */
+:global(body[data-dsh-minecraft] .aionui-floating-expand) {
+  width: 24px;
+  border: 2px solid #101418;
+  border-right: none;
+  border-radius: 0;
+  background-color: #8b8b8b;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0 2px, transparent 2px 4px);
+  color: #fff;
+  box-shadow:
+    inset 2px 0 0 rgba(255, 255, 255, 0.28),
+    inset -2px 0 0 rgba(0, 0, 0, 0.3);
+  transition:
+    background-color 90ms ease,
+    color 90ms ease,
+    transform 90ms ease,
+    filter 90ms ease;
+}
+:global(body[data-dsh-minecraft] .aionui-floating-expand:hover:not(:disabled)) {
+  background-color: #a8b9d2;
+  color: #ffffa0;
+}
+:global(body[data-dsh-minecraft] .aionui-floating-expand:active:not(:disabled)) {
+  transform: translateY(1px);
+}
+:global(body[data-dsh-minecraft] .aionui-floating-expand:focus-visible) {
+  outline: 3px solid #ffffa0;
+  outline-offset: 2px;
+}
+:global(body[data-dsh-minecraft] .aionui-floating-expand:disabled),
+:global(body[data-dsh-minecraft] .aionui-floating-expand:disabled:hover) {
+  cursor: not-allowed;
+  opacity: 0.4;
+  transform: none;
+  background-color: #6b6b6b;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Context menu: a plank slab with a dark frame, blocky items. */
+:global(body[data-dsh-minecraft] .aionui-menu) {
+  border: 2px solid #101418;
+  border-radius: 0;
+}
+:global(body[data-dsh-minecraft] .aionui-menu-item) {
+  border-radius: 0;
+}
+:global(body[data-dsh-minecraft] .aionui-menu-item:hover:not(.aionui-menu-item-disabled)) {
+  background-color: rgba(131, 201, 78, 0.22);
+}
+:global(body[data-dsh-minecraft] .aionui-menu-item:focus-visible) {
+  outline: 3px solid #ffffa0;
+  outline-offset: -3px;
+}
+:global(body[data-dsh-minecraft] .aionui-menu-item:active:not(.aionui-menu-item-disabled)) {
+  background-color: rgba(131, 201, 78, 0.32);
+}
+:global(body[data-dsh-minecraft] .aionui-menu-item-disabled) {
+  color: var(--aion-text-disabled);
+}
+:global(body[data-dsh-minecraft] .aionui-menu-item-disabled:hover) {
+  background: transparent;
+}
+:global(body[data-dsh-minecraft] .aionui-menu-sep) {
+  background: #0b0f14;
+}
+
+/* Confirm dialog: a floating stone card over the scrim. */
+:global(body[data-dsh-minecraft] .aionui-overlay) {
+  background: rgba(4, 8, 5, 0.55);
+}
+:global(body[data-dsh-minecraft] .aionui-dialog) {
+  border: 2px solid #0b0f14;
+  border-radius: 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 16px 44px rgba(0, 0, 0, 0.55);
+}
+
+/* Toast: a little slab that slides up, framed like the rest. */
+:global(body[data-dsh-minecraft] .aionui-toast) {
+  border: 2px solid #101418;
+  border-radius: 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 8px 22px rgba(0, 0, 0, 0.4);
+}
+
+/* Search/input fields inside the panels pick up the app's sign-post style via
+   the element selectors above; this plane keeps focus rings squared and the
+   pixel cursor accent readable on both stone roots. */
+:global(body[data-dsh-minecraft] .aionui-root input),
+:global(body[data-dsh-minecraft] .aionui-root textarea) {
+  border-radius: 0;
+}
+:global(body[data-dsh-minecraft] .aionui-root input:focus),
+:global(body[data-dsh-minecraft] .aionui-root textarea:focus) {
+  outline-offset: 0;
+}
+
+/* --- git-graph 提交图适配（dsh-git-graph） -----------------------------------
+   The git graph dialog / branch popover / selector chip read the shell's
+   --dsw-alias-* remap above, so their surfaces already sit on the night
+   slate. These rules add the skin's own color voice to the commit topology:
+   each lane column gets a hue from the voxel palette (pass lines stay muted;
+   the current-branch badge keeps the grass fill), and the dialog frame re-
+   reads the blocky slab chrome like the aionui confirm dialog. Hooks are
+   the presentation-neutral data-gitgraph-* attributes emitted by the
+   dsh-git-graph bundle — no hashed class names are involved. */
+
+/* Lane hue ramp: lapis / green / pumpkin / brick / stone / grass, repeating
+   every six columns. Node and merge glyphs share the column hue; pass and
+   gap cells keep the muted lane color from the plugin's own tokens. */
+body[data-dsh-minecraft] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+1),
+body[data-dsh-minecraft] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+1) { color: #38628f; }
+body[data-dsh-minecraft] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+2),
+body[data-dsh-minecraft] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+2) { color: #5a9e38; }
+body[data-dsh-minecraft] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+3),
+body[data-dsh-minecraft] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+3) { color: #b57e1e; }
+body[data-dsh-minecraft] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+4),
+body[data-dsh-minecraft] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+4) { color: #b6442e; }
+body[data-dsh-minecraft] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+5),
+body[data-dsh-minecraft] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+5) { color: #78896c; }
+body[data-dsh-minecraft] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n),
+body[data-dsh-minecraft] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n) { color: #83c94e; }
+
+/* Night variant: the same hue family, brightened to glow on the dark slab. */
+body[data-dsh-minecraft][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+1),
+body[data-dsh-minecraft][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+1) { color: #4a7db8; }
+body[data-dsh-minecraft][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+2),
+body[data-dsh-minecraft][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+2) { color: #83c94e; }
+body[data-dsh-minecraft][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+3),
+body[data-dsh-minecraft][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+3) { color: #d9a53c; }
+body[data-dsh-minecraft][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+4),
+body[data-dsh-minecraft][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+4) { color: #d45a5a; }
+body[data-dsh-minecraft][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n+5),
+body[data-dsh-minecraft][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n+5) { color: #a4b0a0; }
+body[data-dsh-minecraft][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='node']:nth-child(6n),
+body[data-dsh-minecraft][data-ds-dark-theme] [data-gitgraph-lanes] > [data-gitgraph-glyph='merge']:nth-child(6n) { color: #aed08a; }
+
+/* Dialog frame: a floating stone slab with the same dark outline and pixel
+   bevel as the aionui confirm dialog. */
+body[data-dsh-minecraft] [data-gitgraph-dialog] {
+  border: 2px solid #0b0f14;
+  border-radius: 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 16px 44px rgba(0, 0, 0, 0.55);
+}
+
+/* Ref badges (non-current): blocky stone chips with a light outline; the
+   current branch keeps the grass brand fill from the token remap. */
+body[data-dsh-minecraft] [data-gitgraph-ref]:not([data-gitgraph-ref-current]) {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0;
+}
+

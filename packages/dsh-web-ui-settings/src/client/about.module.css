@@ -1,0 +1,66 @@
+/* 设置页「关于」section 排版（token 驱动，跟随当前皮肤/主题）。 */
+
+.about {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 2px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--dsw-alias-label-primary, #eef1ff);
+}
+
+.sub {
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--dsw-alias-label-tertiary, #8b95c4);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.blockTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary, #eef1ff);
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2, rgba(140, 160, 255, 0.22));
+}
+
+.row {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--dsw-alias-label-secondary, #b9c2e8);
+}
+
+.rowLabel {
+  color: var(--dsw-alias-label-tertiary, #8b95c4);
+  margin-right: 8px;
+}
+
+.link {
+  color: var(--dsw-alias-brand-primary, #7aa2ff);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--dsw-alias-interactive-bg-primary, rgba(122, 162, 255, 0.2));
+  color: var(--dsw-alias-label-primary, #eef1ff);
+  vertical-align: 1px;
+}
