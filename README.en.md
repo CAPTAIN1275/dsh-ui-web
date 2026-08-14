@@ -1,4 +1,4 @@
-# dsh-web-ui · DSH Web UI Family (@captain1275 enhanced)
+# DeepSeek Harness UI WEB · DeepSeek Harness WEB UI Beautification
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
