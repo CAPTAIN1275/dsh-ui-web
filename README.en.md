@@ -75,7 +75,7 @@ and one-click switching.
 
 ```bash
 # in the DSH profile dir (~/.dsh/profiles/web)
-npm install @captain1275/dsh-web-ui-all@0.1.12
+npm install @captain1275/dsh-web-ui-all@0.2.0
 ```
 
 Add `@captain1275/dsh-web-ui-all` (and optionally the aurora skin and

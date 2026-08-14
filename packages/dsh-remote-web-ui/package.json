@@ -1,7 +1,7 @@
 {
   "name": "@captain1275/dsh-remote-web-ui",
   "description": "Mobile remote control for the dsh web GUI: scan-to-pair QR entry beside the settings button, one-time pairing tokens, live device status, and revocable mobile sessions",
-  "version": "0.1.12",
+  "version": "0.2.0",
   "type": "module",
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
