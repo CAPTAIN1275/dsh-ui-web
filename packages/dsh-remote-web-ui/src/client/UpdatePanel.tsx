@@ -36,6 +36,11 @@ function anchorLatest(status: UpdateStatus | undefined): string | undefined {
   return status?.packages[0]?.latest
 }
 
+/** The locally installed anchor version (link/dev mode reads it from disk). */
+function anchorCurrent(status: UpdateStatus | undefined): string | undefined {
+  return status?.packages[0]?.current
+}
+
 /**
  * Render the update panel.
  * @param props - copy, view state, and actions.
@@ -109,7 +114,12 @@ function ResultBody({ t, status }: { t: TranslateNS<"remote">; status: UpdateSta
     return (
       <div>
         <p className={css.updateStatus}>{t("update.linkMode")}</p>
-        <p className={css.updateDetail}>{t("update.linkModeDetail", { version: latest ?? "-" })}</p>
+        <p className={css.updateDetail}>
+          {t("update.linkModeDetail", {
+            current: anchorCurrent(status) ?? "?",
+            latest: latest ?? "-",
+          })}
+        </p>
       </div>
     )
   }
