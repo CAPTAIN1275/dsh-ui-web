@@ -14,6 +14,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 // entry) and the ctx.settingsScope Context merge.
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import { AboutSection } from './AboutSection.tsx'
+import { PersonaSection } from './PersonaSection.tsx'
 import { WebUIPluginsCard } from './WebUIPluginsCard.tsx'
 import { en, zh, type WebUIPluginsKey } from './locales.ts'
 
@@ -64,6 +65,17 @@ export function apply(ctx: ClientContext): void {
     locale: 'web-ui-plugins',
     children: { 'web-ui.plugin.item': { kind: 'list', scope: 'root' } },
   }, WebUIPluginsCard))
+
+  // 设置页「人格设定」section：编辑并启用/禁用常驻人格（写 ~/.dsh/persona.json
+  // 并同步生成 ~/.dsh/skills/catgirl-rp/SKILL.md，DSH 技能系统热加载生效）。
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section',
+    id: 'persona',
+    order: 98,
+    label: () => '人格设定',
+    locale: 'web-ui-plugins',
+    inject: () => ({}),
+  }, PersonaSection as never))
 
   // 设置页「关于」section：与通用/模型/插件/Agent 预设同级，排最后。
   ctx.slots.inject('settings.section', () => ctx.slots.register({

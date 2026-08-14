@@ -1,0 +1,118 @@
+/* 设置页「人格设定」section 表单样式（token 驱动，跟随当前皮肤/主题）。 */
+
+.persona {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 2px;
+  max-width: 640px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.switchRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary, #eef1ff);
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--dsw-alias-brand-primary, #7aa2ff);
+  cursor: pointer;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-tertiary, #8b95c4);
+}
+
+.input,
+.textarea,
+.content {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  font-family: inherit;
+  color: var(--dsw-alias-label-primary, #eef1ff);
+  background: var(--dsw-alias-surface-input, rgba(16, 25, 38, 0.55));
+  border: 1px solid var(--dsw-alias-border-l2, rgba(140, 160, 255, 0.22));
+  outline: none;
+  resize: vertical;
+}
+
+.input:focus,
+.textarea:focus,
+.content:focus {
+  border-color: var(--dsw-alias-brand-primary, #7aa2ff);
+}
+
+.content {
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Courier New', monospace;
+  font-size: 12px;
+  min-height: 300px;
+  white-space: pre-wrap;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.save {
+  padding: 6px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--dsw-alias-brand-primary, #7aa2ff);
+  border: none;
+  cursor: pointer;
+}
+
+.save:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.saved {
+  font-size: 12px;
+  color: var(--dsw-alias-success, #4ade80);
+}
+
+.error {
+  font-size: 12px;
+  color: var(--dsw-alias-danger, #f87171);
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--dsw-alias-label-tertiary, #8b95c4);
+}
+
+.note {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--dsw-alias-label-tertiary, #8b95c4);
+}
