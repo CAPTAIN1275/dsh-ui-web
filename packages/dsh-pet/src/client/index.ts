@@ -169,7 +169,7 @@ export function apply(ctx: ClientContext): void {
             const prevRank = rankOf(lastPoints)
             const newRank = rankOf(points)
             if (newRank !== prevRank) {
-              setFeedback({ text: `升级啦！现在是「${newRank}」了！`, kind: 'none', at: Date.now() })
+              setFeedback({ text: `升级啦！现在是「${newRank.name}」了！`, kind: 'none', at: Date.now() })
             }
           }
           if (lastTreats >= 0 && treats > lastTreats) {
