@@ -1,5 +1,9 @@
 # dsh-web-ui · DSH Web UI Family (@captain1275 enhanced)
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
+> [中文 README](README.md)
+
 > A renamed and enhanced fork of [zhu1090093659/dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui)
 > (Apache-2.0) — a plugin and skin suite for the DeepSeek Harness (DSH) web GUI.
 > All 22 packages are published on npm under the `@captain1275/*` scope.
@@ -9,6 +13,12 @@ a task board, SSH operations, a right-side file/change panel, a git graph, mobil
 remote control, a DeepSeek-girl companion pet (raising system), live token
 stats, and a skin center. Every plugin can be installed independently or all at
 once through the aggregate package.
+
+**Aurora skin preview (dark / light)**
+
+![aurora-dark](packages/skins/aurora/preview/dark.png)
+
+![aurora-light](packages/skins/aurora/preview/light.png)
 
 ## Features
 
@@ -21,6 +31,9 @@ once through the aggregate package.
 - **Reasoning-effort slider**: click the「推理等级」row in the model menu to open
   an Effort slider panel — continuous drag, snap-on-release, WebGL fire trail,
   OFF/MAX scale, Low/Medium/High/Ultracode states
+
+![Reasoning-effort slider](docs/effort-slider.png)
+
 - **Frosted user message bubbles** matching the input glass
 
 ### DeepSeek-girl companion pet (raising system)
@@ -69,6 +82,9 @@ once through the aggregate package.
 trading / whale-song / aurora / skin-center) with mutual-exclusion management
 and one-click switching.
 
+The other skins (qq98 / ths / xp / blue-fantasy / dragon-heir / minecraft /
+miku / trading / whale-song) come from the upstream dsh-web-ui.
+
 ## Installation
 
 ### From npm (published)
@@ -78,9 +94,26 @@ and one-click switching.
 npm install @captain1275/dsh-web-ui-all@0.2.1
 ```
 
-Add `@captain1275/dsh-web-ui-all` (and optionally the aurora skin and
-dsh-full-stats) to `dsh.profile.bundles` in the profile `package.json`, then
-restart DSH.
+Then add `@captain1275/dsh-web-ui-all` to `dsh.profile.bundles` in the
+profile `package.json`:
+
+```json
+{
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "@captain1275/dsh-client-ui-skin-aurora",
+        "@captain1275/dsh-full-stats",
+        "@captain1275/dsh-web-ui-all"
+      ]
+    }
+  }
+}
+```
+
+Restart DSH for the changes to take effect.
 
 ### From source (development)
 
@@ -89,6 +122,8 @@ git clone <your-repo-url> dsh-web-ui
 cd dsh-web-ui
 pnpm install
 pnpm -r build
+
+# link the local packages into the profile (junction)
 node scripts/link-profile.mjs
 ```
 
@@ -101,12 +136,24 @@ node scripts/link-profile.mjs
   `node scripts/aggregate.mjs`
 - Skin asset sync: `node packages/dsh-skins/build.mjs`
 
+## Directory structure
+
+```
+packages/
+├─ dsh-task-board / dsh-ssh / dsh-aionui-panel / dsh-git-graph
+├─ dsh-pet / dsh-remote-web-ui / dsh-live-stats / dsh-full-stats
+├─ dsh-web-ui-settings / dsh-web-ui-all / dsh-skins
+└─ skins/            # skin sources (aurora, miku, qq98, etc.)
+scripts/             # build / registry / link tools
+shared/              # shared build presets (tsdown.client.ts)
+```
+
 ## License & credits
 
 - **Core code**: [zhu1090093659/dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui),
   Apache-2.0
-- **Enhancements**: @captain1275 (Aurora glass, Effort slider, full stats line,
-  raising system, About page, etc.)
+- **Enhancements**: [@captain1275](https://github.com/CAPTAIN1275) (Aurora glass,
+  Effort slider, full stats line, raising system, persona settings, About page, etc.)
 - **DeepSeek-girl spritesheet**: [xpy12367/codex-pet-DeepSeek-girl](https://github.com/xpy12367/codex-pet-DeepSeek-girl),
   community fan asset, copyright of the original author
 - **Human icon**: Font Awesome 6.7.2, CC BY 4.0
