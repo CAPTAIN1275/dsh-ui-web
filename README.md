@@ -21,6 +21,9 @@ SSH 运维、右侧文件/变更面板、Git 图谱、移动端远程控制、De
 - **自定义背景图**：URL / 本地图片 / 透明度 / 模糊调节，深浅两套极光渐变
 - **仿Claude Code推理等级滑块**：点击模型菜单的「推理等级」弹出 Effort 滑块面板——无极拖动、松手吸附、
   WebGL 火焰跟随、OFF/MAX 刻度、Low/Medium/High/Ultracode 状态
+
+![推理等级滑块](docs/effort-slider.png)
+
 - **用户消息气泡毛玻璃**：与输入框统一的玻璃质感
 
 ### DeepSeek 看板娘（养成系）
