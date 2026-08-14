@@ -16,6 +16,7 @@ describe('live-stats client apply', () => {
     const injected: string[] = []
     const ctx = {
       effect: (fn: () => unknown) => fn(),
+      get: () => undefined,
       locale: { register: () => () => {}, bind: () => (key: string) => key },
       slots: {
         inject: (key: string) => { injected.push(key); return () => {} },

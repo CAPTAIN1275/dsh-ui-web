@@ -4,15 +4,17 @@ import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import { PetService } from '../src/service.ts'
 
 function activity(phase: string, seq: number): SessionEvent {
+  // rc.6+ derives pet phases from the core session vocabulary; a completed
+  // turn is the "done" input (turn/end with reason.kind === 'completed').
   return {
-    type: 'activity/status',
+    type: 'turn/end',
     seq,
     time: seq,
-    data: { phase },
+    data: { turn: seq, reason: { kind: 'completed' as const } },
   } as SessionEvent
 }
 
-const session = null as unknown as Session
+const session = { id: 'test-session' } as unknown as Session
 
 describe('PetService enabled switch', () => {
   it('stops consuming session activity while disabled and resumes on re-enable', async () => {
