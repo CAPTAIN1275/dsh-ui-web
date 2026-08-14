@@ -34,6 +34,21 @@ once through the aggregate package.
 - Pet / feed / rename / drag interactions, and an orange edge toggle button
   (live2d-widget style)
 
+### Skill persona
+
+- **"Persona" section in Settings**: toggle the always-on persona on/off, edit
+  the skill name, description, and persona body
+- **Takes effect instantly**: saving writes the user-level skill
+  `~/.dsh/skills/catgirl-rp/SKILL.md`, which the DSH skill system hot-reloads —
+  every new conversation replies as that persona (tone, bracketed actions,
+  interaction rules)
+- **Built-in catgirl persona**: ships with "小咪" the catgirl (always-on,
+  affinity system, mode-switch commands), fully editable
+- **Temporary exit**: say「退出角色扮演模式」in chat to switch back to a normal
+  assistant, or「进入角色扮演模式」to resume
+
+![Persona settings](docs/persona-settings.png)
+
 ### Plugins
 
 | Plugin | What it does |
@@ -45,7 +60,7 @@ once through the aggregate package.
 | **dsh-remote-web-ui** | Mobile remote control: QR pairing, device caps, cloudflared tunnel, phone SPA |
 | **dsh-live-stats** | Live token estimates and generation throughput |
 | **dsh-full-stats** | Full stats line: overrides the official one (no truncation) + running indicator + custom status text |
-| **dsh-web-ui-settings** | "Web UI Plugins" settings group + an "About" license page |
+| **dsh-web-ui-settings** | "Web UI Plugins" settings group + a "Persona" section + an "About" license page |
 | **dsh-web-ui-all** | Aggregate package: installs the whole family at once |
 
 ### Skin center

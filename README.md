@@ -2,6 +2,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
+> [English README](README.en.md)
+
 > 基于 [zhu1090093659/dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui)（Apache-2.0）开发的
 > DeepSeek Harness（DSH）Web UI 插件套件。全套 22 个包已发布到 npm（`@captain1275/*`）。
 
@@ -38,8 +40,8 @@ SSH 运维、右侧文件/变更面板、Git 图谱、移动端远程控制、De
 
 ### Skill 人格设定
 
-- **设置页「人格设定」**：开关启用/禁用常驻人格，编辑技能名、描述与人格正文
-- **一键生效**：保存后写入用户级技能 `~/.dsh/skills/catgirl-rp/SKILL.md`，DSH 技能系统实时热加载，
+- **设置「人格设定」**：开关启用/禁用常驻人格，编辑技能名、描述与人格正文
+- **一键生效**：保存后写入用户级技能 `~/.dsh/skills/catgirl-rp/SKILL.md`，DSH 技能系统实时加载，
   所有新对话自动以该人格回应（含语气、动作表达、互动规则）
 - **内置猫娘人格**：默认提供「小咪」猫娘人格（常驻生效、好感度系统、模式切换指令），可自由改写
 - **可临时退出**：对话中说「退出角色扮演模式」即切回普通助手，说「进入角色扮演模式」恢复
