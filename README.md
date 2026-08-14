@@ -1,6 +1,6 @@
-# dsh-web-ui · DSH Web UI 全家桶（@captain1275 增强版）
+# DeepSeek Harness UI WEB · DeepSeek Harness WEB UI美化
 
-> 基于 [zhu1090093659/dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui)（Apache-2.0）改名与增强的
+> 基于 [zhu1090093659/dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui)（Apache-2.0）开发的
 > DeepSeek Harness（DSH）Web UI 插件套件。全套 22 个包已发布到 npm（`@captain1275/*`）。
 
 DSH Web UI 全家桶为 DeepSeek Harness 的 Web 界面提供一系列插件与皮肤：极光毛玻璃皮肤、任务看板、
@@ -13,7 +13,7 @@ SSH 运维、右侧文件/变更面板、Git 图谱、移动端远程控制、De
 
 - **毛玻璃输入框**：高斯模糊（backdrop-filter 30px）+ 半透明玻璃底 + 细边框 + 内高光
 - **自定义背景图**：URL / 本地图片 / 透明度 / 模糊调节，深浅两套极光渐变
-- **推理等级滑块**：点击模型菜单的「推理等级」弹出 Effort 滑块面板——无极拖动、松手吸附、
+- **仿Claude Code推理等级滑块**：点击模型菜单的「推理等级」弹出 Effort 滑块面板——无极拖动、松手吸附、
   WebGL 火焰跟随、OFF/MAX 刻度、Low/Medium/High/Ultracode 状态
 - **用户消息气泡毛玻璃**：与输入框统一的玻璃质感
 
@@ -46,15 +46,12 @@ aurora / skin-center），支持皮肤启用互斥管理与一键切换。
 
 ## 皮肤一览
 
-| 极光 Aurora（深/浅） | 蓝幻 Blue Fantasy（深/浅） |
-| --- | --- |
-| ![aurora-dark](packages/skins/aurora/preview/dark.png) | ![blue-dark](packages/skins/blue-fantasy/preview/dark.png) |
-| ![aurora-light](packages/skins/aurora/preview/light.png) | ![blue-light](packages/skins/blue-fantasy/preview/light.png) |
+**极光 Aurora**（本仓库自制皮肤：自定义背景图 + 毛玻璃输入框 + 推理等级滑块）：
 
-| MIKU（深/浅） | Qq98（深/浅） |
-| --- | --- |
-| ![miku-dark](packages/skins/miku/preview/dark.png) | ![qq98-dark](packages/skins/qq98/preview/dark.png) |
-| ![miku-light](packages/skins/miku/preview/light.png) | ![qq98-light](packages/skins/qq98/preview/light.png) |
+> 预览图待补充（aurora 实际效果截图）
+
+其余皮肤（qq98 / ths / xp / blue-fantasy / dragon-heir / minecraft / miku / trading / whale-song）
+为上游 dsh-web-ui 自带皮肤，不在本文档展示。
 
 ## 安装
 
@@ -121,7 +118,7 @@ shared/              # 共享构建预设（tsdown.client.ts）
 ## 版权与许可
 
 - **主体代码**：[zhu1090093659/dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui)，Apache-2.0
-- **增强维护**：@captain1275（毛玻璃 / Effort 滑块 / 完整统计行 / 养成系统 / 关于页等）
+- **增强优化**：@captain1275
 - **DeepSeek 娘精灵图**：[xpy12367/codex-pet-DeepSeek-girl](https://github.com/xpy12367/codex-pet-DeepSeek-girl)，
   社区同人资源，版权归原作者
 - **人形图标**：Font Awesome 6.7.2，CC BY 4.0
