@@ -97,9 +97,9 @@ describe('skin registry derivation (from skin.json wiring)', () => {
       pkg: '@captain1275/dsh-client-ui-skin-blue-fantasy',
       id: 'ui-skin-blue-fantasy',
     }))
-    // xp is bundle-wired (carries no insert row) �?the repo's skin.json truth.
-    expect(registry.xp.bundleWired).toBe(true)
-    expect(wiredNames(registry).has('xp')).toBe(true)
+    // aurora is bundle-wired (carries no insert row) �?the repo's skin.json truth.
+    expect(registry.aurora.bundleWired).toBe(true)
+    expect(wiredNames(registry).has('aurora')).toBe(true)
   })
 })
 
@@ -125,7 +125,7 @@ describe('pure patch helpers', () => {
 
   it('renderManaged(wired skin) needs no insert row', () => {
     const registry = miniRegistry()
-    const rendered = renderManaged('xp', registry)
+    const rendered = renderManaged('aurora', registry)
     expect(rendered).not.toContain('- insert:')
   })
 
