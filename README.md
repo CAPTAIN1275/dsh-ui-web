@@ -7,6 +7,12 @@ DSH Web UI 全家桶为 DeepSeek Harness 的 Web 界面提供一系列插件与�
 SSH 运维、右侧文件/变更面板、Git 图谱、移动端远程控制、DeepSeek 娘看板娘（养成系）、实时令牌统计，
 以及皮肤中心。所有插件既可独立安装，也可通过聚合包一次装齐。
 
+**极光 Aurora 皮肤效果（深色 / 浅色）**
+
+![aurora-dark](packages/skins/aurora/preview/dark.png)
+
+![aurora-light](packages/skins/aurora/preview/light.png)
+
 ## 特性
 
 ### 极光（Aurora）皮肤
@@ -44,16 +50,8 @@ SSH 运维、右侧文件/变更面板、Git 图谱、移动端远程控制、De
 11 套皮肤（qq98 / ths / xp / blue-fantasy / dragon-heir / minecraft / miku / trading / whale-song /
 aurora / skin-center），支持皮肤启用互斥管理与一键切换。
 
-## 皮肤一览
-
-**极光 Aurora**（本仓库自制皮肤：自定义背景图 + 毛玻璃输入框 + 推理等级滑块）：
-
-| 深色 | 浅色 |
-| --- | --- |
-| ![aurora-dark](packages/skins/aurora/preview/dark.png) | ![aurora-light](packages/skins/aurora/preview/light.png) |
-
 其余皮肤（qq98 / ths / xp / blue-fantasy / dragon-heir / minecraft / miku / trading / whale-song）
-为上游 dsh-web-ui 自带皮肤，不在本文档展示。
+为上游 dsh-web-ui 自带皮肤。
 
 ## 安装
 
