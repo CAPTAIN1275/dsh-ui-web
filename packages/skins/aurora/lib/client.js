@@ -735,8 +735,8 @@ window.__ModuleLoader__.load({
 			return dark ? [
 				"radial-gradient(1200px 800px at 15% 8%, rgba(90,120,255,0.38), transparent 60%)",
 				"radial-gradient(1000px 700px at 85% 18%, rgba(0,200,180,0.24), transparent 55%)",
-				"radial-gradient(900px 900px at 60% 100%, rgba(160,80,255,0.26), transparent 60%)",
-				"linear-gradient(180deg, #05081a 0%, #0a1030 55%, #0d0a26 100%)"
+				"radial-gradient(800px 700px at 60% 115%, rgba(160,80,255,0.15), transparent 60%)",
+				"linear-gradient(180deg, #05081a 0%, #0c1234 55%, #111736 100%)"
 			].join(",") : [
 				"radial-gradient(1200px 800px at 15% 8%, rgba(90,130,255,0.30), transparent 60%)",
 				"radial-gradient(1000px 700px at 85% 18%, rgba(0,180,170,0.20), transparent 55%)",
