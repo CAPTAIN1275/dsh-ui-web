@@ -48,7 +48,9 @@ aurora / skin-center），支持皮肤启用互斥管理与一键切换。
 
 **极光 Aurora**（本仓库自制皮肤：自定义背景图 + 毛玻璃输入框 + 推理等级滑块）：
 
-> 预览图待补充（aurora 实际效果截图）
+| 深色 | 浅色 |
+| --- | --- |
+| ![aurora-dark](packages/skins/aurora/preview/dark.png) | ![aurora-light](packages/skins/aurora/preview/light.png) |
 
 其余皮肤（qq98 / ths / xp / blue-fantasy / dragon-heir / minecraft / miku / trading / whale-song）
 为上游 dsh-web-ui 自带皮肤，不在本文档展示。
