@@ -23,13 +23,13 @@ SSH 运维、右侧文件/变更面板、Git 图谱、移动端远程控制、De
   WebGL 火焰跟随、OFF/MAX 刻度、Low/Medium/High/Ultracode 状态
 - **用户消息气泡毛玻璃**：与输入框统一的玻璃质感
 
-### DeepSeek 娘看板娘（养成系）
+### DeepSeek 看板娘（养成系）
 
-- 蓝发鲸鱼女孩（社区同人资源，[codex-pet-DeepSeek-girl](https://github.com/xpy12367/codex-pet-DeepSeek-girl)）
+- 图片资源（社区同人资源，[codex-pet-DeepSeek-girl](https://github.com/xpy12367/codex-pet-DeepSeek-girl)）
 - **养成系统**：亲密度 4 级成长（幼鲸 / 伙伴 / 挚友 / 深海羁绊）、升级庆祝气泡、进度条、
   Token 零食经济、使用时长成长（每 30 分钟 +1）
 - **待机随机气泡**：空闲时随机说话（live2d 风格文案）
-- 摸头 / 喂食 / 改名 / 拖动，召唤按钮（live2d 同款橙色贴边滑出）
+- 摸头 / 喂食 / 改名 / 拖动，召唤按钮（live2d 同款贴边滑出）
 
 ### 功能插件
 
