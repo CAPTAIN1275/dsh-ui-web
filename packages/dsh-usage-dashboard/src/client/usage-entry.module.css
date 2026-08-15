@@ -1,27 +1,51 @@
-/* dsh-usage-dashboard 侧边栏入口按钮样式（与 remote-web-ui trigger 同风格）。 */
+/* dsh-usage-dashboard 侧边栏入口（与任务看板/ssh 同风格）。 */
 
-.trigger {
-  flex: none;
-  display: inline-flex;
+.entry {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  padding: 0;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+  padding: 0 12px;
   background: transparent;
+  border: none;
+  border-radius: 8px;
   color: var(--dsw-alias-label-secondary);
   cursor: pointer;
-  transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease;
 }
 
-.trigger:hover:not(:disabled) {
-  background: var(--dsw-alias-interactive-bg-hover);
+.entry:hover {
+  background: var(--dsw-specific-sidebar-nav-item-hover);
   color: var(--dsw-alias-label-primary);
 }
 
-.trigger:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--dsw-alias-bg-layer-2), 0 0 0 4px var(--dsw-alias-brand-primary);
+.entry:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+.entryIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.entryLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Collapsed rail: icon-only, centered, matching the shell's 56px rail. */
+[data-dsh-frame][data-sidebar-collapsed] .entry {
+  justify-content: center;
+  padding: 0;
+  width: 100%;
+}
+
+[data-dsh-frame][data-sidebar-collapsed] .entryLabel {
+  display: none;
 }

@@ -4,6 +4,7 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
+		let react_dom_client = require("react-dom/client");
 		let react = require("react");
 		let react_dom = require("react-dom");
 		let react_jsx_runtime = require("react/jsx-runtime");
@@ -471,6 +472,151 @@ window.__ModuleLoader__.load({
 			}), document.body);
 		}
 		//#endregion
+		//#region \0dsh-css:D:\Desktop\DeepSeek Harness\dsh-web-ui-0.1.10\packages\dsh-usage-dashboard\src\client\usage-entry.module.css.mjs
+		const css$1 = ".oI3yBG_entry{width:100%;height:32px;color:var(--dsw-alias-label-secondary);cursor:pointer;white-space:nowrap;background:0 0;border:none;border-radius:8px;align-items:center;gap:8px;padding:0 12px;font-size:13px;transition:background-color .12s,color .12s;display:flex}.oI3yBG_entry:hover{background:var(--dsw-specific-sidebar-nav-item-hover);color:var(--dsw-alias-label-primary)}.oI3yBG_entry:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.oI3yBG_entryIcon{flex:none;justify-content:center;align-items:center;display:inline-flex}.oI3yBG_entryLabel{text-overflow:ellipsis;overflow:hidden}[data-dsh-frame][data-sidebar-collapsed] .oI3yBG_entry{justify-content:center;width:100%;padding:0}[data-dsh-frame][data-sidebar-collapsed] .oI3yBG_entryLabel{display:none}";
+		const tagId$1 = "@captain1275/dsh-usage-dashboard/usage-entry.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@captain1275/dsh-usage-dashboard";
+			tag.dataset.pluginCss = tagId$1;
+			tag.textContent = css$1;
+			document.head.appendChild(tag);
+		}
+		var usage_entry_module_css_default = {
+			"entry": "oI3yBG_entry",
+			"entryIcon": "oI3yBG_entryIcon",
+			"entryLabel": "oI3yBG_entryLabel"
+		};
+		//#endregion
+		//#region src/client/UsageEntry.tsx
+		/**
+		* Usage dashboard sidebar entry — DOM-level injection.
+		*
+		* dsh's sidebar shell exposes no slot an external plugin can register into
+		* (`sidebar.workspaces` / `sidebar.settings` are single-occupant and already
+		* taken), so — following the task-board / ssh precedent of DOM-level
+		* extension — the entry row is injected between the shell's New Session
+		* button and the workspace browser. The injection self-heals: a
+		* MutationObserver watches the sidebar root and re-inserts the row whenever
+		* a React re-render displaces it.
+		*
+		* The row is plain DOM; clicking it mounts the full-screen dashboard overlay
+		* as a separate React root (see mountDashboard).
+		* @module @captain1275/dsh-usage-dashboard/client/UsageEntry
+		*/
+		/** Inline icon (matches the shell's 16px nav-icon look): three rainbow bars. */
+		const ICON = "<svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"2.5\" y=\"8\" width=\"3\" height=\"5\" rx=\"0.8\" fill=\"#f472b6\"/><rect x=\"7\" y=\"4.5\" width=\"3\" height=\"8.5\" rx=\"0.8\" fill=\"#fb923c\"/><rect x=\"11.5\" y=\"1.5\" width=\"3\" height=\"11.5\" rx=\"0.8\" fill=\"#4ade80\"/></svg>";
+		/** Find the sidebar shell root element, or undefined while not yet mounted. */
+		function sidebarRoot() {
+			const column = document.querySelector("[data-pane=\"sidebar\"], [class*=\"sidebarCol\"]");
+			if (column === null) return void 0;
+			return column.querySelector("[class*=\"logoRow\"]")?.parentElement ?? column.firstElementChild;
+		}
+		/** The New Session button: nested in the logo row on current shells, a direct child on legacy shells. */
+		function newSessionButton(root) {
+			const nested = root.querySelector("button[class*=\"newSession\"]");
+			if (nested !== null) return nested;
+			for (const child of root.children) if (child.tagName === "BUTTON") return child;
+		}
+		/** The injected dashboard overlay root (single instance while open). */
+		let overlayRoot;
+		let overlayHost;
+		/** Close the dashboard overlay if open. */
+		function closeDashboard() {
+			overlayRoot?.unmount();
+			overlayRoot = void 0;
+			overlayHost?.remove();
+			overlayHost = void 0;
+		}
+		/** Open the full-screen dashboard overlay. */
+		function openDashboard() {
+			if (overlayRoot !== void 0) return;
+			overlayHost = document.createElement("div");
+			overlayHost.dataset.dshUsageOverlay = "";
+			document.body.appendChild(overlayHost);
+			overlayRoot = (0, react_dom_client.createRoot)(overlayHost);
+			overlayRoot.render(/* @__PURE__ */ (0, react_jsx_runtime.jsx)(DashboardPanel, { onClose: closeDashboard }));
+		}
+		/** Build the entry row (a detached button; insert once the shell is up). */
+		function createEntry() {
+			const entry = document.createElement("button");
+			entry.type = "button";
+			entry.dataset.dshUsageEntry = "";
+			entry.className = usage_entry_module_css_default.entry;
+			entry.setAttribute("aria-label", t("usage.entry"));
+			entry.setAttribute("title", t("usage.entry"));
+			entry.innerHTML = `<span class="${usage_entry_module_css_default.entryIcon}">${ICON}</span><span class="${usage_entry_module_css_default.entryLabel}">${t("usage.entry")}</span>`;
+			entry.addEventListener("click", () => {
+				openDashboard();
+			});
+			return entry;
+		}
+		/** Re-insert the entry after the New Session row (before the browser region). */
+		function placeEntry(root, entry) {
+			const button = newSessionButton(root);
+			if (button === void 0) return false;
+			if (entry.parentElement !== root) {
+				const row = button.closest("[class*=\"logoRow\"]");
+				const base = row !== null && row.parentElement === root ? row : button;
+				const family = Array.from(root.children).filter((el) => el instanceof HTMLElement && el.matches("[data-dsh-taskboard-entry], [data-dsh-ssh-entry], [data-dsh-usage-entry]"));
+				const anchor = family.length > 0 ? family[family.length - 1].nextElementSibling : base.nextElementSibling;
+				root.insertBefore(entry, anchor);
+			}
+			return true;
+		}
+		/**
+		* Mount the sidebar entry, waiting for the shell to render and self-healing
+		* on later React re-renders.
+		* @returns disposer removing the entry and its observers.
+		*/
+		function mountUsageEntry() {
+			const entry = createEntry();
+			let root;
+			let placed = false;
+			const tryPlace = () => {
+				if (root !== void 0 && !root.isConnected) {
+					rootObserver.disconnect();
+					root = void 0;
+					placed = false;
+				}
+				if (placed) {
+					if (document.body.contains(entry)) return;
+					rootObserver.disconnect();
+					root = void 0;
+					placed = false;
+				}
+				root ??= sidebarRoot();
+				if (root === void 0) return;
+				placed = placeEntry(root, entry);
+				if (placed) rootObserver.observe(root, {
+					childList: true,
+					subtree: true
+				});
+			};
+			const waitObserver = new MutationObserver(() => {
+				tryPlace();
+			});
+			waitObserver.observe(document.body, {
+				childList: true,
+				subtree: true
+			});
+			const rootObserver = new MutationObserver(() => {
+				if (root === void 0 || !root.isConnected) {
+					placed = false;
+					tryPlace();
+					return;
+				}
+				if (!root.contains(entry)) placed = placeEntry(root, entry);
+			});
+			tryPlace();
+			return () => {
+				waitObserver.disconnect();
+				rootObserver.disconnect();
+				entry.remove();
+				closeDashboard();
+			};
+		}
+		//#endregion
 		//#region src/client/UsageRecorder.tsx
 		/**
 		* Usage recorder — an invisible conversation-dock seat that watches the
@@ -494,10 +640,6 @@ window.__ModuleLoader__.load({
 		}
 		/** 会话内模型（从 connection 会话选择读取，尽力而为）。 */
 		let currentModel = "unknown";
-		/** 供入口设置当前模型（连接层回调）。 */
-		function setCurrentModel(model) {
-			if (typeof model === "string" && model.length > 0) currentModel = model;
-		}
 		/**
 		* The invisible recorder seat. Compares the tokenUsage projection against
 		* the last reported value; on growth (a response settled) it uploads the
@@ -539,84 +681,6 @@ window.__ModuleLoader__.load({
 			]);
 			return null;
 		});
-		//#endregion
-		//#region \0dsh-css:D:\Desktop\DeepSeek Harness\dsh-web-ui-0.1.10\packages\dsh-usage-dashboard\src\client\usage-entry.module.css.mjs
-		const css$1 = ".oI3yBG_trigger{width:36px;height:36px;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:none;border-radius:50%;flex:none;justify-content:center;align-items:center;padding:0;transition:background-color .12s,color .12s,box-shadow .12s;display:inline-flex}.oI3yBG_trigger:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}.oI3yBG_trigger:focus-visible{box-shadow:0 0 0 2px var(--dsw-alias-bg-layer-2), 0 0 0 4px var(--dsw-alias-brand-primary);outline:none}";
-		const tagId$1 = "@captain1275/dsh-usage-dashboard/usage-entry.module.css";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@captain1275/dsh-usage-dashboard";
-			tag.dataset.pluginCss = tagId$1;
-			tag.textContent = css$1;
-			document.head.appendChild(tag);
-		}
-		var usage_entry_module_css_default = { "trigger": "oI3yBG_trigger" };
-		//#endregion
-		//#region src/client/UsageEntry.tsx
-		/**
-		* Usage dashboard entry — the sidebar seat. A colorful chart button that
-		* opens the full-screen dashboard panel. Also drives the recorder's model
-		* name from the connection layer.
-		* @module @captain1275/dsh-usage-dashboard/client/UsageEntry
-		*/
-		/**
-		* Render the usage trigger and dashboard overlay.
-		* @param props - column state and connection hook.
-		* @returns the entry element tree.
-		*/
-		function UsageEntry({ wide, useSessions }) {
-			const [open, setOpen] = (0, react.useState)(false);
-			const session = useSessions((s) => ({ current: s.current }));
-			(0, react.useEffect)(() => {
-				const model = session.current?.model;
-				if (typeof model === "string" && model.length > 0) setCurrentModel(model);
-			}, [session.current?.model]);
-			const close = (0, react.useCallback)(() => {
-				setOpen(false);
-			}, []);
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-				type: "button",
-				className: usage_entry_module_css_default.trigger,
-				"data-wide": wide ? void 0 : "rail",
-				"aria-label": t("usage.entry"),
-				title: t("usage.entry"),
-				onClick: () => {
-					setOpen(true);
-				},
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-					viewBox: "0 0 18 18",
-					width: wide ? 16 : 18,
-					height: wide ? 16 : 18,
-					"aria-hidden": "true",
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-							x: "2",
-							y: "9",
-							width: "3",
-							height: "7",
-							rx: "1",
-							fill: "#f472b6"
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-							x: "7",
-							y: "5",
-							width: "3",
-							height: "11",
-							rx: "1",
-							fill: "#fb923c"
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-							x: "12",
-							y: "2",
-							width: "3",
-							height: "14",
-							rx: "1",
-							fill: "#4ade80"
-						})
-					]
-				})
-			}), open && (0, react_dom.createPortal)(/* @__PURE__ */ (0, react_jsx_runtime.jsx)(DashboardPanel, { onClose: close }), document.body)] });
-		}
 		//#endregion
 		//#region \0dsh-css:D:\Desktop\DeepSeek Harness\dsh-web-ui-0.1.10\packages\dsh-usage-dashboard\src\client\usage-settings.module.css.mjs
 		const css = ".jgFV7q_card{border:1px solid var(--dsw-alias-border-l2,#8ca0ff38);background:var(--dsw-alias-surface-card,#12182e99);border-radius:10px;list-style:none;overflow:hidden}.jgFV7q_header{width:100%;color:inherit;font:inherit;cursor:pointer;text-align:left;background:0 0;border:none;align-items:center;gap:10px;padding:12px 16px;display:flex}.jgFV7q_headText{flex-direction:column;flex:1;gap:2px;min-width:0;display:flex}.jgFV7q_name{color:var(--dsw-alias-label-primary,#eef1ff);font-size:14px;font-weight:600}.jgFV7q_description{color:var(--dsw-alias-label-tertiary,#8b95c4);font-size:12px}.jgFV7q_chevron{color:var(--dsw-alias-label-tertiary,#8b95c4);font-size:12px;transition:transform .12s}.jgFV7q_chevronOpen{color:var(--dsw-alias-label-tertiary,#8b95c4);font-size:12px;transform:rotate(180deg)}.jgFV7q_body{flex-direction:column;gap:8px;padding:4px 16px 14px;display:flex}.jgFV7q_legendRow{color:var(--dsw-alias-label-secondary,#b9c2e8);align-items:center;gap:8px;font-size:12px;display:flex}.jgFV7q_dot{border-radius:50%;flex:none;width:9px;height:9px}";
@@ -723,10 +787,11 @@ window.__ModuleLoader__.load({
 				zh,
 				en
 			}), "usage-dashboard: dictionaries");
-			ctx.slots.inject("sidebar.remote", () => ctx.slots.register({
-				name: "sidebar.remote",
-				locale: NS
-			}, UsageEntry));
+			let disposeEntry;
+			ctx.effect(() => {
+				disposeEntry = mountUsageEntry();
+				return () => disposeEntry?.();
+			}, "usage-dashboard: sidebar entry");
 			ctx.slots.inject("conversation.composer.dock", () => ctx.slots.register({
 				name: "conversation.composer.dock",
 				id: "usage-recorder",
@@ -741,7 +806,10 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		exports.apply = apply;
+		exports.closeDashboard = closeDashboard;
 		exports.inject = inject;
+		exports.mountUsageEntry = mountUsageEntry;
+		exports.openDashboard = openDashboard;
 		return module.exports;
 	}
 });
