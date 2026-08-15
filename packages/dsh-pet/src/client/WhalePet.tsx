@@ -2,8 +2,8 @@
  * Whale-girl companion component — the browser half's centerpiece. Renders a
  * fixed-position floating sprite (React portal onto document.body), plays
  * the spritesheet track matching the host animation snapshot, and exposes
- * the interaction surface: click to pet, hover panel with feed/hide, drag to
- * reposition (persisted via setConfig).
+ * the interaction surface: click to pet, right-click toggles the action
+ * panel (feed / rename / hide), drag to reposition (persisted via setConfig).
  * @module @captain1275/dsh-pet/client/WhalePet
  */
 
@@ -83,12 +83,11 @@ export function WhalePet(props: WhalePetProps): ReactPortal {
   const [imageReady, setImageReady] = useState(false)
   const [imageHeight, setImageHeight] = useState(FRAME_HEIGHT * 9)
   const [frameCounts, setFrameCounts] = useState<number[] | null>(null)
-  const [hovered, setHovered] = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [dragPos, setDragPos] = useState<{ right: number; bottom: number } | null>(null)
   const dragRef = useRef<{ startX: number; startY: number; right: number; bottom: number } | null>(null)
-  const hideTimerRef = useRef<number | null>(null)
   const frameRef = useRef<{ track: PetAnimation | null; index: number; elapsed: number }>({
     track: null,
     index: 0,
@@ -227,20 +226,30 @@ export function WhalePet(props: WhalePetProps): ReactPortal {
   // `draggedRef` records whether the pointer actually moved, so the browser's
   // trailing click (fired after pointerup) does not pet the whale.
   const draggedRef = useRef(false)
-  const clearHideTimer = (): void => {
-    if (hideTimerRef.current !== null) {
-      window.clearTimeout(hideTimerRef.current)
-      hideTimerRef.current = null
+
+  // Right-click toggles the panel; clicking anywhere outside the pet (sprite
+  // + panel) closes it. A document-level pointerdown listener covers clicks
+  // on any other part of the page.
+  useEffect(() => {
+    if (!panelOpen) return
+    const onDocPointerDown = (e: PointerEvent): void => {
+      if (floatRef.current !== null && e.target instanceof Node && floatRef.current.contains(e.target)) return
+      setPanelOpen(false)
     }
-  }
+    document.addEventListener('pointerdown', onDocPointerDown)
+    return () => document.removeEventListener('pointerdown', onDocPointerDown)
+  }, [panelOpen])
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>): void => {
+    // Only the primary (left) button starts a drag; the right button is
+    // handled by onContextMenu below.
+    if (e.button !== 0) return
     e.preventDefault()
     ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
     const current = dragPos ?? { right: display.right, bottom: display.bottom }
     dragRef.current = { startX: e.clientX, startY: e.clientY, ...current }
     draggedRef.current = false
-    setHovered(false)
+    setPanelOpen(false)
   }
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>): void => {
     const drag = dragRef.current
@@ -267,23 +276,6 @@ export function WhalePet(props: WhalePetProps): ReactPortal {
       ref={floatRef}
       className={styles.float}
       style={{ right: pos.right, bottom: pos.bottom, zIndex: 2147483000 }}
-      onPointerEnter={() => {
-        clearHideTimer()
-        setHovered(true)
-      }}
-      onPointerLeave={(e) => {
-        // The panel and bubble render OUTSIDE the container's box (absolute,
-        // above the sprite), so moving onto them fires pointerleave on the
-        // container. Treat a target still inside the container's DOM (the
-        // overflowed panel) as "still hovering"; otherwise give the pointer a
-        // short grace period to reach the panel across the gap above it. The
-        // bridge (`.panel::after`) keeps the pointer inside the hit area, and
-        // the grace period covers a slow mouse crossing the remaining sliver.
-        const next = e.relatedTarget
-        if (next instanceof Node && floatRef.current?.contains(next)) return
-        clearHideTimer()
-        hideTimerRef.current = window.setTimeout(() => setHovered(false), 300)
-      }}
     >
       <div
         ref={spriteRef}
@@ -300,10 +292,18 @@ export function WhalePet(props: WhalePetProps): ReactPortal {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onContextMenu={(e) => {
+          // Right-click toggles the action panel (suppressing the browser
+          // context menu). Left-button pettings and drags never reach here.
+          e.preventDefault()
+          setPanelOpen((open) => !open)
+        }}
         onClick={() => {
           // A pointer sequence that moved (dragged) still fires a trailing
           // click; skip the pet when that happened.
           if (draggedRef.current) return
+          // Petting closes the panel so the reaction bubble is not overlapped.
+          setPanelOpen(false)
           props.onPet()
         }}
         role="button"
@@ -314,16 +314,8 @@ export function WhalePet(props: WhalePetProps): ReactPortal {
           {feedback.text}
         </div>
       )}
-      {hovered && dragRef.current === null && (
-        <div
-          className={styles.panel}
-          onPointerEnter={() => {
-            // Reaching the panel (or its bridge) must cancel any hide timer
-            // the container's pointerleave may have armed while the pointer
-            // crossed the sliver between the sprite and the panel.
-            clearHideTimer()
-          }}
-        >
+      {panelOpen && dragRef.current === null && (
+        <div className={styles.panel}>
           {renaming ? (
             <div className={styles.renameRow}>
               <input
@@ -332,16 +324,14 @@ export function WhalePet(props: WhalePetProps): ReactPortal {
                 maxLength={20}
                 placeholder={props.t('pet.namePlaceholder')}
                 autoFocus
-                // 聚焦/输入时强制保持 hover（改名框出现时面板内容被替换会触发
-                // pointerleave + 隐藏定时器，不干预的话一输入面板就收起）。
+                // 聚焦/输入时保持面板打开：点击输入框本身不会触发面板外
+                // 关闭监听，但保留显式保活以防边缘情况。
                 onFocus={() => {
-                  setHovered(true)
-                  clearHideTimer()
+                  setPanelOpen(true)
                 }}
                 onChange={(e) => {
                   setNameDraft(e.target.value)
-                  setHovered(true)
-                  clearHideTimer()
+                  setPanelOpen(true)
                 }}
                 onKeyDown={(e) => {
                   // While an IME composition is active (e.g. selecting a
@@ -354,6 +344,7 @@ export function WhalePet(props: WhalePetProps): ReactPortal {
                     if (trimmed !== '') {
                       props.onRename(trimmed)
                       setRenaming(false)
+                      setPanelOpen(false)
                     }
                   } else if (e.key === 'Escape') {
                     setRenaming(false)
@@ -368,6 +359,7 @@ export function WhalePet(props: WhalePetProps): ReactPortal {
                   if (trimmed !== '') {
                     props.onRename(trimmed)
                     setRenaming(false)
+                    setPanelOpen(false)
                   }
                 }}
               >
@@ -400,7 +392,15 @@ export function WhalePet(props: WhalePetProps): ReactPortal {
                 )
               })()}
               <div className={styles.actions}>
-                <button type="button" className={`${styles.action} ${styles.actionFeed}`} onClick={props.onFeed}>
+                <button
+                  type="button"
+                  className={`${styles.action} ${styles.actionFeed}`}
+                  onClick={() => {
+                    // 喂食后收起面板，让反应气泡不被遮挡。
+                    setPanelOpen(false)
+                    props.onFeed()
+                  }}
+                >
                   {props.t('pet.feed')}
                 </button>
                 <button

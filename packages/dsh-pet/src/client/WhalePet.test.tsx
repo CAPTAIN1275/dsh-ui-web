@@ -74,9 +74,9 @@ function renderPet(): { onRename: ReturnType<typeof vi.fn> } {
   return { onRename }
 }
 
-/** Hover the sprite to open the panel, then click the rename button. */
+/** Right-click the sprite to open the panel, then click the rename button. */
 function openRename(): HTMLInputElement {
-  fireEvent.pointerOver(screen.getByRole('button', { name: 'whale girl' }))
+  fireEvent.contextMenu(screen.getByRole('button', { name: 'whale girl' }))
   fireEvent.click(screen.getByText('改名'))
   return screen.getByPlaceholderText('输入新名字') as HTMLInputElement
 }
@@ -135,5 +135,34 @@ describe('WhalePet rename input', () => {
     fireEvent.keyDown(input, { key: 'Escape' })
     expect(onRename).not.toHaveBeenCalled()
     expect(screen.queryByPlaceholderText('输入新名字')).toBeNull()
+  })
+})
+
+describe('WhalePet panel toggle', () => {
+  it('opens the panel on right-click and closes it on a second right-click', () => {
+    renderPet()
+    const sprite = screen.getByRole('button', { name: 'whale girl' })
+    expect(screen.queryByText('改名')).toBeNull()
+    fireEvent.contextMenu(sprite)
+    expect(screen.getByText('改名')).toBeTruthy()
+    fireEvent.contextMenu(sprite)
+    expect(screen.queryByText('改名')).toBeNull()
+  })
+
+  it('closes the panel when clicking outside the pet', () => {
+    renderPet()
+    fireEvent.contextMenu(screen.getByRole('button', { name: 'whale girl' }))
+    expect(screen.getByText('改名')).toBeTruthy()
+    fireEvent.pointerDown(document.body)
+    expect(screen.queryByText('改名')).toBeNull()
+  })
+
+  it('keeps the panel open when clicking inside it', () => {
+    renderPet()
+    fireEvent.contextMenu(screen.getByRole('button', { name: 'whale girl' }))
+    // The panel itself is inside the float root, so a pointerdown on it must
+    // not close the panel (the document listener checks containment).
+    fireEvent.pointerDown(screen.getByText('改名'))
+    expect(screen.getByText('改名')).toBeTruthy()
   })
 })
