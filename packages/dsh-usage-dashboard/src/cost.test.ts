@@ -3,12 +3,16 @@
  * @module @captain1275/dsh-usage-dashboard/cost
  */
 import { describe, expect, it } from 'vitest'
-import { DEEPSEEK_RATES, estimateCost, ratesForModel } from './cost.ts'
+import { DEEPSEEK_FLASH_RATES, DEEPSEEK_LEGACY_RATES, estimateCost, ratesForModel } from './cost.ts'
 
 describe('ratesForModel', () => {
-  it('uses the deepseek standard rate for deepseek models', () => {
-    expect(ratesForModel('deepseek/deepseek-chat')).toBe(DEEPSEEK_RATES)
-    expect(ratesForModel('deepseek-v4-flash')).toBe(DEEPSEEK_RATES)
+  it('uses the flash rate for flash models (v4-flash)', () => {
+    expect(ratesForModel('deepseek-v4-flash')).toBe(DEEPSEEK_FLASH_RATES)
+    expect(ratesForModel('deepseek-v4-flash-0731')).toBe(DEEPSEEK_FLASH_RATES)
+  })
+
+  it('uses the legacy deepseek rate for old chat models', () => {
+    expect(ratesForModel('deepseek/deepseek-chat')).toBe(DEEPSEEK_LEGACY_RATES)
   })
 
   it('uses the reasoner rate for reasoning models', () => {
@@ -17,26 +21,25 @@ describe('ratesForModel', () => {
   })
 
   it('falls back to the generic rate for unknown models', () => {
-    // Generic and deepseek standard rates coincide today; assert the shape.
-    expect(ratesForModel('openai/gpt-4o')).toEqual(DEEPSEEK_RATES)
+    expect(ratesForModel('openai/gpt-4o')).toEqual(DEEPSEEK_FLASH_RATES)
   })
 })
 
 describe('estimateCost', () => {
-  it('computes 1M input at the deepseek rate = 3 yuan', () => {
-    expect(estimateCost('deepseek/deepseek-chat', 1_000_000, 0, 0)).toBe(3)
+  it('computes 1M uncached input at the flash rate = 1 yuan', () => {
+    expect(estimateCost('deepseek-v4-flash', 1_000_000, 0, 0)).toBe(1)
   })
 
-  it('computes output and cache portions', () => {
-    // 1M output at 6/M + 1M cache at 1/M + 1M input at 3/M = 10
-    expect(estimateCost('deepseek/deepseek-chat', 1_000_000, 1_000_000, 1_000_000)).toBe(10)
+  it('computes flash output and cache portions (output 2/M, cache 0.02/M)', () => {
+    // 1M input(1) + 1M output(2) + 1M cache(0.02) = 3.02
+    expect(estimateCost('deepseek-v4-flash', 1_000_000, 1_000_000, 1_000_000)).toBe(3.02)
   })
 
   it('handles fractional token counts', () => {
-    expect(estimateCost('deepseek/deepseek-chat', 250_000, 0, 0)).toBe(0.75)
+    expect(estimateCost('deepseek-v4-flash', 250_000, 0, 0)).toBe(0.25)
   })
 
   it('rounds to 4 decimals', () => {
-    expect(estimateCost('deepseek/deepseek-chat', 123_456, 0, 0)).toBeCloseTo(0.3704, 3)
+    expect(estimateCost('deepseek-v4-flash', 123_456, 0, 0)).toBeCloseTo(0.1235, 3)
   })
 })

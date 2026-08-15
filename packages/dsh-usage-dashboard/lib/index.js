@@ -2,32 +2,52 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 //#region src/cost.ts
-/** DeepSeek 官方定价（2026-08 起 V4 系列，元/百万 token）。 */
+/** DeepSeek 官方定价（2026-08，元/百万 token，来源 api-docs.deepseek.com/quick_start/pricing）。 */
+/** deepseek-v4-flash：缓存命中 0.02 / 缓存未命中 1 / 输出 2。 */
+const DEEPSEEK_FLASH_RATES = {
+	inputPerM: 1,
+	outputPerM: 2,
+	cachePerM: .02
+};
+/** deepseek-v4-pro：缓存命中 0.025 / 缓存未命中 3 / 输出 6。 */
 const DEEPSEEK_RATES = {
 	inputPerM: 3,
 	outputPerM: 6,
-	cachePerM: 1
+	cachePerM: .025
+};
+/** 旧 deepseek-chat / reasoner 定价参考（2025，元/百万 token）。 */
+const DEEPSEEK_LEGACY_RATES = {
+	inputPerM: 2,
+	outputPerM: 8,
+	cachePerM: .5
 };
 const DEEPSEEK_REASONER_RATES = {
 	inputPerM: 4,
 	outputPerM: 16,
 	cachePerM: 1
 };
+/** 未知模型回退通用档。 */
 const GENERIC_RATES = {
-	inputPerM: 3,
-	outputPerM: 6,
-	cachePerM: 1
+	inputPerM: 1,
+	outputPerM: 2,
+	cachePerM: .02
 };
 /**
-* 按模型名取单价。模型名含 "reasoner"/"r1" 用推理档，含 "deepseek" 用标准档，
-* 其余回退通用档。
+* 按模型名取单价。
+* - 含 "flash" → v4-flash 档（0.02 / 1 / 2）
+* - 含 "reasoner"/"r1" → 推理档
+* - 含 "v4-pro"/"pro" → v4-pro 档
+* - 含 "deepseek" → 旧标准档
+* - 其余回退通用档
 * @param model - 模型标识（如 deepseek/deepseek-chat）。
 * @returns 单价。
 */
 function ratesForModel(model) {
 	const m = model.toLowerCase();
+	if (m.includes("flash")) return DEEPSEEK_FLASH_RATES;
 	if (m.includes("reasoner") || m.includes("/r1") || m.includes("-r1")) return DEEPSEEK_REASONER_RATES;
-	if (m.includes("deepseek")) return DEEPSEEK_RATES;
+	if (m.includes("pro") || m.includes("v4-pro")) return DEEPSEEK_RATES;
+	if (m.includes("deepseek")) return DEEPSEEK_LEGACY_RATES;
 	return GENERIC_RATES;
 }
 /**
