@@ -659,9 +659,13 @@ window.__ModuleLoader__.load({
 				if (sid === void 0 || usage === void 0) return;
 				const total = usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens;
 				const prev = lastTotalRef.current;
+				if (prev === -1) {
+					lastTotalRef.current = total;
+					return;
+				}
 				lastTotalRef.current = total;
 				if (total <= 0) return;
-				if (prev !== -1 && total <= prev) return;
+				if (total <= prev) return;
 				const now = Date.now();
 				if (now - lastUploadRef.current < 1e3) return;
 				lastUploadRef.current = now;

@@ -69,11 +69,18 @@ export const UsageRecorder = memo(function UsageRecorder(props: UsageRecorderPro
     if (sid === undefined || usage === undefined) return
     const total = usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
     const prev = lastTotalRef.current
+    // First sight: establish the baseline WITHOUT uploading. The projection
+    // is a session-cumulative total that may already be large when this
+    // component mounts (page refresh, session switch, HMR reload); uploading
+    // it would make the host count the whole history as new usage. Only a
+    // later GROWTH past the baseline is a real delta worth reporting.
+    if (prev === -1) {
+      lastTotalRef.current = total
+      return
+    }
     lastTotalRef.current = total
     if (total <= 0) return
-    // First sight or growth → upload. A reset (total drops) is remembered
-    // but not reported (host deltas clamp at zero anyway).
-    if (prev !== -1 && total <= prev) return
+    if (total <= prev) return
     const now = Date.now()
     if (now - lastUploadRef.current < 1000) return
     lastUploadRef.current = now
