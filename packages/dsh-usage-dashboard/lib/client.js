@@ -620,14 +620,23 @@ window.__ModuleLoader__.load({
 		//#region src/client/UsageRecorder.tsx
 		/**
 		* Usage recorder — an invisible conversation-dock seat that watches the
-		* `tokenUsage` projection and, whenever the cumulative total GROWS (a
-		* response settled), uploads the current cumulative snapshot to the host.
-		* The host stores the LATEST snapshot per session (replace semantics), so
-		* repeated uploads overwrite instead of double counting; the upload fires
-		* only on growth, so the host's calls counter tracks real response
-		* completions rather than poll ticks.
+		* `tokenUsage` projection and uploads per-response snapshots to the host.
+		*
+		* Semantics:
+		*  - The projection is a session-cumulative total that may already be large
+		*    when this component mounts (page refresh, session switch, HMR reload).
+		*    The FIRST sight only establishes a baseline — never uploaded, so a
+		*    mount never counts the whole history as new usage.
+		*  - While the total GROWS (a response is streaming), uploads are debounced
+		*    to one per second. When growth stops for SETTLE_MS, the recorder
+		*    flushes one final snapshot — one completed response = one upload, so
+		*    the host's calls counter tracks real response rounds.
+		*  - The host stores the LATEST snapshot per session (replace semantics);
+		*    repeated uploads overwrite instead of double counting.
 		* @module @captain1275/dsh-usage-dashboard/client/UsageRecorder
 		*/
+		/** 一轮响应结束判定的静默时长（ms）。 */
+		const SETTLE_MS = 2e3;
 		/** 上报当前快照到宿主（replace 语义：同会话覆盖，不累加）。 */
 		async function postSnapshot(snapshot) {
 			try {
@@ -648,8 +657,7 @@ window.__ModuleLoader__.load({
 			if (typeof model === "string" && model.length > 0) currentModel = model;
 		}
 		/**
-		* The invisible recorder seat. Tracks the last seen cumulative total; when
-		* the projection grows it uploads the current snapshot (debounced 1s).
+		* The invisible recorder seat.
 		* @param props - framework runtime share.
 		* @returns null (renders nothing).
 		*/
@@ -657,7 +665,20 @@ window.__ModuleLoader__.load({
 			const session = props.useSession((s) => ({ sessionId: s.sessionId }));
 			const usage = props.useProjection("tokenUsage");
 			const lastTotalRef = (0, react.useRef)(-1);
-			const lastUploadRef = (0, react.useRef)(0);
+			const settleTimerRef = (0, react.useRef)(null);
+			const lastSeenRef = (0, react.useRef)(null);
+			const flush = () => {
+				settleTimerRef.current = null;
+				const seen = lastSeenRef.current;
+				if (seen === null) return;
+				postSnapshot({
+					sessionId: seen.sessionId,
+					model: currentModel,
+					inputTokens: seen.input,
+					outputTokens: seen.output,
+					cacheReadTokens: seen.cache
+				});
+			};
 			(0, react.useEffect)(() => {
 				const sid = session.sessionId;
 				if (sid === void 0 || usage === void 0) return;
@@ -670,17 +691,20 @@ window.__ModuleLoader__.load({
 				lastTotalRef.current = total;
 				if (total <= 0) return;
 				if (total <= prev) return;
-				const now = Date.now();
-				if (now - lastUploadRef.current < 1e3) return;
-				lastUploadRef.current = now;
-				postSnapshot({
+				lastSeenRef.current = {
 					sessionId: sid,
-					model: currentModel,
-					inputTokens: usage.uncachedInputTokens + usage.cacheReadTokens,
-					outputTokens: usage.outputTokens,
-					cacheReadTokens: usage.cacheReadTokens
-				});
+					input: usage.uncachedInputTokens + usage.cacheReadTokens,
+					output: usage.outputTokens,
+					cache: usage.cacheReadTokens
+				};
+				if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
+				settleTimerRef.current = window.setTimeout(flush, SETTLE_MS);
 			}, [session.sessionId, usage]);
+			(0, react.useEffect)(() => {
+				return () => {
+					if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
+				};
+			}, []);
 			return null;
 		});
 		//#endregion
