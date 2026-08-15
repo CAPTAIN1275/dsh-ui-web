@@ -132,15 +132,15 @@ describe('skin-center routes', () => {
 
   it('POST /apply switches a skin and reports the new active', async () => {
     const { run, calls } = stubRunner([
-      { args: ['use', 'qq98'], out: 'wrote patch\n' },
-      { args: ['current'], out: 'qq98\n' },
+      { args: ['use', 'ths'], out: 'wrote patch\n' },
+      { args: ['current'], out: 'ths\n' },
     ])
     const server = await serve(makeSkinCenterRoutes({ run }))
-    const response = await call(server.port, 'POST', `${SKIN_CENTER_API_PREFIX}/apply`, { body: { skin: 'qq98' } })
+    const response = await call(server.port, 'POST', `${SKIN_CENTER_API_PREFIX}/apply`, { body: { skin: 'ths' } })
     await server.close()
     expect(response.status).toBe(200)
-    expect(response.body).toEqual({ ok: true, active: 'qq98', message: 'wrote patch' })
-    expect(calls).toEqual([['use', 'qq98'], ['current']])
+    expect(response.body).toEqual({ ok: true, active: 'ths', message: 'wrote patch' })
+    expect(calls).toEqual([['use', 'ths'], ['current']])
   })
 
   it('POST /apply official restores the stock look', async () => {
@@ -176,7 +176,7 @@ describe('skin-center routes', () => {
   it('POST /apply rejects skin and official together', async () => {
     const { run } = stubRunner([])
     const server = await serve(makeSkinCenterRoutes({ run }))
-    const response = await call(server.port, 'POST', `${SKIN_CENTER_API_PREFIX}/apply`, { body: { skin: 'qq98', official: true } })
+    const response = await call(server.port, 'POST', `${SKIN_CENTER_API_PREFIX}/apply`, { body: { skin: 'ths', official: true } })
     await server.close()
     expect(response.status).toBe(400)
     expect(response.body).toEqual({ ok: false, error: 'invalid-skin: skin and official are mutually exclusive' })
@@ -198,7 +198,7 @@ describe('skin-center routes', () => {
       headers: { 'sec-fetch-site': 'cross-site' },
     })
     const apply = await call(server.port, 'POST', `${SKIN_CENTER_API_PREFIX}/apply`, {
-      body: { skin: 'qq98' },
+      body: { skin: 'ths' },
       headers: { 'sec-fetch-site': 'cross-site' },
     })
     await server.close()
@@ -211,7 +211,7 @@ describe('skin-center routes', () => {
     const { run } = stubRunner([])
     const server = await serve(makeSkinCenterRoutes({ run }))
     const response = await call(server.port, 'POST', `${SKIN_CENTER_API_PREFIX}/apply`, {
-      body: { skin: 'qq98' },
+      body: { skin: 'ths' },
       headers: { origin: 'http://evil.example' },
     })
     await server.close()
@@ -236,7 +236,7 @@ describe('skin-center routes', () => {
   it('fences wrong methods with 405', async () => {
     const { run } = stubRunner([])
     const server = await serve(makeSkinCenterRoutes({ run }))
-    const response = await call(server.port, 'PUT', `${SKIN_CENTER_API_PREFIX}/apply`, { body: { skin: 'qq98' } })
+    const response = await call(server.port, 'PUT', `${SKIN_CENTER_API_PREFIX}/apply`, { body: { skin: 'ths' } })
     await server.close()
     expect(response.status).toBe(405)
   })
@@ -244,13 +244,13 @@ describe('skin-center routes', () => {
   it('GET /bundle/<id> serves a real skin client bundle as JavaScript', async () => {
     const { run } = stubRunner([])
     const server = await serve(makeSkinCenterRoutes({ run }))
-    const response = await call(server.port, 'GET', `${SKIN_CENTER_API_PREFIX}/bundle/qq98`)
+    const response = await call(server.port, 'GET', `${SKIN_CENTER_API_PREFIX}/bundle/ths`)
     await server.close()
     expect(response.status).toBe(200)
     // The body is the prebuilt bundle text, executable as a script (it
     // registers the factory via window.__ModuleLoader__.load).
     expect(response.raw).toContain('window.__ModuleLoader__.load')
-    expect(response.raw).toContain('@captain1275/dsh-client-ui-skin-qq98')
+    expect(response.raw).toContain('@captain1275/dsh-client-ui-skin-ths')
   })
 
   it('GET /bundle/<id> 404s unknown skins and missing bundles', async () => {
@@ -274,7 +274,7 @@ describe('skin-center routes', () => {
     // gate (400). Either way the skins tree is unreachable.
     const raw = await call(server.port, 'GET', `${SKIN_CENTER_API_PREFIX}/bundle/..`)
     const encoded = await call(server.port, 'GET', `${SKIN_CENTER_API_PREFIX}/bundle/%2e%2e%2f`)
-    const nested = await call(server.port, 'GET', `${SKIN_CENTER_API_PREFIX}/bundle/qq98%2f..%2f..%2fetc%2fpasswd`)
+    const nested = await call(server.port, 'GET', `${SKIN_CENTER_API_PREFIX}/bundle/ths%2f..%2f..%2fetc%2fpasswd`)
     await server.close()
     expect(raw.status).toBe(404)
     expect(encoded.status).toBe(400)
@@ -284,8 +284,8 @@ describe('skin-center routes', () => {
   it('fences the bundle route with method and same-origin checks', async () => {
     const { run } = stubRunner([])
     const server = await serve(makeSkinCenterRoutes({ run }))
-    const post = await call(server.port, 'POST', `${SKIN_CENTER_API_PREFIX}/bundle/qq98`)
-    const cross = await call(server.port, 'GET', `${SKIN_CENTER_API_PREFIX}/bundle/qq98`, {
+    const post = await call(server.port, 'POST', `${SKIN_CENTER_API_PREFIX}/bundle/ths`)
+    const cross = await call(server.port, 'GET', `${SKIN_CENTER_API_PREFIX}/bundle/ths`, {
       headers: { 'sec-fetch-site': 'cross-site' },
     })
     await server.close()

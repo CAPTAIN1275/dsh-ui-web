@@ -18,7 +18,7 @@
  *     - ../skins/skin-center
  *   deps:
  *     - ../skins/skin-center
- *     - ../qq98
+ *     - ../ths
  *
  *   - patchFrom entries contribute their child's cordis.patch.yml insert rows
  *     to the aggregate patch (nested aggregates expand recursively, in

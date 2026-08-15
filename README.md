@@ -64,10 +64,10 @@ SSH 运维、右侧文件/变更面板、Git 图谱、移动端远程控制、De
 
 ### 皮肤中心
 
-11 套皮肤（qq98 / ths / xp / blue-fantasy / dragon-heir / minecraft / miku / trading / whale-song /
+10 套皮肤（ths / xp / blue-fantasy / dragon-heir / minecraft / miku / trading / whale-song /
 aurora / skin-center），支持皮肤启用互斥管理与一键切换。
 
-其余皮肤（qq98 / ths / xp / blue-fantasy / dragon-heir / minecraft / miku / trading / whale-song）
+其余皮肤（ths / xp / blue-fantasy / dragon-heir / minecraft / miku / trading / whale-song）
 为上游 dsh-web-ui 自带皮肤。
 
 ## 安装
@@ -127,7 +127,7 @@ packages/
 ├─ dsh-task-board / dsh-ssh / dsh-aionui-panel / dsh-git-graph
 ├─ dsh-pet / dsh-remote-web-ui / dsh-live-stats / dsh-full-stats
 ├─ dsh-web-ui-settings / dsh-web-ui-all / dsh-skins
-└─ skins/            # 皮肤源码（aurora、miku、qq98 等）
+└─ skins/            # 皮肤源码（aurora、miku、ths 等）
 scripts/             # 构建 / 注册表 / 链接工具
 shared/              # 共享构建预设（tsdown.client.ts）
 ```

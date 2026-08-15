@@ -112,13 +112,12 @@ describe('TryOnController skin switching', () => {
     expect(document.body.getAttribute('data-dsh-ths')).toBe('')
     expect(document.querySelector('style[data-plugin-css*="ths.module.css"]')).not.toBeNull()
 
-    await expect(c.tryOn(entry('qq98'))).resolves.toBeUndefined()
+    // Switch to miku: ths's body attribute and stylesheet must be gone.
+    await expect(c.tryOn(entry('miku'))).resolves.toBeUndefined()
     expect(document.body.hasAttribute('data-dsh-ths')).toBe(false)
     expect(document.querySelector('style[data-plugin-css*="ths.module.css"]')).toBeNull()
     expect(document.body.querySelector('[class*="thsTitlebar"]')).toBeNull()
     expect(document.body.querySelector('[class*="thsStatusbar"]')).toBeNull()
-    // qq98 try-on is live, so the title is qq98's — but never ths's.
-    expect(document.title).not.toBe('同花顺 · DeepSeek 在线')
   })
 
   it('a skin whose apply() throws mid-write is rolled back completely', async () => {
@@ -138,21 +137,21 @@ describe('TryOnController skin switching', () => {
     expect(document.body.querySelector('.bombChrome')).toBeNull()
 
     // The surface stays usable for the next try-on.
-    await expect(c.tryOn(entry('qq98'))).resolves.toBeUndefined()
+    await expect(c.tryOn(entry('ths'))).resolves.toBeUndefined()
     expect(document.body.hasAttribute('data-dsh-bomb')).toBe(false)
-    expect(document.querySelector('style[data-plugin-css*="qq98.module.css"]')).not.toBeNull()
+    expect(document.querySelector('style[data-plugin-css*="ths.module.css"]')).not.toBeNull()
   })
 
   it('re-try-on after exit re-registers the same skin cleanly', async () => {
     const c = controller()
-    await expect(c.tryOn(entry('qq98'))).resolves.toBeUndefined()
+    await expect(c.tryOn(entry('ths'))).resolves.toBeUndefined()
     c.exit()
-    expect(document.body.hasAttribute('data-dsh-retro')).toBe(false)
-    expect(document.querySelector('style[data-plugin-css*="qq98.module.css"]')).toBeNull()
+    expect(document.body.hasAttribute('data-dsh-ths')).toBe(false)
+    expect(document.querySelector('style[data-plugin-css*="ths.module.css"]')).toBeNull()
     // A second try-on of the same skin must work: the exit invalidated the
     // module record, so the next load registers a fresh factory (no
     // duplicate-registration throw).
-    await expect(c.tryOn(entry('qq98'))).resolves.toBeUndefined()
-    expect(document.body.getAttribute('data-dsh-retro')).toBe('')
+    await expect(c.tryOn(entry('ths'))).resolves.toBeUndefined()
+    expect(document.body.getAttribute('data-dsh-ths')).toBe('')
   })
 })

@@ -5,7 +5,7 @@
 （设置 → 插件配置 → Web UI 插件 → 皮肤中心），与 task-board / pet / live-stats 等
 全家桶插件同一套槽位（`web-ui.plugin.item`），不占设置页一级导航。
 
-- 列表：展示「官方默认」+ 仓库里全部皮肤（qq98 / ths / xp / blue-fantasy / dragon-heir /
+- 列表：展示「官方默认」+ 仓库里全部皮肤（ths / xp / blue-fantasy / dragon-heir /
   minecraft）的名称、tagline、强调色；当前激活的目标带 Active 标记。
 - 试穿：点击「Try on」后按需加载该皮肤的 client bundle——host 路由
   `/api/skin-center/bundle/<id>` 以同源 script 提供 `lib/client.js`（内核加载插件的同一机制），
@@ -51,7 +51,7 @@ skin-center 是符合 DSH 官方插件标准的自包含 bundle（`dsh.bundle.pa
 
 pnpm ≥10 安装 git 依赖前需先授权 `allowBuilds`（`prepare` 会原地构建），本地 link 安装则无此要求。
 
-需要皮肤插件们（qq98 / ths / xp / blue-fantasy）在宿主里也可解析时，skin-center 才能
+需要皮肤插件们（ths / xp / blue-fantasy）在宿主里也可解析时，skin-center 才能
 完整列出 / 试穿全部皮肤；skin-center 本身无互斥要求。
 
 ## 目录结构
@@ -112,7 +112,7 @@ pnpm --filter @captain1275/dsh-client-ui-skin-center run bundle
 ## 安装（个人环境接线，不在 checkout 提交）
 
 ```sh
-# 1. profile symlink（与 qq98/blue-fantasy 同款）
+# 1. profile symlink（与 ths/blue-fantasy 同款）
 ln -sfn ~/code/dsh-web-ui/packages/skins/skin-center \
   ~/.dsh/profiles/node_modules/@captain1275/dsh-client-ui-skin-center
 

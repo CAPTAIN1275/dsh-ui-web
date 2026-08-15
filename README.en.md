@@ -78,11 +78,11 @@ once through the aggregate package.
 
 ### Skin center
 
-11 skins (qq98 / ths / xp / blue-fantasy / dragon-heir / minecraft / miku /
+10 skins (ths / xp / blue-fantasy / dragon-heir / minecraft / miku /
 trading / whale-song / aurora / skin-center) with mutual-exclusion management
 and one-click switching.
 
-The other skins (qq98 / ths / xp / blue-fantasy / dragon-heir / minecraft /
+The other skins (ths / xp / blue-fantasy / dragon-heir / minecraft /
 miku / trading / whale-song) come from the upstream dsh-web-ui.
 
 ## Installation
@@ -143,7 +143,7 @@ packages/
 ├─ dsh-task-board / dsh-ssh / dsh-aionui-panel / dsh-git-graph
 ├─ dsh-pet / dsh-remote-web-ui / dsh-live-stats / dsh-full-stats
 ├─ dsh-web-ui-settings / dsh-web-ui-all / dsh-skins
-└─ skins/            # skin sources (aurora, miku, qq98, etc.)
+└─ skins/            # skin sources (aurora, miku, ths, etc.)
 scripts/             # build / registry / link tools
 shared/              # shared build presets (tsdown.client.ts)
 ```

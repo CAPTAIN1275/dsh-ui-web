@@ -2,7 +2,7 @@
 'use strict'
 
 /**
- * dsh-skin â€?one-command skin switching for the DSH web GUI.
+ * dsh-skin ï¿½?one-command skin switching for the DSH web GUI.
  *
  * Every skin in this repo is a standalone plugin package in the official
  * turtle-ui shape: `dsh.bundle` manifest + cordis.patch.yml + self-contained
@@ -17,11 +17,11 @@
  * symlink that makes the chosen package resolvable from the web profile
  * (pnpm's `link:` installs are symlinks too, so both paths coexist).
  *
- * Switch = rewrite the managed patch section â†?HMR re-scans â†?refresh the
+ * Switch = rewrite the managed patch section ï¿½?HMR re-scans ï¿½?refresh the
  * page. Only ONE skin row is ever enabled: every non-active skin gets an
  * id-target `disabled: true` row (which also neutralizes skins wired at
  * the bundle layer, e.g. ui-skin-xp), and the active skin gets its insert
- * row (xp needs none â€?the bundle layer already carries it).
+ * row (xp needs none ï¿½?the bundle layer already carries it).
  */
 
 const fs = require('node:fs')
@@ -41,7 +41,6 @@ const REPO = process.env.DSH_SKIN_REPO || path.resolve(__dirname, '..')
 
 /** Skin registry: name -> package, cordis row id, symlink resolve target (all repo dirs). */
 const SKINS = {
-  qq98: { pkg: '@captain1275/dsh-client-ui-skin-qq98', id: 'ui-skin-qq98', dir: `${REPO}/packages/skins/qq98` },
   ths: { pkg: '@captain1275/dsh-client-ui-skin-ths', id: 'ui-skin-ths', dir: `${REPO}/packages/skins/ths` },
   xp: { pkg: '@captain1275/dsh-client-ui-skin-xp', id: 'ui-skin-xp', dir: `${REPO}/packages/skins/xp` },
   'blue-fantasy': { pkg: '@captain1275/dsh-client-ui-skin-blue-fantasy', id: 'ui-skin-blue-fantasy', dir: `${REPO}/packages/skins/blue-fantasy` },
@@ -64,7 +63,7 @@ function profileManifestPath() {
  * Skins whose patch row the profile bundle layer already provides (installed
  * via `dsh-skin install` = `dsh plugin add`, which reconciles the package
  * into the profile's `dsh.profile.bundles`). `use` must not insert those rows
- * again â€?a duplicate id fails the boot. Detected dynamically so installing
+ * again ï¿½?a duplicate id fails the boot. Detected dynamically so installing
  * new skins never requires editing this script.
  */
 function bundleWiredFromProfile() {
@@ -105,7 +104,7 @@ function cmdInstall(name) {
   }
   console.log(`dsh plugin --profile ${DEFAULT_PROFILE} add ${SKINS[name].dir}`)
   execFileSync('dsh', ['plugin', '--profile', DEFAULT_PROFILE, 'add', SKINS[name].dir], { stdio: 'inherit' })
-  console.log(`installed ${SKINS[name].pkg} into profile "${DEFAULT_PROFILE}" â€?the dshClient row comes from the bundle's cordis.patch.yml.`)
+  console.log(`installed ${SKINS[name].pkg} into profile "${DEFAULT_PROFILE}" ï¿½?the dshClient row comes from the bundle's cordis.patch.yml.`)
 }
 
 const MANAGED_START = '# --- dsh-skin managed (auto-generated; do not edit) ---'
@@ -142,7 +141,7 @@ function renderManaged(active) {
     if (name === active) continue
     lines.push(`- id: ${SKINS[name].id}`, '  disabled: true')
   }
-  // `official` (active === null) = every skin disabled, no insert row â€?the
+  // `official` (active === null) = every skin disabled, no insert row ï¿½?the
   // stock look. A wired active skin also needs no insert row.
   if (active !== null && !wired.has(active)) {
     lines.push('- insert:', `    - id: ${SKINS[active].id}`, `      name: '${SKINS[active].pkg}'`)
@@ -182,7 +181,7 @@ function ensureSymlink(name) {
   try { stat = fs.lstatSync(target) } catch { /* absent */ }
   if (stat) {
     if (!stat.isSymbolicLink()) {
-      throw new Error(`${target} exists and is not a symlink â€?refusing to touch it`)
+      throw new Error(`${target} exists and is not a symlink ï¿½?refusing to touch it`)
     }
     const cur = fs.readlinkSync(target)
     if (cur === dir) return false
@@ -219,8 +218,8 @@ function cmdUse(name) {
   fs.renameSync(tmp, PATCH)
   console.log(`wrote ${PATCH}`)
   console.log(official
-    ? 'restored the official stock look â€?the config watcher applies it within seconds; refresh the page to see it.'
-    : `skin switched to "${name}" â€?the config watcher applies it within seconds; refresh the page (or the manifest re-fetches) to see it.`)
+    ? 'restored the official stock look ï¿½?the config watcher applies it within seconds; refresh the page to see it.'
+    : `skin switched to "${name}" ï¿½?the config watcher applies it within seconds; refresh the page (or the manifest re-fetches) to see it.`)
 }
 
 function cmdList() {
@@ -268,7 +267,7 @@ if (require.main === module) {
     case 'list': cmdList(); break
     case 'current': cmdCurrent(); break
     default:
-      console.log('dsh-skin â€?one-command skin switching for the DSH web GUI')
+      console.log('dsh-skin ï¿½?one-command skin switching for the DSH web GUI')
       console.log('')
       console.log('usage:')
       console.log('  dsh-skin install <name>   install a skin into the web profile the official way (dsh plugin add)')

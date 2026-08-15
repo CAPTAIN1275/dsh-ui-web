@@ -37,8 +37,6 @@ export interface SkinCenterEntry {
 
 /** Every skin, ordered by packages/skins/<name>/skin.json `order`. */
 export const SKIN_CENTER_ENTRIES: readonly SkinCenterEntry[] = [
-  {"id":"qq98","name":"QQ2008 怀旧版","nameEn":"QQ2008 Retro","author":"dsh-web-ui","tagline":"水晶蓝桌面 · 玻璃深蓝标题栏 · 戴围巾企鹅","description":"dsh web ui 家族收录的第一个皮肤：QQ2008 水晶蓝年代。深蓝渐变桌面、玻璃质感标题栏、浅蓝状态栏和圆角高光控件，配一只戴围巾的企鹅。","tags":["retro","qq","2008","crystal-blue","nostalgia"],"accent":"#2b7cd9","bodyAttr":"data-dsh-retro","package":"@captain1275/dsh-client-ui-skin-qq98","order":1},
-
   {"id":"ths","name":"同花顺风格","nameEn":"Tonghuashun Trading","author":"dsh-web-ui","tagline":"品牌红标题栏 · 实时行情状态栏 · 灰蓝数据终端","description":"同花顺风格炒股主题：品牌红标题栏带上证指数行情签，状态栏红涨绿跌，自选股风格的侧边栏和交易终端面板，写代码也像盯盘。","tags":["stock","trading","terminal","red"],"accent":"#e60012","bodyAttr":"data-dsh-ths","package":"@captain1275/dsh-client-ui-skin-ths","order":2},
 
   {"id":"xp","name":"Windows XP (Luna)","nameEn":"Windows XP Luna","author":"dsh-web-ui","tagline":"Luna 蓝窗口条 · 绿色开始按钮 · Bliss 蓝天桌面","description":"Windows XP (Luna) 复古主题：蓝色渐变窗口条带窗口按钮、米色状态栏（大写/数字/滚动指示灯）、侧边栏任务栏上的绿色「开始」按钮、资源管理器风格树行和 Bliss 蓝天桌面，全局直角。","tags":["retro","xp","luna","windows","start-button"],"accent":"#316ac5","bodyAttr":"data-dsh-xp","package":"@captain1275/dsh-client-ui-skin-xp","order":3},

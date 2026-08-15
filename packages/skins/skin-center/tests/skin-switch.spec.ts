@@ -88,11 +88,10 @@ function miniRegistry(exclude = [] as string[]): Record<string, SkinSwitchEntry>
 describe('skin registry derivation (from skin.json wiring)', () => {
   it('loadRegistry() maps every installed skin to its wiring metadata', () => {
     const registry = loadRegistry()
-    expect(registry.qq98).toEqual(expect.objectContaining({
-      pkg: '@captain1275/dsh-client-ui-skin-qq98',
-      id: 'ui-skin-qq98',
+    expect(registry.ths).toEqual(expect.objectContaining({
+      pkg: '@captain1275/dsh-client-ui-skin-ths',
+      id: 'ui-skin-ths',
     }))
-    expect(registry.ths).toEqual(expect.objectContaining({ id: 'ui-skin-ths' }))
     expect(registry['blue-fantasy']).toEqual(expect.objectContaining({
       pkg: '@captain1275/dsh-client-ui-skin-blue-fantasy',
       id: 'ui-skin-blue-fantasy',
@@ -117,10 +116,10 @@ describe('pure patch helpers', () => {
 
   it('renderManaged(name) keeps one insert row for a non-wired skin', () => {
     const registry = miniRegistry()
-    const rendered = renderManaged('qq98', registry)
+    const rendered = renderManaged('ths', registry)
     expect(rendered).toContain('- insert:')
-    expect(rendered).toContain(`- id: ${registry.qq98.id}`)
-    expect(rendered).not.toContain(`- id: ${registry.qq98.id}\n  disabled: true`)
+    expect(rendered).toContain(`- id: ${registry.ths.id}`)
+    expect(rendered).not.toContain(`- id: ${registry.ths.id}\n  disabled: true`)
   })
 
   it('renderManaged(wired skin) needs no insert row', () => {
@@ -151,7 +150,7 @@ describe('pure patch helpers', () => {
 
   it('currentActive returns the active skin from an insert row', () => {
     const registry = miniRegistry()
-    expect(currentActive(renderManaged('qq98', registry), registry)).toBe('qq98')
+    expect(currentActive(renderManaged('ths', registry), registry)).toBe('ths')
   })
 })
 
@@ -176,26 +175,26 @@ describe('useSkin / currentSkin against a throwaway HOME', () => {
   it('use <name> writes an insert row and the profile symlink for a non-wired skin', () => {
     const h = fakeHome()
     const registry = loadRegistry()
-    const qq98 = registry.qq98
+    const ths = registry.ths
     // A complete skin package at the fake repo path so the resolvability gate passes.
-    const fakeDir = join(h, 'code', 'dsh-web-ui', 'packages', 'skins', 'qq98')
-    makeSkinPackage(fakeDir, qq98)
+    const fakeDir = join(h, 'code', 'dsh-web-ui', 'packages', 'skins', 'ths')
+    makeSkinPackage(fakeDir, ths)
     // Point the registry's dir at the fake skin dir so the symlink is resolvable.
     const fakeRegistry: Record<string, SkinSwitchEntry> = {
       ...registry,
-      qq98: { ...qq98, dir: fakeDir },
+      ths: { ...ths, dir: fakeDir },
     }
     writeFileSync(patchPath(h), '')
-    const message = useSkin('qq98', { home: h, registry: fakeRegistry })
+    const message = useSkin('ths', { home: h, registry: fakeRegistry })
     const after = readFileSync(patchPath(h), 'utf8')
     expect(after).toContain('- insert:')
-    expect(after).toContain(`- id: ${fakeRegistry.qq98.id}`)
-    expect(currentSkin(after, { home: h, registry: fakeRegistry })).toBe('qq98')
-    expect(message).toContain('skin switched to "qq98"')
+    expect(after).toContain(`- id: ${fakeRegistry.ths.id}`)
+    expect(currentSkin(after, { home: h, registry: fakeRegistry })).toBe('ths')
+    expect(message).toContain('skin switched to "ths"')
     // The profile symlink now points at the fake skin dir.
-    const link = join(resolvePaths(h).profileModulesDir, qq98.pkg)
+    const link = join(resolvePaths(h).profileModulesDir, ths.pkg)
     expect(existsSync(link) || readlinkSync(link)).toBeTruthy()
-    if (existsSync(link)) expect(readlinkSync(link)).toBe(fakeRegistry.qq98.dir)
+    if (existsSync(link)) expect(readlinkSync(link)).toBe(fakeRegistry.ths.dir)
   })
 
   it('useSkin on an unknown skin rejects like the CLI', () => {
@@ -206,58 +205,58 @@ describe('useSkin / currentSkin against a throwaway HOME', () => {
   it('useSkin leaves an already-installed REAL package dir untouched (npm layout, issue #21/#33)', () => {
     const h = fakeHome()
     const registry = loadRegistry()
-    const qq98 = registry.qq98
+    const ths = registry.ths
     // The npm-install layout: the skin package is physically present as a
     // directory under the profile's node_modules �?no symlink exists. The
     // directory must carry this skin's identity to count as installed.
-    const installed = join(resolvePaths(h).profileModulesDir, qq98.pkg)
+    const installed = join(resolvePaths(h).profileModulesDir, ths.pkg)
     // A real installed package must be a complete resolvable skin (package.json
     // + host entry + skin.json) so both the identity check and the resolvability
     // gate accept it.
-    makeSkinPackage(installed, qq98)
+    makeSkinPackage(installed, ths)
     const fakeRegistry: Record<string, SkinSwitchEntry> = {
       ...registry,
-      qq98: { ...qq98, dir: installed },
+      ths: { ...ths, dir: installed },
     }
-    expect(() => useSkin('qq98', { home: h, registry: fakeRegistry })).not.toThrow()
+    expect(() => useSkin('ths', { home: h, registry: fakeRegistry })).not.toThrow()
     // The real directory survives untouched (not replaced by a symlink).
     expect(existsSync(installed)).toBe(true)
     const after = readFileSync(patchPath(h), 'utf8')
     expect(after).toContain('- insert:')
-    expect(after).toContain('- id: ' + fakeRegistry.qq98.id)
+    expect(after).toContain('- id: ' + fakeRegistry.ths.id)
   })
 
   it('useSkin refuses an unrelated directory at the profile link path', () => {
     const h = fakeHome()
     const registry = loadRegistry()
-    const qq98 = registry.qq98
+    const ths = registry.ths
     // A stray directory that is NOT this skin's package: the old code
     // refused non-symlinks, and the npm-layout relaxation must not silently
     // accept just any directory.
-    const target = join(resolvePaths(h).profileModulesDir, qq98.pkg)
+    const target = join(resolvePaths(h).profileModulesDir, ths.pkg)
     mkdirSync(target, { recursive: true })
-    expect(() => useSkin('qq98', { home: h })).toThrow(/does not look like/)
+    expect(() => useSkin('ths', { home: h })).toThrow(/does not look like/)
   })
 
   it('honest apply: useSkin rejects a skin dir with no package.json / host entry (issue #42)', () => {
     const h = fakeHome()
     const registry = loadRegistry()
-    const qq98 = registry.qq98
+    const ths = registry.ths
     // Mirror the broken npm aggregate layout that shipped skin dirs with only
     // skin.json + lib/client.js (no package.json, no host entry): ensureSymlink
     // happily points the profile at it, but the boot cannot resolve the package
     // (MODULE_NOT_FOUND .../package.json). useSkin must throw so /apply reports
     // ok:false instead of claiming success.
-    const carrierDir = join(h, 'code', 'dsh-web-ui', 'packages', 'skins', 'qq98')
+    const carrierDir = join(h, 'code', 'dsh-web-ui', 'packages', 'skins', 'ths')
     mkdirSync(join(carrierDir, 'lib'), { recursive: true })
     writeFileSync(join(carrierDir, 'lib', 'client.js'), 'window.__ModuleLoader__\n')
-    writeFileSync(join(carrierDir, 'skin.json'), JSON.stringify({ id: 'qq98', package: qq98.pkg, wiring: { id: qq98.id } }))
+    writeFileSync(join(carrierDir, 'skin.json'), JSON.stringify({ id: 'ths', package: ths.pkg, wiring: { id: ths.id } }))
     const fakeRegistry: Record<string, SkinSwitchEntry> = {
       ...registry,
-      qq98: { ...qq98, dir: carrierDir },
+      ths: { ...ths, dir: carrierDir },
     }
     writeFileSync(patchPath(h), '')
-    expect(() => useSkin('qq98', { home: h, registry: fakeRegistry })).toThrow(/缺少 package\.json/)
+    expect(() => useSkin('ths', { home: h, registry: fakeRegistry })).toThrow(/缺少 package\.json/)
     // The patch must not have been written / no insert row left behind.
     const patch = readFileSync(patchPath(h), 'utf8')
     expect(patch).not.toContain('- insert:')
@@ -266,12 +265,12 @@ describe('useSkin / currentSkin against a throwaway HOME', () => {
   it('falls back to a directory junction when symlinkSync fails with EPERM on win32 (issue #24)', () => {
     const h = fakeHome()
     const registry = loadRegistry()
-    const qq98 = registry.qq98
-    const fakeDir = join(h, 'code', 'dsh-web-ui', 'packages', 'skins', 'qq98')
-    makeSkinPackage(fakeDir, qq98)
+    const ths = registry.ths
+    const fakeDir = join(h, 'code', 'dsh-web-ui', 'packages', 'skins', 'ths')
+    makeSkinPackage(fakeDir, ths)
     const fakeRegistry: Record<string, SkinSwitchEntry> = {
       ...registry,
-      qq98: { ...qq98, dir: fakeDir },
+      ths: { ...ths, dir: fakeDir },
     }
     const mock = vi.mocked(symlinkSync)
     mock.mockImplementationOnce(() => {
@@ -282,7 +281,7 @@ describe('useSkin / currentSkin against a throwaway HOME', () => {
     const platformDesc = Object.getOwnPropertyDescriptor(process, 'platform')!
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true })
     try {
-      useSkin('qq98', { home: h, registry: fakeRegistry })
+      useSkin('ths', { home: h, registry: fakeRegistry })
       // First call raised EPERM; the retry must be a junction link.
       expect(mock).toHaveBeenLastCalledWith(expect.any(String), expect.any(String), 'junction')
     } finally {
@@ -297,29 +296,29 @@ describe('npm-install layout registry scan (issue #21/#33/#34)', () => {
     const fakeRoot = mkdtempSync(join(tmpdir(), 'skin-npm-layout-'))
     try {
       const scoped = join(fakeRoot, '@captain1275')
-      mkdirSync(join(scoped, 'dsh-client-ui-skin-qq98'), { recursive: true })
       mkdirSync(join(scoped, 'dsh-client-ui-skin-ths'), { recursive: true })
+      mkdirSync(join(scoped, 'dsh-client-ui-skin-miku'), { recursive: true })
       // Non-skin packages in the same scoped dir must be skipped.
       mkdirSync(join(scoped, 'dsh-ssh'), { recursive: true })
       mkdirSync(join(scoped, 'dsh-task-board'), { recursive: true })
-      writeFileSync(join(scoped, 'dsh-client-ui-skin-qq98', 'skin.json'), JSON.stringify({
-        id: 'qq98',
-        package: '@captain1275/dsh-client-ui-skin-qq98',
-        wiring: { id: 'ui-skin-qq98' },
-      }))
       writeFileSync(join(scoped, 'dsh-client-ui-skin-ths', 'skin.json'), JSON.stringify({
         id: 'ths',
         package: '@captain1275/dsh-client-ui-skin-ths',
-        wiring: { id: 'ui-skin-ths', bundleWired: true },
+        wiring: { id: 'ui-skin-ths' },
+      }))
+      writeFileSync(join(scoped, 'dsh-client-ui-skin-miku', 'skin.json'), JSON.stringify({
+        id: 'miku',
+        package: '@captain1275/dsh-client-ui-skin-miku',
+        wiring: { id: 'ui-skin-miku', bundleWired: true },
       }))
       const registry = loadRegistry(scoped)
-      expect(Object.keys(registry).sort()).toEqual(['qq98', 'ths'])
-      expect(registry.qq98).toEqual(expect.objectContaining({
-        pkg: '@captain1275/dsh-client-ui-skin-qq98',
-        id: 'ui-skin-qq98',
-        dir: join(scoped, 'dsh-client-ui-skin-qq98'),
+      expect(Object.keys(registry).sort()).toEqual(['miku', 'ths'])
+      expect(registry.ths).toEqual(expect.objectContaining({
+        pkg: '@captain1275/dsh-client-ui-skin-ths',
+        id: 'ui-skin-ths',
+        dir: join(scoped, 'dsh-client-ui-skin-ths'),
       }))
-      expect(registry.ths.bundleWired).toBe(true)
+      expect(registry.miku.bundleWired).toBe(true)
     } finally {
       rmSync(fakeRoot, { recursive: true, force: true })
     }
@@ -356,7 +355,7 @@ describe('bundled-skins carrier (dsh-skins/skins/<id>, npm layout)', () => {
       mkdirSync(join(carrier, 'miku', 'lib'), { recursive: true })
       mkdirSync(join(carrier, 'trading', 'lib'), { recursive: true })
       // A legacy per-skin package coexisting (already published installs).
-      mkdirSync(join(scoped, 'dsh-client-ui-skin-qq98'), { recursive: true })
+      mkdirSync(join(scoped, 'dsh-client-ui-skin-ths'), { recursive: true })
       // A non-skin package in the same scoped dir.
       mkdirSync(join(scoped, 'dsh-ssh'), { recursive: true })
       writeFileSync(join(carrier, 'miku', 'skin.json'), JSON.stringify({
@@ -369,18 +368,18 @@ describe('bundled-skins carrier (dsh-skins/skins/<id>, npm layout)', () => {
         package: '@captain1275/dsh-client-ui-skin-trading',
         wiring: { id: 'ui-skin-trading' },
       }))
-      writeFileSync(join(scoped, 'dsh-client-ui-skin-qq98', 'skin.json'), JSON.stringify({
-        id: 'qq98',
-        package: '@captain1275/dsh-client-ui-skin-qq98',
-        wiring: { id: 'ui-skin-qq98' },
+      writeFileSync(join(scoped, 'dsh-client-ui-skin-ths', 'skin.json'), JSON.stringify({
+        id: 'ths',
+        package: '@captain1275/dsh-client-ui-skin-ths',
+        wiring: { id: 'ui-skin-ths' },
       }))
       const registry = loadRegistry(scoped)
-      expect(Object.keys(registry).sort()).toEqual(['miku', 'qq98', 'trading'])
+      expect(Object.keys(registry).sort()).toEqual(['miku', 'ths', 'trading'])
       // Bundled skins resolve to their carrier paths.
       expect(registry.miku.dir).toBe(join(carrier, 'miku'))
       expect(registry.trading.dir).toBe(join(carrier, 'trading'))
       // Legacy per-skin packages still resolve.
-      expect(registry.qq98.dir).toBe(join(scoped, 'dsh-client-ui-skin-qq98'))
+      expect(registry.ths.dir).toBe(join(scoped, 'dsh-client-ui-skin-ths'))
     } finally {
       rmSync(fakeRoot, { recursive: true, force: true })
     }
@@ -487,17 +486,17 @@ describe('self-referential symlink defense (issue #43: ELOOP on second skin swit
       const alias = join(scoped, 'dsh-client-ui-skin-miku')
       symlinkSync(join(real, 'miku'), alias, process.platform === 'win32' ? 'junction' : 'dir')
       // A real legacy package (kept).
-      mkdirSync(join(scoped, 'dsh-client-ui-skin-qq98'), { recursive: true })
-      writeFileSync(join(scoped, 'dsh-client-ui-skin-qq98', 'skin.json'), JSON.stringify({
-        id: 'qq98',
-        package: '@captain1275/dsh-client-ui-skin-qq98',
-        wiring: { id: 'ui-skin-qq98' },
+      mkdirSync(join(scoped, 'dsh-client-ui-skin-ths'), { recursive: true })
+      writeFileSync(join(scoped, 'dsh-client-ui-skin-ths', 'skin.json'), JSON.stringify({
+        id: 'ths',
+        package: '@captain1275/dsh-client-ui-skin-ths',
+        wiring: { id: 'ui-skin-ths' },
       }))
       const candidates = listSkinDirCandidates(scoped)
       // The alias link must never appear as a skin-dir candidate.
       expect(candidates).not.toContain(alias)
       // The real direct package is still found.
-      expect(candidates).toContain(join(scoped, 'dsh-client-ui-skin-qq98'))
+      expect(candidates).toContain(join(scoped, 'dsh-client-ui-skin-ths'))
       // The real skin dir reachable via the carrier is still found.
       expect(candidates).toContain(join(real, 'miku'))
     } finally {
@@ -535,21 +534,21 @@ describe('self-referential symlink defense (issue #43: ELOOP on second skin swit
   it('useSkin refuses to build a self-referential link after a poisoned registry (second switch, no ELOOP)', () => {
     const h = fakeHome()
     const registry = loadRegistry()
-    const qq98 = registry.qq98
-    const realDir = join(h, 'code', 'dsh-web-ui', 'packages', 'skins', 'qq98')
-    makeSkinPackage(realDir, qq98)
-    const target = join(resolvePaths(h).profileModulesDir, qq98.pkg)
+    const ths = registry.ths
+    const realDir = join(h, 'code', 'dsh-web-ui', 'packages', 'skins', 'ths')
+    makeSkinPackage(realDir, ths)
+    const target = join(resolvePaths(h).profileModulesDir, ths.pkg)
     // First switch: a normal link target -> realDir.
-    const goodRegistry: Record<string, SkinSwitchEntry> = { ...registry, qq98: { ...qq98, dir: realDir } }
+    const goodRegistry: Record<string, SkinSwitchEntry> = { ...registry, ths: { ...ths, dir: realDir } }
     writeFileSync(patchPath(h), '')
-    useSkin('qq98', { home: h, registry: goodRegistry })
+    useSkin('ths', { home: h, registry: goodRegistry })
     expect(readlinkSync(target)).toBe(realDir)
     // Poison the registry exactly like the issue: entry.dir resolves to the
     // profile link path itself (the loadRegistry realpath bug). ensureSymlink
     // must refuse to re-link target -> itself (ELOOP) and leave state intact.
-    const poisonedRegistry: Record<string, SkinSwitchEntry> = { ...registry, qq98: { ...qq98, dir: target } }
+    const poisonedRegistry: Record<string, SkinSwitchEntry> = { ...registry, ths: { ...ths, dir: target } }
     writeFileSync(patchPath(h), '')
-    expect(() => useSkin('qq98', { home: h, registry: poisonedRegistry })).not.toThrow()
+    expect(() => useSkin('ths', { home: h, registry: poisonedRegistry })).not.toThrow()
     // The existing link still points at the real dir, never at itself.
     expect(readlinkSync(target)).toBe(realDir)
     // And it still resolves (no ELOOP on realpath).

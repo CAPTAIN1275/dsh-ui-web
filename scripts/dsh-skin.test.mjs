@@ -40,11 +40,11 @@ test('renderManaged(null) disables every skin and inserts nothing', () => {
 })
 
 test('renderManaged(name) keeps one insert row for a non-wired skin', () => {
-  const rendered = renderManaged('qq98')
+  const rendered = renderManaged('ths')
   assert.ok(rendered.includes('- insert:'))
-  assert.ok(rendered.includes(`- id: ${SKINS.qq98.id}`))
+  assert.ok(rendered.includes(`- id: ${SKINS.ths.id}`))
   // The active skin itself must not be disabled.
-  assert.ok(!rendered.includes(`- id: ${SKINS.qq98.id}\n  disabled: true`))
+  assert.ok(!rendered.includes(`- id: ${SKINS.ths.id}\n  disabled: true`))
 })
 
 test('stripManaged removes only the managed section', () => {
@@ -98,20 +98,20 @@ test('use <name> still writes an insert row for a non-wired skin', () => {
   try {
     // ensureSymlink requires the skin source dir under DSH_SKIN_REPO.
     const repo = join(home, 'code', 'dsh-web-ui')
-    mkdirSync(join(repo, 'packages', 'skins', 'qq98'), { recursive: true })
+    mkdirSync(join(repo, 'packages', 'skins', 'ths'), { recursive: true })
     const patch = patchPath(home)
     writeFileSync(patch, '')
-    execFileSync(process.execPath, [SCRIPT, 'use', 'qq98'], {
+    execFileSync(process.execPath, [SCRIPT, 'use', 'ths'], {
       env: { ...process.env, DSH_HOME: join(home, '.dsh'), DSH_SKIN_REPO: repo },
     })
     const after = readFileSync(patch, 'utf8')
     assert.ok(after.includes('- insert:'))
-    assert.ok(after.includes(`- id: ${SKINS.qq98.id}`))
+    assert.ok(after.includes(`- id: ${SKINS.ths.id}`))
     const current = execFileSync(process.execPath, [SCRIPT, 'current'], {
       env: { ...process.env, DSH_HOME: join(home, '.dsh'), DSH_SKIN_REPO: repo },
       encoding: 'utf8',
     })
-    assert.equal(current.trim(), 'qq98')
+    assert.equal(current.trim(), 'ths')
   } finally {
     rmSync(home, { recursive: true, force: true })
   }
