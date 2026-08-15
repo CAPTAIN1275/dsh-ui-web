@@ -12,6 +12,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
+import { BOOTSCREEN_API_PREFIX, handleBootscreen } from './bootscreen.ts'
 
 /** 稳定插件名（对应 cordis.patch.yml 的 insert id）。 */
 export const name = 'ui-web-ui-settings'
@@ -279,6 +280,7 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
 export function apply(ctx: Context): void {
   ctx.inject(['webServer'], (httpCtx) => {
     const dispose = httpCtx.webServer.register({ kind: 'prefix', path: PERSONA_API_PREFIX, handler: handle })
-    httpCtx.effect(() => dispose, 'ui-web-ui-settings: persona route')
+    const disposeBoot = httpCtx.webServer.register({ kind: 'prefix', path: BOOTSCREEN_API_PREFIX, handler: handleBootscreen })
+    httpCtx.effect(() => () => { dispose(); disposeBoot() }, 'ui-web-ui-settings: persona + bootscreen routes')
   })
 }

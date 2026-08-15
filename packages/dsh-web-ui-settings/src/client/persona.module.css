@@ -1,5 +1,16 @@
 /* 设置页「人格设定」section 表单样式（token 驱动，跟随当前皮肤/主题）。 */
 
+.card {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--dsw-alias-border-l2, rgba(140, 160, 255, 0.22));
+  border-radius: 10px;
+  background: var(--dsw-alias-surface-card, rgba(18, 24, 46, 0.6));
+}
+
 .persona {
   display: flex;
   flex-direction: column;
