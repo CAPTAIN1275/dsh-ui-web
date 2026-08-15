@@ -42,7 +42,7 @@ interface SessionStatsProjection {
   decodeTokens: number
 }
 
-const EMPTY_CONFIG: FullStatsConfig = { workingText: '', doneText: '' }
+const EMPTY_CONFIG: FullStatsConfig = { thinkingText: '', workingText: '', doneText: '' }
 let cachedConfig: FullStatsConfig = { ...EMPTY_CONFIG }
 
 /** 从宿主路由拉取配置（失败沿用缓存）。 */
@@ -52,6 +52,7 @@ async function refreshConfig(): Promise<void> {
     const data = (await res.json()) as { ok?: boolean; config?: Partial<FullStatsConfig> }
     if (data?.ok === true && data.config !== undefined) {
       cachedConfig = {
+        thinkingText: typeof data.config.thinkingText === 'string' ? data.config.thinkingText : '',
         workingText: typeof data.config.workingText === 'string' ? data.config.workingText : '',
         doneText: typeof data.config.doneText === 'string' ? data.config.doneText : '',
       }
@@ -59,6 +60,34 @@ async function refreshConfig(): Promise<void> {
   } catch {
     /* 沿用缓存 */
   }
+}
+
+/** 官方「思考中」占位文本（ChatView 硬编码，无可字典化文案）。 */
+const OFFICIAL_THINKING_TEXT = 'Deep diving...'
+
+/**
+ * 替换官方「Deep diving...」状态文本。ChatView 将思考中文本硬编码为内联
+ * JSX（role=status + turnStatus 类），无法通过官方配置修改；这里用
+ * MutationObserver 监听会话区，出现官方占位文本且用户配置了 thinkingText
+ * 时原位替换（保留时钟 span）。配置为空或文本已非官方占位时不动。
+ */
+function mountThinkingTextReplacer(): () => void {
+  const apply = (): void => {
+    if (cachedConfig.thinkingText === '') return
+    document.querySelectorAll<HTMLElement>('[class*="turnStatus"]').forEach((el) => {
+      const textNode = Array.from(el.childNodes).find(
+        (n) => n.nodeType === Node.TEXT_NODE && n.textContent?.includes(OFFICIAL_THINKING_TEXT),
+      )
+      if (textNode !== undefined) {
+        textNode.textContent = cachedConfig.thinkingText
+      }
+    })
+  }
+  // 立即执行 + 监听 DOM 变化（会话切换/流式重渲染都会重建状态行）。
+  apply()
+  const observer = new MutationObserver(apply)
+  observer.observe(document.body, { childList: true, subtree: true })
+  return () => observer.disconnect()
 }
 
 function formatDuration(ms: number): string {
@@ -172,6 +201,9 @@ export function apply(ctx: ClientContext): void {
   const onConfig = (): void => { void refreshConfig() }
   window.addEventListener(FULL_STATS_EVENT, onConfig)
   ctx.effect(() => () => window.removeEventListener(FULL_STATS_EVENT, onConfig), 'ui-full-stats: config listener')
+
+  // Deep diving 替换：监听 turnStatus 状态行，把官方占位文本换成用户配置。
+  ctx.effect(() => mountThinkingTextReplacer(), 'ui-full-stats: thinking text replacer')
 
   ctx.slots.inject(DOCK, () => ctx.slots.register(
     {

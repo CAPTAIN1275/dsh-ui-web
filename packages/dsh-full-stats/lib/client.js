@@ -43,6 +43,7 @@ window.__ModuleLoader__.load({
 		* 并派发 dshc-full-stats-config 事件让统计行即时刷新。
 		*/
 		const DEFAULTS = {
+			thinkingText: "",
 			workingText: "",
 			doneText: ""
 		};
@@ -54,6 +55,7 @@ window.__ModuleLoader__.load({
 			try {
 				const data = await (await fetch("/api/full-stats/config")).json();
 				if (data?.ok === true && data.config !== void 0) return {
+					thinkingText: typeof data.config.thinkingText === "string" ? data.config.thinkingText : DEFAULTS.thinkingText,
 					workingText: typeof data.config.workingText === "string" ? data.config.workingText : DEFAULTS.workingText,
 					doneText: typeof data.config.doneText === "string" ? data.config.doneText : DEFAULTS.doneText
 				};
@@ -125,7 +127,23 @@ window.__ModuleLoader__.load({
 					children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 							className: cls("desc"),
-							children: "自定义输入框下方状态行：会话运行时显示「工作中」文本并保留完整统计， 完成后显示「完成时」文本；留空则只显示原始统计。"
+							children: "自定义状态文本：思考中（替换官方 Deep diving...）、工作中、完成时； 留空则显示原始内容。完整统计（轮/步/耗时/缓存/token）始终保留。"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
+							className: cls("field"),
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: cls("fieldLabel"),
+								children: "思考中状态文本（替换 Deep diving...）"
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+								type: "text",
+								className: cls("input"),
+								value: cfg.thinkingText,
+								placeholder: "例如：小咪正在努力思考喵...",
+								onChange: (e) => setCfg({
+									...cfg,
+									thinkingText: e.target.value
+								})
+							})]
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
 							className: cls("field"),
@@ -197,6 +215,7 @@ window.__ModuleLoader__.load({
 		const STATS_ID = "stats";
 		const PLUGIN_ITEM = "web-ui.plugin.item";
 		let cachedConfig = {
+			thinkingText: "",
 			workingText: "",
 			doneText: ""
 		};
@@ -205,10 +224,35 @@ window.__ModuleLoader__.load({
 			try {
 				const data = await (await fetch("/api/full-stats/config")).json();
 				if (data?.ok === true && data.config !== void 0) cachedConfig = {
+					thinkingText: typeof data.config.thinkingText === "string" ? data.config.thinkingText : "",
 					workingText: typeof data.config.workingText === "string" ? data.config.workingText : "",
 					doneText: typeof data.config.doneText === "string" ? data.config.doneText : ""
 				};
 			} catch {}
+		}
+		/** 官方「思考中」占位文本（ChatView 硬编码，无可字典化文案）。 */
+		const OFFICIAL_THINKING_TEXT = "Deep diving...";
+		/**
+		* 替换官方「Deep diving...」状态文本。ChatView 将思考中文本硬编码为内联
+		* JSX（role=status + turnStatus 类），无法通过官方配置修改；这里用
+		* MutationObserver 监听会话区，出现官方占位文本且用户配置了 thinkingText
+		* 时原位替换（保留时钟 span）。配置为空或文本已非官方占位时不动。
+		*/
+		function mountThinkingTextReplacer() {
+			const apply = () => {
+				if (cachedConfig.thinkingText === "") return;
+				document.querySelectorAll("[class*=\"turnStatus\"]").forEach((el) => {
+					const textNode = Array.from(el.childNodes).find((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.includes(OFFICIAL_THINKING_TEXT));
+					if (textNode !== void 0) textNode.textContent = cachedConfig.thinkingText;
+				});
+			};
+			apply();
+			const observer = new MutationObserver(apply);
+			observer.observe(document.body, {
+				childList: true,
+				subtree: true
+			});
+			return () => observer.disconnect();
 		}
 		function formatDuration(ms) {
 			const s = ms / 1e3;
@@ -303,6 +347,7 @@ window.__ModuleLoader__.load({
 			};
 			window.addEventListener(FULL_STATS_EVENT, onConfig);
 			ctx.effect(() => () => window.removeEventListener(FULL_STATS_EVENT, onConfig), "ui-full-stats: config listener");
+			ctx.effect(() => mountThinkingTextReplacer(), "ui-full-stats: thinking text replacer");
 			ctx.slots.inject(DOCK, () => ctx.slots.register({
 				name: DOCK,
 				id: STATS_ID,

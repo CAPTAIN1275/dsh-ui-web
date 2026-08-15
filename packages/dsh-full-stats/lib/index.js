@@ -5,6 +5,7 @@ import { homedir } from "node:os";
 /** 稳定插件名（对应 cordis.patch.yml 的 insert id）。 */
 const name = "ui-full-stats";
 const DEFAULTS = {
+	thinkingText: "",
 	workingText: "",
 	doneText: ""
 };
@@ -19,6 +20,7 @@ function readConfig() {
 	try {
 		const raw = JSON.parse(readFileSync(configPath(), "utf8"));
 		return {
+			thinkingText: typeof raw.thinkingText === "string" ? raw.thinkingText : DEFAULTS.thinkingText,
 			workingText: typeof raw.workingText === "string" ? raw.workingText : DEFAULTS.workingText,
 			doneText: typeof raw.doneText === "string" ? raw.doneText : DEFAULTS.doneText
 		};
@@ -58,6 +60,7 @@ function handle(req, res) {
 		readBody(req).then((body) => {
 			const parsed = JSON.parse(body);
 			const next = {
+				thinkingText: typeof parsed.thinkingText === "string" ? parsed.thinkingText : DEFAULTS.thinkingText,
 				workingText: typeof parsed.workingText === "string" ? parsed.workingText : DEFAULTS.workingText,
 				doneText: typeof parsed.doneText === "string" ? parsed.doneText : DEFAULTS.doneText
 			};
@@ -89,4 +92,4 @@ function apply(ctx) {
 	});
 }
 //#endregion
-export { FULL_STATS_API_PREFIX, apply, name };
+export { FULL_STATS_API_PREFIX, apply, name, readConfig };

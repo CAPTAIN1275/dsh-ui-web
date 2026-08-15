@@ -9,11 +9,12 @@ import css from './card.module.css'
 
 /** 配置形状（与宿主一致）。 */
 export interface FullStatsConfig {
+  thinkingText: string
   workingText: string
   doneText: string
 }
 
-const DEFAULTS: FullStatsConfig = { workingText: '', doneText: '' }
+const DEFAULTS: FullStatsConfig = { thinkingText: '', workingText: '', doneText: '' }
 
 /** 配置变更事件（统计行监听刷新）。 */
 export const FULL_STATS_EVENT = 'dshc-full-stats-config'
@@ -27,6 +28,7 @@ async function fetchConfig(): Promise<FullStatsConfig> {
     const data = (await res.json()) as { ok?: boolean; config?: Partial<FullStatsConfig> }
     if (data?.ok === true && data.config !== undefined) {
       return {
+        thinkingText: typeof data.config.thinkingText === 'string' ? data.config.thinkingText : DEFAULTS.thinkingText,
         workingText: typeof data.config.workingText === 'string' ? data.config.workingText : DEFAULTS.workingText,
         doneText: typeof data.config.doneText === 'string' ? data.config.doneText : DEFAULTS.doneText,
       }
@@ -100,9 +102,19 @@ export function FullStatsSettingsCard() {
       {open && (
         <div className={cls('body')}>
           <p className={cls('desc')}>
-            自定义输入框下方状态行：会话运行时显示「工作中」文本并保留完整统计，
-            完成后显示「完成时」文本；留空则只显示原始统计。
+            自定义状态文本：思考中（替换官方 Deep diving...）、工作中、完成时；
+            留空则显示原始内容。完整统计（轮/步/耗时/缓存/token）始终保留。
           </p>
+          <label className={cls('field')}>
+            <span className={cls('fieldLabel')}>思考中状态文本（替换 Deep diving...）</span>
+            <input
+              type="text"
+              className={cls('input')}
+              value={cfg.thinkingText}
+              placeholder="例如：小咪正在努力思考喵..."
+              onChange={(e) => setCfg({ ...cfg, thinkingText: e.target.value })}
+            />
+          </label>
           <label className={cls('field')}>
             <span className={cls('fieldLabel')}>工作中状态文本</span>
             <input

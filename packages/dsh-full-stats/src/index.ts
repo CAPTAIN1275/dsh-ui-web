@@ -15,13 +15,14 @@ import { homedir } from 'node:os'
 /** 稳定插件名（对应 cordis.patch.yml 的 insert id）。 */
 export const name = 'ui-full-stats'
 
-/** 配置形状：工作中/完成时的自定义状态文本（空串 = 显示原始统计）。 */
+/** 配置形状：思考中/工作中/完成时的自定义状态文本（空串 = 显示原始）。 */
 export interface FullStatsConfig {
+  thinkingText: string
   workingText: string
   doneText: string
 }
 
-const DEFAULTS: FullStatsConfig = { workingText: '', doneText: '' }
+const DEFAULTS: FullStatsConfig = { thinkingText: '', workingText: '', doneText: '' }
 
 /** 路由前缀。 */
 export const FULL_STATS_API_PREFIX = '/api/full-stats'
@@ -32,10 +33,11 @@ function configPath(): string {
 }
 
 /** 读取配置（文件缺失/损坏时回退默认值）。 */
-function readConfig(): FullStatsConfig {
+export function readConfig(): FullStatsConfig {
   try {
     const raw = JSON.parse(readFileSync(configPath(), 'utf8')) as Partial<FullStatsConfig>
     return {
+      thinkingText: typeof raw.thinkingText === 'string' ? raw.thinkingText : DEFAULTS.thinkingText,
       workingText: typeof raw.workingText === 'string' ? raw.workingText : DEFAULTS.workingText,
       doneText: typeof raw.doneText === 'string' ? raw.doneText : DEFAULTS.doneText,
     }
@@ -76,6 +78,7 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
       .then((body) => {
         const parsed = JSON.parse(body) as Partial<FullStatsConfig>
         const next: FullStatsConfig = {
+          thinkingText: typeof parsed.thinkingText === 'string' ? parsed.thinkingText : DEFAULTS.thinkingText,
           workingText: typeof parsed.workingText === 'string' ? parsed.workingText : DEFAULTS.workingText,
           doneText: typeof parsed.doneText === 'string' ? parsed.doneText : DEFAULTS.doneText,
         }
