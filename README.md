@@ -87,7 +87,7 @@ aurora / skin-center），支持皮肤启用互斥管理与一键切换。
 
 ```bash
 # 在 DSH profile 目录（~/.dsh/profiles/web）安装聚合包
-npm install @captain1275/dsh-web-ui-all@0.2.3
+npm install @captain1275/dsh-web-ui-all@0.2.4
 ```
 
 然后在 profile 的 `package.json` 里把 `@captain1275/dsh-web-ui-all` 加入

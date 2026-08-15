@@ -104,7 +104,7 @@ miku / trading / whale-song) come from the upstream dsh-web-ui.
 
 ```bash
 # in the DSH profile dir (~/.dsh/profiles/web)
-npm install @captain1275/dsh-web-ui-all@0.2.3
+npm install @captain1275/dsh-web-ui-all@0.2.4
 ```
 
 Then add `@captain1275/dsh-web-ui-all` to `dsh.profile.bundles` in the
