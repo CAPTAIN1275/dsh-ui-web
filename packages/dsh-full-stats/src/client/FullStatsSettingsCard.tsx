@@ -111,7 +111,7 @@ export function FullStatsSettingsCard() {
               type="text"
               className={cls('input')}
               value={cfg.thinkingText}
-              placeholder="例如：小咪正在努力思考喵..."
+              placeholder="例如：DeepSleep"
               onChange={(e) => setCfg({ ...cfg, thinkingText: e.target.value })}
             />
           </label>

@@ -40,12 +40,12 @@ describe('dsh-full-stats config (thinking/working/done)', () => {
     try {
       mkdirSync(home, { recursive: true })
       writeFileSync(join(home, 'full-stats.json'), JSON.stringify({
-        thinkingText: '小咪正在努力思考喵...',
+        thinkingText: 'DeepSleep',
         workingText: '工作中',
         doneText: '完成',
       }), 'utf8')
       const cfg = readConfig()
-      expect(cfg.thinkingText).toBe('小咪正在努力思考喵...')
+      expect(cfg.thinkingText).toBe('DeepSleep')
       expect(cfg.workingText).toBe('工作中')
       expect(cfg.doneText).toBe('完成')
     } finally {
