@@ -28,9 +28,11 @@ interface AuroraConfig {
   backgroundUrl: string
   opacity: number
   blur: number
+  mediaType: 'image' | 'video'
+  muted: boolean
 }
 
-const DEFAULTS: AuroraConfig = { enabled: true, backgroundUrl: '', opacity: 0.8, blur: 0 }
+const DEFAULTS: AuroraConfig = { enabled: true, backgroundUrl: '', opacity: 0.8, blur: 0, mediaType: 'image', muted: true }
 
 let cached: AuroraConfig = { ...DEFAULTS }
 
@@ -45,6 +47,8 @@ async function fetchConfig(): Promise<AuroraConfig> {
         backgroundUrl: typeof data.config.backgroundUrl === 'string' ? data.config.backgroundUrl : DEFAULTS.backgroundUrl,
         opacity: typeof data.config.opacity === 'number' ? data.config.opacity : DEFAULTS.opacity,
         blur: typeof data.config.blur === 'number' ? data.config.blur : DEFAULTS.blur,
+        mediaType: data.config.mediaType === 'video' ? 'video' : 'image',
+        muted: typeof data.config.muted === 'boolean' ? data.config.muted : DEFAULTS.muted,
       }
     }
   } catch {
@@ -87,19 +91,50 @@ export function apply(ctx: ClientContext): void {
   body.dataset.dshAurora = ''
 
   let backdrop: HTMLElement | null = null
+  let videoEl: HTMLVideoElement | null = null
+  let videoSrc = ''
 
   const renderBackdrop = (cfg: AuroraConfig): void => {
+    // 配置变化时：若已是视频背景且 URL 未变，只更新样式（不重载视频，
+    // 避免模糊/透明度调节导致重新缓冲卡顿）；否则重建背景层。
+    if (backdrop !== null && backdrop.isConnected && cfg.enabled && cfg.backgroundUrl === videoSrc) {
+      backdrop.style.opacity = String(cfg.opacity)
+      backdrop.style.filter = cfg.blur > 0 ? `blur(${cfg.blur}px)` : 'none'
+      if (videoEl !== null && cfg.mediaType === 'video') {
+        videoEl.muted = cfg.muted
+      }
+      return
+    }
     backdrop?.remove()
     backdrop = null
+    videoEl = null
+    videoSrc = ''
     if (!cfg.enabled) return
     const dark = body.dataset.dsDarkTheme !== undefined
     const layer = document.createElement('div')
     layer.className = cls('auroraBackdrop')
-    layer.style.backgroundImage = cfg.backgroundUrl
-      ? `url("${cssEscape(cfg.backgroundUrl)}")`
-      : auroraGradient(dark)
     layer.style.opacity = String(cfg.opacity)
     layer.style.filter = cfg.blur > 0 ? `blur(${cfg.blur}px)` : 'none'
+    if (cfg.backgroundUrl && cfg.mediaType === 'video') {
+      // 视频背景：<video> 铺底，autoplay/muted/loop/playsinline。
+      // 永不显示 controls（避免进度条/控制条）；声音只由 muted 开关控制。
+      const video = document.createElement('video')
+      video.src = cfg.backgroundUrl
+      video.autoplay = true
+      video.muted = cfg.muted
+      video.loop = true
+      video.playsInline = true
+      video.setAttribute('playsinline', '')
+      video.className = cls('auroraVideo')
+      layer.appendChild(video)
+      videoEl = video
+      videoSrc = cfg.backgroundUrl
+    } else {
+      // 图片/动图背景：background-image（GIF/WebP 动图原生支持）。
+      layer.style.backgroundImage = cfg.backgroundUrl
+        ? `url("${cssEscape(cfg.backgroundUrl)}")`
+        : auroraGradient(dark)
+    }
     body.appendChild(layer)
     backdrop = layer
   }

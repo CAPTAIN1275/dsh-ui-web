@@ -37,6 +37,8 @@ export interface SkinCenterEntry {
 
 /** Every skin, ordered by packages/skins/<name>/skin.json `order`. */
 export const SKIN_CENTER_ENTRIES: readonly SkinCenterEntry[] = [
+  {"id":"aurora","name":"极光 · Aurora","nameEn":"Aurora","author":"dsh-web-ui-custom","tagline":"自定义背景图 · 毛玻璃面板 · 极光渐变","description":"支持自定义背景图片的极光皮肤：在设置中填入任意背景图 URL（或使用内置极光渐变），配合半透明毛玻璃面板与深浅两套极光调色板，背景随心换。","tags":["aurora","custom-background","glass","gradient"],"accent":"#7aa2ff","bodyAttr":"data-dsh-aurora","package":"@captain1275/dsh-client-ui-skin-aurora","order":1.5},
+
   {"id":"ths","name":"同花顺风格","nameEn":"Tonghuashun Trading","author":"dsh-web-ui","tagline":"品牌红标题栏 · 实时行情状态栏 · 灰蓝数据终端","description":"同花顺风格炒股主题：品牌红标题栏带上证指数行情签，状态栏红涨绿跌，自选股风格的侧边栏和交易终端面板，写代码也像盯盘。","tags":["stock","trading","terminal","red"],"accent":"#e60012","bodyAttr":"data-dsh-ths","package":"@captain1275/dsh-client-ui-skin-ths","order":2},
 
   {"id":"xp","name":"Windows XP (Luna)","nameEn":"Windows XP Luna","author":"dsh-web-ui","tagline":"Luna 蓝窗口条 · 绿色开始按钮 · Bliss 蓝天桌面","description":"Windows XP (Luna) 复古主题：蓝色渐变窗口条带窗口按钮、米色状态栏（大写/数字/滚动指示灯）、侧边栏任务栏上的绿色「开始」按钮、资源管理器风格树行和 Bliss 蓝天桌面，全局直角。","tags":["retro","xp","luna","windows","start-button"],"accent":"#316ac5","bodyAttr":"data-dsh-xp","package":"@captain1275/dsh-client-ui-skin-xp","order":3},
@@ -52,7 +54,5 @@ export const SKIN_CENTER_ENTRIES: readonly SkinCenterEntry[] = [
   {"id":"trading","name":"交易终端","nameEn":"Trading Terminal","author":"dsh-web-ui","tagline":"实时行情跑马灯 · 长桥港美股行情 · 红涨绿跌交易终端","description":"结合 dsh-fun-ticker 行情跑马灯与 dsh-longbridge 港美股行情的炒股皮肤：顶栏滚动 A股/港股/美股/指数/加密/外汇报价（装 fun-ticker 后跟随你的自选列表），状态栏展示长桥行情快照与 A股/港股/美股交易时段，写代码也像盯盘。","tags":["stock","trading","ticker","live","terminal","longbridge"],"accent":"#f23645","bodyAttr":"data-dsh-trading","package":"@captain1275/dsh-client-ui-skin-trading","order":8},
 
   {"id":"miku","name":"初音未来 · 电子歌姬","nameEn":"Hatsune Miku","author":"涂山苏苏","tagline":"蓝紫双马尾 · 01 编号 · 音符波形 · 电子歌姬主题","description":"以世界第一的虚拟歌姬初音未来为灵感的主题皮肤：蓝紫洋红渐变贯穿全局，音符与声波曲线点缀在半透明面板之间，标题栏与状态栏带有 01 编号徽标与音乐波形，半透明毛玻璃面板透出背景图——沉浸式电子歌姬氛围。","tags":["miku","vocaloid","blue","music","idol","waveform"],"accent":"#2e9bff","bodyAttr":"data-dsh-miku","package":"@captain1275/dsh-client-ui-skin-miku","order":9},
-
-  {"id":"aurora","name":"极光 · Aurora","nameEn":"Aurora","author":"dsh-web-ui-custom","tagline":"自定义背景图 · 毛玻璃面板 · 极光渐变","description":"支持自定义背景图片的极光皮肤：在设置中填入任意背景图 URL（或使用内置极光渐变），配合半透明毛玻璃面板与深浅两套极光调色板，背景随心换。","tags":["aurora","custom-background","glass","gradient"],"accent":"#7aa2ff","bodyAttr":"data-dsh-aurora","package":"@captain1275/dsh-client-ui-skin-aurora","order":99},
 
 ]

@@ -18,9 +18,18 @@ export interface AuroraCardConfig {
   backgroundUrl: string
   opacity: number
   blur: number
+  mediaType: 'image' | 'video'
+  muted: boolean
 }
 
-const DEFAULTS: AuroraCardConfig = { enabled: true, backgroundUrl: '', opacity: 0.8, blur: 0 }
+const DEFAULTS: AuroraCardConfig = {
+  enabled: true,
+  backgroundUrl: '',
+  opacity: 0.8,
+  blur: 0,
+  mediaType: 'image',
+  muted: true,
+}
 
 /** 配置变更事件（aurora 皮肤浏览器半区监听）。 */
 const AURORA_EVENT = 'dshc-aurora-config'
@@ -38,6 +47,8 @@ async function fetchConfig(): Promise<AuroraCardConfig> {
         backgroundUrl: typeof data.config.backgroundUrl === 'string' ? data.config.backgroundUrl : DEFAULTS.backgroundUrl,
         opacity: typeof data.config.opacity === 'number' ? data.config.opacity : DEFAULTS.opacity,
         blur: typeof data.config.blur === 'number' ? data.config.blur : DEFAULTS.blur,
+        mediaType: data.config.mediaType === 'video' ? 'video' : 'image',
+        muted: typeof data.config.muted === 'boolean' ? data.config.muted : DEFAULTS.muted,
       }
     }
   } catch {
@@ -60,9 +71,9 @@ async function writeConfig(next: AuroraCardConfig): Promise<boolean> {
   }
 }
 
-/** 本地图片转压缩 data URL（最长边 1920px、JPEG 0.85）。 */
-function fileToDataUrl(file: File, maxDim = 1920): Promise<string> {
-  return new Promise((resolve, reject) => {
+/** 本地图片转压缩 data URL（视频直接传原始文件，不转 data URL）。 */
+async function fileToDataUrl(file: File, maxDim = 1920): Promise<string> {
+  return await new Promise<string>((resolve, reject) => {
     const url = URL.createObjectURL(file)
     const img = new Image()
     img.onload = () => {
@@ -91,11 +102,33 @@ function fileToDataUrl(file: File, maxDim = 1920): Promise<string> {
   })
 }
 
+/** 上传媒体到宿主（原始二进制，避免 base64 内存膨胀），返回持久 URL。 */
+async function uploadMedia(file: File): Promise<string> {
+  const res = await fetch('/api/skin-aurora/upload', {
+    method: 'POST',
+    headers: { 'X-File-Name': encodeURIComponent(file.name) },
+    body: file,
+  })
+  const data = (await res.json()) as { ok?: boolean; url?: string; error?: string }
+  if (!res.ok || data.ok !== true || data.url === undefined) {
+    throw new Error(data.error ?? `upload failed: ${res.status}`)
+  }
+  return data.url
+}
+
+/** 按 URL 推断媒体类型（视频扩展名 → video，其余 → image）。 */
+function detectMediaType(url: string): 'image' | 'video' {
+  return /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(url) ? 'video' : 'image'
+}
+
 /** Aurora 卡片内的自定义背景区块。 */
 export function AuroraBackgroundSection() {
   const [cfg, setCfg] = useState<AuroraCardConfig>(DEFAULTS)
   const fileRef = useRef<HTMLInputElement | null>(null)
-  const isData = cfg.backgroundUrl.startsWith('data:image/')
+  // 本地选取/上传的媒体（data URL、blob 或宿主 media 路由）→ 显示预览 + 清除。
+  const isLocal = cfg.backgroundUrl.startsWith('data:image/')
+    || cfg.backgroundUrl.startsWith('blob:')
+    || cfg.backgroundUrl.includes('/api/skin-aurora/media/')
 
   useEffect(() => {
     let alive = true
@@ -129,35 +162,58 @@ export function AuroraBackgroundSection() {
     e.target.value = ''
     if (file === undefined) return
     try {
-      write({ backgroundUrl: await fileToDataUrl(file) })
+      let uploadFile = file
+      if (!file.type.startsWith('video/')) {
+        // 图片/动图：压缩为小 data URL 后转回 Blob 上传（省存储）。
+        const dataUrl = await fileToDataUrl(file)
+        const mime = dataUrl.slice(5, dataUrl.indexOf(';'))
+        const b64 = dataUrl.split(',')[1]!
+        const bin = atob(b64)
+        const bytes = new Uint8Array(bin.length)
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+        uploadFile = new File([bytes], file.name, { type: mime })
+      }
+      // 直接传原始二进制（避免 base64 内存膨胀），host 持久化。
+      const url = await uploadMedia(uploadFile)
+      write({ backgroundUrl: url, mediaType: file.type.startsWith('video/') ? 'video' : 'image' })
     } catch (err) {
-      window.alert(`图片读取失败：${err instanceof Error ? err.message : String(err)}`)
+      window.alert(`文件上传失败：${err instanceof Error ? err.message : String(err)}`)
     }
+  }
+
+  const onUrlChange = (value: string): void => {
+    write({ backgroundUrl: value, mediaType: detectMediaType(value) })
   }
 
   return (
     <div className={cls('auroraSection')}>
-      <div className={cls('auroraSectionTitle')}>自定义背景图</div>
+      <div className={cls('auroraSectionTitle')}>自定义背景（图片 / 动图 / 视频）</div>
       <div className={cls('auroraField')}>
         <button type="button" className={cls('auroraFileBtn')} onClick={() => fileRef.current?.click()}>
-          选择本地图片…
+          选择本地文件…
         </button>
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept="image/*,video/*"
           style={{ display: 'none' }}
           onChange={(e) => void onPickFile(e)}
         />
       </div>
-      {isData ? (
+      {isLocal ? (
         <div className={cls('auroraField')}>
           <span
             className={cls('auroraThumb')}
-            style={{ backgroundImage: `url("${cfg.backgroundUrl}")` }}
+            style={cfg.mediaType === 'video'
+              ? undefined
+              : { backgroundImage: `url("${cfg.backgroundUrl}")` }}
             role="img"
-            aria-label="背景图预览"
-          />
+            aria-label="背景预览"
+          >
+            {cfg.mediaType === 'video' && (
+              <video src={cfg.backgroundUrl} muted loop playsInline autoPlay style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 6 }} />
+            )}
+          </span>
           <button type="button" className={cls('auroraFileBtn')} onClick={() => write({ backgroundUrl: '' })}>
             清除
           </button>
@@ -168,10 +224,20 @@ export function AuroraBackgroundSection() {
             className={cls('auroraUrl')}
             type="text"
             value={cfg.backgroundUrl}
-            placeholder="https://example.com/bg.jpg（留空用极光渐变）"
-            onChange={(e) => write({ backgroundUrl: e.target.value })}
+            placeholder="https://example.com/bg.jpg 或 bg.mp4（留空用极光渐变）"
+            onChange={(e) => onUrlChange(e.target.value)}
           />
         </div>
+      )}
+      {cfg.mediaType === 'video' && cfg.backgroundUrl !== '' && (
+        <label className={cls('auroraField')}>
+          <input
+            type="checkbox"
+            checked={cfg.muted}
+            onChange={(e) => write({ muted: e.target.checked })}
+          />
+          <span>静音循环播放（取消勾选后视频带声音）</span>
+        </label>
       )}
       <div className={cls('auroraField')}>
         <span className={cls('auroraFieldLabel')}>不透明度：{Math.round(cfg.opacity * 100)}%</span>

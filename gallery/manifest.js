@@ -3,6 +3,32 @@ window.SKIN_MANIFEST = {
   "generated": "2026-08-15",
   "skins": [
     {
+      "id": "aurora",
+      "name": "极光 · Aurora",
+      "nameEn": "Aurora",
+      "author": "dsh-web-ui-custom",
+      "tagline": "自定义背景图 · 毛玻璃面板 · 极光渐变",
+      "description": "支持自定义背景图片的极光皮肤：在设置中填入任意背景图 URL（或使用内置极光渐变），配合半透明毛玻璃面板与深浅两套极光调色板，背景随心换。",
+      "tags": [
+        "aurora",
+        "custom-background",
+        "glass",
+        "gradient"
+      ],
+      "accent": "#7aa2ff",
+      "bodyAttr": "data-dsh-aurora",
+      "package": "@captain1275/dsh-client-ui-skin-aurora",
+      "wiring": {
+        "id": "ui-skin-aurora",
+        "bundleWired": true
+      },
+      "order": 1.5,
+      "preview": {
+        "light": "packages/skins/aurora/preview/light.png",
+        "dark": "packages/skins/aurora/preview/dark.png"
+      }
+    },
+    {
       "id": "ths",
       "name": "同花顺风格",
       "nameEn": "Tonghuashun Trading",
@@ -221,32 +247,6 @@ window.SKIN_MANIFEST = {
         "dark": "packages/skins/miku/preview/dark.png"
       },
       "order": 9
-    },
-    {
-      "id": "aurora",
-      "name": "极光 · Aurora",
-      "nameEn": "Aurora",
-      "author": "dsh-web-ui-custom",
-      "tagline": "自定义背景图 · 毛玻璃面板 · 极光渐变",
-      "description": "支持自定义背景图片的极光皮肤：在设置中填入任意背景图 URL（或使用内置极光渐变），配合半透明毛玻璃面板与深浅两套极光调色板，背景随心换。",
-      "tags": [
-        "aurora",
-        "custom-background",
-        "glass",
-        "gradient"
-      ],
-      "accent": "#7aa2ff",
-      "bodyAttr": "data-dsh-aurora",
-      "package": "@captain1275/dsh-client-ui-skin-aurora",
-      "wiring": {
-        "id": "ui-skin-aurora",
-        "bundleWired": true
-      },
-      "order": 99,
-      "preview": {
-        "light": "packages/skins/aurora/preview/light.png",
-        "dark": "packages/skins/aurora/preview/dark.png"
-      }
     }
   ]
 };

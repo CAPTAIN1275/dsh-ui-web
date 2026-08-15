@@ -1,4 +1,4 @@
-# DeepSeek Harness UI WEB · DeepSeek Harness WEB UI Beautification
+# DeepSeek Harness UI WEB · DeepSeek Harness WEB UI Beautification (dynamic background)
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -22,12 +22,13 @@ once through the aggregate package.
 
 ## Features
 
-### Aurora skin
+### Aurora skin (dynamic background support)
 
 - **Frosted-glass composer input**: `backdrop-filter: blur(30px)` + translucent
   glass base + hairline border + inner highlight
-- **Custom background image**: URL / local image / opacity / blur, with dark and
-  light aurora gradients
+- **Custom background**: URL / local image / animated (GIF/WebP) / **video (mp4/webm)** /
+  opacity / blur, with dark and light aurora gradients; video supports a mute toggle
+  and local-file persistence (stored in `~/.dsh/skin-aurora-media/`, survives refresh)
 - **Reasoning-effort slider**: click the「推理等级」row in the model menu to open
   an Effort slider panel — continuous drag, snap-on-release, WebGL fire trail,
   OFF/MAX scale, Low/Medium/High/Ultracode states

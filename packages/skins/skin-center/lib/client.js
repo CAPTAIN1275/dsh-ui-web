@@ -10,6 +10,24 @@ window.__ModuleLoader__.load({
 		/** Every skin, ordered by packages/skins/<name>/skin.json `order`. */
 		const SKIN_CENTER_ENTRIES = [
 			{
+				"id": "aurora",
+				"name": "极光 · Aurora",
+				"nameEn": "Aurora",
+				"author": "dsh-web-ui-custom",
+				"tagline": "自定义背景图 · 毛玻璃面板 · 极光渐变",
+				"description": "支持自定义背景图片的极光皮肤：在设置中填入任意背景图 URL（或使用内置极光渐变），配合半透明毛玻璃面板与深浅两套极光调色板，背景随心换。",
+				"tags": [
+					"aurora",
+					"custom-background",
+					"glass",
+					"gradient"
+				],
+				"accent": "#7aa2ff",
+				"bodyAttr": "data-dsh-aurora",
+				"package": "@captain1275/dsh-client-ui-skin-aurora",
+				"order": 1.5
+			},
+			{
 				"id": "ths",
 				"name": "同花顺风格",
 				"nameEn": "Tonghuashun Trading",
@@ -164,24 +182,6 @@ window.__ModuleLoader__.load({
 				"bodyAttr": "data-dsh-miku",
 				"package": "@captain1275/dsh-client-ui-skin-miku",
 				"order": 9
-			},
-			{
-				"id": "aurora",
-				"name": "极光 · Aurora",
-				"nameEn": "Aurora",
-				"author": "dsh-web-ui-custom",
-				"tagline": "自定义背景图 · 毛玻璃面板 · 极光渐变",
-				"description": "支持自定义背景图片的极光皮肤：在设置中填入任意背景图 URL（或使用内置极光渐变），配合半透明毛玻璃面板与深浅两套极光调色板，背景随心换。",
-				"tags": [
-					"aurora",
-					"custom-background",
-					"glass",
-					"gradient"
-				],
-				"accent": "#7aa2ff",
-				"bodyAttr": "data-dsh-aurora",
-				"package": "@captain1275/dsh-client-ui-skin-aurora",
-				"order": 99
 			}
 		];
 		//#endregion
@@ -258,7 +258,9 @@ window.__ModuleLoader__.load({
 			enabled: true,
 			backgroundUrl: "",
 			opacity: .8,
-			blur: 0
+			blur: 0,
+			mediaType: "image",
+			muted: true
 		};
 		/** 配置变更事件（aurora 皮肤浏览器半区监听）。 */
 		const AURORA_EVENT = "dshc-aurora-config";
@@ -271,7 +273,9 @@ window.__ModuleLoader__.load({
 					enabled: typeof data.config.enabled === "boolean" ? data.config.enabled : DEFAULTS.enabled,
 					backgroundUrl: typeof data.config.backgroundUrl === "string" ? data.config.backgroundUrl : DEFAULTS.backgroundUrl,
 					opacity: typeof data.config.opacity === "number" ? data.config.opacity : DEFAULTS.opacity,
-					blur: typeof data.config.blur === "number" ? data.config.blur : DEFAULTS.blur
+					blur: typeof data.config.blur === "number" ? data.config.blur : DEFAULTS.blur,
+					mediaType: data.config.mediaType === "video" ? "video" : "image",
+					muted: typeof data.config.muted === "boolean" ? data.config.muted : DEFAULTS.muted
 				};
 			} catch {}
 			return { ...DEFAULTS };
@@ -287,9 +291,9 @@ window.__ModuleLoader__.load({
 				return false;
 			}
 		}
-		/** 本地图片转压缩 data URL（最长边 1920px、JPEG 0.85）。 */
-		function fileToDataUrl(file, maxDim = 1920) {
-			return new Promise((resolve, reject) => {
+		/** 本地图片转压缩 data URL（视频直接传原始文件，不转 data URL）。 */
+		async function fileToDataUrl(file, maxDim = 1920) {
+			return await new Promise((resolve, reject) => {
 				const url = URL.createObjectURL(file);
 				const img = new Image();
 				img.onload = () => {
@@ -317,11 +321,26 @@ window.__ModuleLoader__.load({
 				img.src = url;
 			});
 		}
+		/** 上传媒体到宿主（原始二进制，避免 base64 内存膨胀），返回持久 URL。 */
+		async function uploadMedia(file) {
+			const res = await fetch("/api/skin-aurora/upload", {
+				method: "POST",
+				headers: { "X-File-Name": encodeURIComponent(file.name) },
+				body: file
+			});
+			const data = await res.json();
+			if (!res.ok || data.ok !== true || data.url === void 0) throw new Error(data.error ?? `upload failed: ${res.status}`);
+			return data.url;
+		}
+		/** 按 URL 推断媒体类型（视频扩展名 → video，其余 → image）。 */
+		function detectMediaType(url) {
+			return /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(url) ? "video" : "image";
+		}
 		/** Aurora 卡片内的自定义背景区块。 */
 		function AuroraBackgroundSection() {
 			const [cfg, setCfg] = (0, react.useState)(DEFAULTS);
 			const fileRef = (0, react.useRef)(null);
-			const isData = cfg.backgroundUrl.startsWith("data:image/");
+			const isLocal = cfg.backgroundUrl.startsWith("data:image/") || cfg.backgroundUrl.startsWith("blob:") || cfg.backgroundUrl.includes("/api/skin-aurora/media/");
 			(0, react.useEffect)(() => {
 				let alive = true;
 				fetchConfig().then((c) => {
@@ -355,17 +374,37 @@ window.__ModuleLoader__.load({
 				e.target.value = "";
 				if (file === void 0) return;
 				try {
-					write({ backgroundUrl: await fileToDataUrl(file) });
+					let uploadFile = file;
+					if (!file.type.startsWith("video/")) {
+						const dataUrl = await fileToDataUrl(file);
+						const mime = dataUrl.slice(5, dataUrl.indexOf(";"));
+						const b64 = dataUrl.split(",")[1];
+						const bin = atob(b64);
+						const bytes = new Uint8Array(bin.length);
+						for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+						uploadFile = new File([bytes], file.name, { type: mime });
+					}
+					const url = await uploadMedia(uploadFile);
+					write({
+						backgroundUrl: url,
+						mediaType: file.type.startsWith("video/") ? "video" : "image"
+					});
 				} catch (err) {
-					window.alert(`图片读取失败：${err instanceof Error ? err.message : String(err)}`);
+					window.alert(`文件上传失败：${err instanceof Error ? err.message : String(err)}`);
 				}
+			};
+			const onUrlChange = (value) => {
+				write({
+					backgroundUrl: value,
+					mediaType: detectMediaType(value)
+				});
 			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: cls("auroraSection"),
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: cls("auroraSectionTitle"),
-						children: "自定义背景图"
+						children: "自定义背景（图片 / 动图 / 视频）"
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: cls("auroraField"),
@@ -373,22 +412,35 @@ window.__ModuleLoader__.load({
 							type: "button",
 							className: cls("auroraFileBtn"),
 							onClick: () => fileRef.current?.click(),
-							children: "选择本地图片…"
+							children: "选择本地文件…"
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
 							ref: fileRef,
 							type: "file",
-							accept: "image/*",
+							accept: "image/*,video/*",
 							style: { display: "none" },
 							onChange: (e) => void onPickFile(e)
 						})]
 					}),
-					isData ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					isLocal ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: cls("auroraField"),
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: cls("auroraThumb"),
-							style: { backgroundImage: `url("${cfg.backgroundUrl}")` },
+							style: cfg.mediaType === "video" ? void 0 : { backgroundImage: `url("${cfg.backgroundUrl}")` },
 							role: "img",
-							"aria-label": "背景图预览"
+							"aria-label": "背景预览",
+							children: cfg.mediaType === "video" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
+								src: cfg.backgroundUrl,
+								muted: true,
+								loop: true,
+								playsInline: true,
+								autoPlay: true,
+								style: {
+									width: 120,
+									height: 68,
+									objectFit: "cover",
+									borderRadius: 6
+								}
+							})
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 							type: "button",
 							className: cls("auroraFileBtn"),
@@ -401,9 +453,17 @@ window.__ModuleLoader__.load({
 							className: cls("auroraUrl"),
 							type: "text",
 							value: cfg.backgroundUrl,
-							placeholder: "https://example.com/bg.jpg（留空用极光渐变）",
-							onChange: (e) => write({ backgroundUrl: e.target.value })
+							placeholder: "https://example.com/bg.jpg 或 bg.mp4（留空用极光渐变）",
+							onChange: (e) => onUrlChange(e.target.value)
 						})
+					}),
+					cfg.mediaType === "video" && cfg.backgroundUrl !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
+						className: cls("auroraField"),
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+							type: "checkbox",
+							checked: cfg.muted,
+							onChange: (e) => write({ muted: e.target.checked })
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: "静音循环播放（取消勾选后视频带声音）" })]
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: cls("auroraField"),

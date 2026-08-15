@@ -88,6 +88,15 @@ body[data-dsh-aurora]:not([data-ds-dark-theme]) {
   background-attachment: fixed;
 }
 
+/* 视频背景：铺满 + cover，跟随父层透明度/模糊。 */
+.auroraVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* ---- 侧边栏注入入口（任务看板 / SSH）：全透明透出背景 + 间距 ---- */
 body[data-dsh-aurora] [data-dsh-taskboard-entry],
 body[data-dsh-aurora] [data-dsh-ssh-entry] {

@@ -1,4 +1,4 @@
-# DeepSeek Harness UI WEB · DeepSeek Harness WEB UI美化
+# DeepSeek Harness UI WEB · DeepSeek Harness WEB UI美化（支持动态背景）
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -19,10 +19,11 @@ SSH 运维、右侧文件/变更面板、Git 图谱、移动端远程控制、De
 
 ## 特性
 
-### 极光（Aurora）皮肤
+### 极光（Aurora）皮肤（支持动态背景）
 
 - **毛玻璃输入框**：高斯模糊（backdrop-filter 30px）+ 半透明玻璃底 + 细边框 + 内高光
-- **自定义背景图**：URL / 本地图片 / 透明度 / 模糊调节，深浅两套极光渐变
+- **自定义背景**：URL / 本地图片 / 动图（GIF/WebP）/ **视频（mp4/webm）** / 透明度 / 模糊调节，
+  深浅两套极光渐变；视频背景支持静音开关、本地文件持久化（存 `~/.dsh/skin-aurora-media/`，刷新不丢）
 - **仿Claude Code推理等级滑块**：点击模型菜单的「推理等级」弹出 Effort 滑块面板——无极拖动、松手吸附、
   WebGL 火焰跟随、OFF/MAX 刻度、Low/Medium/High/Ultracode 状态
 
