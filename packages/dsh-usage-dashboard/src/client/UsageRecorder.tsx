@@ -1,8 +1,11 @@
 /**
  * Usage recorder — an invisible conversation-dock seat that watches the
- * `tokenUsage` projection and POSTs per-response deltas to the host
- * `/api/usage/record` endpoint. Rendering nothing itself; the colorful
- * dashboard is a separate sidebar entry.
+ * `tokenUsage` projection and, whenever the cumulative total GROWS (a
+ * response settled), uploads the current cumulative snapshot to the host.
+ * The host stores the LATEST snapshot per session (replace semantics), so
+ * repeated uploads overwrite instead of double counting; the upload fires
+ * only on growth, so the host's calls counter tracks real response
+ * completions rather than poll ticks.
  * @module @captain1275/dsh-usage-dashboard/client/UsageRecorder
  */
 import { memo, useEffect, useRef } from 'react'
@@ -22,10 +25,9 @@ export interface UsageRecorderProps {
   useProjection: <K extends string>(key: K) => unknown
 }
 
-/** 上报一条用量记录到宿主。 */
-async function postRecord(record: {
+/** 上报当前快照到宿主（replace 语义：同会话覆盖，不累加）。 */
+async function postSnapshot(snapshot: {
   sessionId: string
-  sessionTitle: string
   model: string
   inputTokens: number
   outputTokens: number
@@ -35,7 +37,7 @@ async function postRecord(record: {
     await fetch('/api/usage/record', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ ...record, ts: Date.now() }),
+      body: JSON.stringify({ ...snapshot, ts: Date.now() }),
     })
   } catch {
     /* 上报失败静默：不打断对话 */
@@ -51,40 +53,36 @@ export function setCurrentModel(model: string | undefined): void {
 }
 
 /**
- * The invisible recorder seat. Compares the tokenUsage projection against
- * the last reported value; on growth (a response settled) it uploads the
- * delta. Runs only while a session is active.
+ * The invisible recorder seat. Tracks the last seen cumulative total; when
+ * the projection grows it uploads the current snapshot (debounced 1s).
  * @param props - framework runtime share.
  * @returns null (renders nothing).
  */
 export const UsageRecorder = memo(function UsageRecorder(props: UsageRecorderProps): null {
   const session = props.useSession((s) => ({ sessionId: s.sessionId }))
   const usage = props.useProjection('tokenUsage') as TokenUsageProjection | undefined
-  const lastRef = useRef<TokenUsageProjection | null>(null)
+  const lastTotalRef = useRef<number>(-1)
   const lastUploadRef = useRef<number>(0)
 
   useEffect(() => {
-    if (session.sessionId === undefined || usage === undefined) return
+    const sid = session.sessionId
+    if (sid === undefined || usage === undefined) return
     const total = usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
-    const prev = lastRef.current
-    lastRef.current = usage
-    if (prev === null || total <= 0) return
-    // Only upload when the total grew (a new response completed); the host
-    // dedupes by ignoring zero/negative deltas.
-    const prevTotal = prev.uncachedInputTokens + prev.outputTokens + prev.cacheReadTokens + prev.cacheWriteTokens
-    if (total <= prevTotal) return
+    const prev = lastTotalRef.current
+    lastTotalRef.current = total
+    if (total <= 0) return
+    // First sight or growth → upload. A reset (total drops) is remembered
+    // but not reported (host deltas clamp at zero anyway).
+    if (prev !== -1 && total <= prev) return
     const now = Date.now()
-    // Debounce: at most one upload per 5s to avoid bursts mid-stream.
-    if (now - lastUploadRef.current < 5000) return
+    if (now - lastUploadRef.current < 1000) return
     lastUploadRef.current = now
-    const input = usage.uncachedInputTokens + usage.cacheReadTokens
-    void postRecord({
-      sessionId: session.sessionId,
-      sessionTitle: '',
+    void postSnapshot({
+      sessionId: sid,
       model: currentModel,
-      inputTokens: input - (prev.uncachedInputTokens + prev.cacheReadTokens),
-      outputTokens: usage.outputTokens - prev.outputTokens,
-      cacheReadTokens: usage.cacheReadTokens - prev.cacheReadTokens,
+      inputTokens: usage.uncachedInputTokens + usage.cacheReadTokens,
+      outputTokens: usage.outputTokens,
+      cacheReadTokens: usage.cacheReadTokens,
     })
   }, [session.sessionId, usage])
 

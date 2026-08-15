@@ -118,47 +118,56 @@ export function writeUsage(store: UsageStore): void {
   }
 }
 
-/** 把一条记录并入聚合。 */
+/** 把一条记录并入聚合（replace 语义：同会话以最新快照覆盖，避免双计）。 */
 export function applyRecord(store: UsageStore, record: UsageRecord): void {
-  const day = dayKey(record.ts)
   const sessionId = record.sessionId || 'default'
+  const existing = store.bySession[sessionId]
 
-  const session = store.bySession[sessionId] ?? {
-    title: record.sessionTitle || '未命名会话',
-    lastModel: record.model,
-    lastTs: record.ts,
-    inputTokens: 0,
-    outputTokens: 0,
-    cacheReadTokens: 0,
-    calls: 0,
+  // Session bucket holds the LATEST cumulative snapshot (client uploads the
+  // current totals). Replace, never accumulate — the dashboard sums the
+  // snapshots at read time, so repeated polls cannot double count.
+  const prevInput = existing?.inputTokens ?? 0
+  const prevOutput = existing?.outputTokens ?? 0
+  const prevCache = existing?.cacheReadTokens ?? 0
+  const session: UsageStore['bySession'][string] = {
+    title: record.sessionTitle || existing?.title || `会话 ${sessionId.slice(0, 8)}`,
+    lastModel: record.model || existing?.lastModel || 'unknown',
+    lastTs: Math.max(existing?.lastTs ?? 0, record.ts),
+    inputTokens: record.inputTokens,
+    outputTokens: record.outputTokens,
+    cacheReadTokens: record.cacheReadTokens,
+    calls: (existing?.calls ?? 0) + 1,
   }
-  session.title = record.sessionTitle || session.title
-  session.lastModel = record.model || session.lastModel
-  session.lastTs = Math.max(session.lastTs, record.ts)
-  session.inputTokens += record.inputTokens
-  session.outputTokens += record.outputTokens
-  session.cacheReadTokens += record.cacheReadTokens
-  session.calls += 1
   store.bySession[sessionId] = session
 
+  // Day / model buckets: running deltas relative to the previous snapshot.
+  // The first upload for a session contributes its full snapshot; later
+  // uploads contribute only the growth (clamped at zero so a projection
+  // reset cannot subtract).
+  const dInput = Math.max(0, record.inputTokens - prevInput)
+  const dOutput = Math.max(0, record.outputTokens - prevOutput)
+  const dCache = Math.max(0, record.cacheReadTokens - prevCache)
+  if (dInput + dOutput + dCache <= 0) return
+
+  const day = dayKey(record.ts)
   const dayBucket = store.byDay[day] ?? { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, calls: 0 }
-  dayBucket.inputTokens += record.inputTokens
-  dayBucket.outputTokens += record.outputTokens
-  dayBucket.cacheReadTokens += record.cacheReadTokens
+  dayBucket.inputTokens += dInput
+  dayBucket.outputTokens += dOutput
+  dayBucket.cacheReadTokens += dCache
   dayBucket.calls += 1
   store.byDay[day] = dayBucket
 
   const model = record.model || 'unknown'
   const modelBucket = store.byModel[model] ?? { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, calls: 0 }
-  modelBucket.inputTokens += record.inputTokens
-  modelBucket.outputTokens += record.outputTokens
-  modelBucket.cacheReadTokens += record.cacheReadTokens
+  modelBucket.inputTokens += dInput
+  modelBucket.outputTokens += dOutput
+  modelBucket.cacheReadTokens += dCache
   modelBucket.calls += 1
   store.byModel[model] = modelBucket
 
-  store.total.inputTokens += record.inputTokens
-  store.total.outputTokens += record.outputTokens
-  store.total.cacheReadTokens += record.cacheReadTokens
+  store.total.inputTokens += dInput
+  store.total.outputTokens += dOutput
+  store.total.cacheReadTokens += dCache
   store.total.calls += 1
 }
 

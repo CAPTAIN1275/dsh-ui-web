@@ -620,19 +620,22 @@ window.__ModuleLoader__.load({
 		//#region src/client/UsageRecorder.tsx
 		/**
 		* Usage recorder — an invisible conversation-dock seat that watches the
-		* `tokenUsage` projection and POSTs per-response deltas to the host
-		* `/api/usage/record` endpoint. Rendering nothing itself; the colorful
-		* dashboard is a separate sidebar entry.
+		* `tokenUsage` projection and, whenever the cumulative total GROWS (a
+		* response settled), uploads the current cumulative snapshot to the host.
+		* The host stores the LATEST snapshot per session (replace semantics), so
+		* repeated uploads overwrite instead of double counting; the upload fires
+		* only on growth, so the host's calls counter tracks real response
+		* completions rather than poll ticks.
 		* @module @captain1275/dsh-usage-dashboard/client/UsageRecorder
 		*/
-		/** 上报一条用量记录到宿主。 */
-		async function postRecord(record) {
+		/** 上报当前快照到宿主（replace 语义：同会话覆盖，不累加）。 */
+		async function postSnapshot(snapshot) {
 			try {
 				await fetch("/api/usage/record", {
 					method: "POST",
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({
-						...record,
+						...snapshot,
 						ts: Date.now()
 					})
 				});
@@ -641,35 +644,33 @@ window.__ModuleLoader__.load({
 		/** 当前模型（由入口从连接层更新，尽力而为）。 */
 		let currentModel = "unknown";
 		/**
-		* The invisible recorder seat. Compares the tokenUsage projection against
-		* the last reported value; on growth (a response settled) it uploads the
-		* delta. Runs only while a session is active.
+		* The invisible recorder seat. Tracks the last seen cumulative total; when
+		* the projection grows it uploads the current snapshot (debounced 1s).
 		* @param props - framework runtime share.
 		* @returns null (renders nothing).
 		*/
 		const UsageRecorder = (0, react.memo)(function UsageRecorder(props) {
 			const session = props.useSession((s) => ({ sessionId: s.sessionId }));
 			const usage = props.useProjection("tokenUsage");
-			const lastRef = (0, react.useRef)(null);
+			const lastTotalRef = (0, react.useRef)(-1);
 			const lastUploadRef = (0, react.useRef)(0);
 			(0, react.useEffect)(() => {
-				if (session.sessionId === void 0 || usage === void 0) return;
+				const sid = session.sessionId;
+				if (sid === void 0 || usage === void 0) return;
 				const total = usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens;
-				const prev = lastRef.current;
-				lastRef.current = usage;
-				if (prev === null || total <= 0) return;
-				if (total <= prev.uncachedInputTokens + prev.outputTokens + prev.cacheReadTokens + prev.cacheWriteTokens) return;
+				const prev = lastTotalRef.current;
+				lastTotalRef.current = total;
+				if (total <= 0) return;
+				if (prev !== -1 && total <= prev) return;
 				const now = Date.now();
-				if (now - lastUploadRef.current < 5e3) return;
+				if (now - lastUploadRef.current < 1e3) return;
 				lastUploadRef.current = now;
-				const input = usage.uncachedInputTokens + usage.cacheReadTokens;
-				postRecord({
-					sessionId: session.sessionId,
-					sessionTitle: "",
+				postSnapshot({
+					sessionId: sid,
 					model: currentModel,
-					inputTokens: input - (prev.uncachedInputTokens + prev.cacheReadTokens),
-					outputTokens: usage.outputTokens - prev.outputTokens,
-					cacheReadTokens: usage.cacheReadTokens - prev.cacheReadTokens
+					inputTokens: usage.uncachedInputTokens + usage.cacheReadTokens,
+					outputTokens: usage.outputTokens,
+					cacheReadTokens: usage.cacheReadTokens
 				});
 			}, [session.sessionId, usage]);
 			return null;

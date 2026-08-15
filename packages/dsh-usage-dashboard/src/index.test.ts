@@ -48,13 +48,30 @@ describe('usage aggregation', () => {
     expect(store.byModel['deepseek/deepseek-reasoner']?.calls).toBe(1)
   })
 
-  it('aggregates multiple records for the same session', () => {
+  it('replaces the session snapshot on repeat uploads (no double counting)', () => {
     const store = emptyUsage()
     applyRecord(store, base)
-    applyRecord(store, { ...base, inputTokens: 50, outputTokens: 25 })
+    // Second upload: same session, higher cumulative snapshot.
+    applyRecord(store, { ...base, inputTokens: 150, outputTokens: 75, cacheReadTokens: 30 })
+    // Session bucket holds the LATEST snapshot.
     expect(store.bySession['s1']?.inputTokens).toBe(150)
     expect(store.bySession['s1']?.outputTokens).toBe(75)
-    expect(store.bySession['s1']?.calls).toBe(2)
+    expect(store.bySession['s1']?.cacheReadTokens).toBe(30)
+    // Day/model/total buckets accumulated the GROWTH only (150-100 input).
+    const day = dayKey(base.ts)
+    expect(store.byDay[day]?.inputTokens).toBe(150)
+    expect(store.byModel['deepseek/deepseek-chat']?.inputTokens).toBe(150)
+    expect(store.total.inputTokens).toBe(150)
+  })
+
+  it('clamps at zero when a projection resets (no subtraction)', () => {
+    const store = emptyUsage()
+    applyRecord(store, base)
+    const before = store.total.inputTokens
+    // A reset snapshot (smaller) must not subtract from totals.
+    applyRecord(store, { ...base, inputTokens: 10, outputTokens: 5 })
+    expect(store.total.inputTokens).toBe(before)
+    expect(store.bySession['s1']?.inputTokens).toBe(10)
   })
 
   it('ranks sessions by total tokens descending', () => {
