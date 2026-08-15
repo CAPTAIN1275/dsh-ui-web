@@ -643,6 +643,10 @@ window.__ModuleLoader__.load({
 		}
 		/** 当前模型（由入口从连接层更新，尽力而为）。 */
 		let currentModel = "unknown";
+		/** 供入口设置当前模型（连接层回调）。 */
+		function setCurrentModel(model) {
+			if (typeof model === "string" && model.length > 0) currentModel = model;
+		}
 		/**
 		* The invisible recorder seat. Tracks the last seen cumulative total; when
 		* the projection grows it uploads the current snapshot (debounced 1s).
@@ -790,6 +794,27 @@ window.__ModuleLoader__.load({
 				disposeEntry = mountUsageEntry();
 				return () => disposeEntry?.();
 			}, "usage-dashboard: sidebar entry");
+			ctx.effect(() => {
+				const connection = ctx.get("connection");
+				if (connection?.api?.sessions === void 0) return () => {};
+				let cancelled = false;
+				const tick = async () => {
+					try {
+						const sessionId = (await connection.api?.sessions?.list({ cursor: "" }))?.result?.value?.items?.[0]?.sessionId;
+						if (sessionId === void 0 || cancelled) return;
+						const model = (await connection.api?.sessions?.models({ sessionId }))?.result?.value?.current?.model;
+						if (model !== void 0 && !cancelled) setCurrentModel(model);
+					} catch {}
+				};
+				tick();
+				const timer = window.setInterval(() => {
+					tick();
+				}, 5e3);
+				return () => {
+					cancelled = true;
+					window.clearInterval(timer);
+				};
+			}, "usage-dashboard: model subscription");
 			ctx.slots.inject("conversation.composer.dock", () => ctx.slots.register({
 				name: "conversation.composer.dock",
 				id: "usage-recorder",

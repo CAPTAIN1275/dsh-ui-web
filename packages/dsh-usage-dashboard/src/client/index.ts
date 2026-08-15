@@ -16,7 +16,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { mountUsageEntry } from './UsageEntry.tsx'
-import { UsageRecorder } from './UsageRecorder.tsx'
+import { UsageRecorder, setCurrentModel } from './UsageRecorder.tsx'
 import { UsageSettingsCard, type UsageSettingsCardProps } from './UsageSettingsCard.tsx'
 import { NS, en, zh } from './locales.ts'
 
@@ -64,6 +64,38 @@ export function apply(ctx: ClientContext): void {
     disposeEntry = mountUsageEntry()
     return () => disposeEntry?.()
   }, 'usage-dashboard: sidebar entry')
+
+  // Model-name subscription: poll the connection's most recent session and
+  // feed its model into the recorder so uploads carry a real model label
+  // instead of "unknown". Best-effort — failures leave the last known value.
+  ctx.effect(() => {
+    const connection = ctx.get('connection') as { api?: { sessions?: {
+      list(request: { sessionId?: string; cursor?: string }): Promise<unknown>
+      models(request: { sessionId: string }): Promise<unknown>
+    } } } | undefined
+    if (connection?.api?.sessions === undefined) return () => {}
+    let cancelled = false
+    const tick = async (): Promise<void> => {
+      try {
+        const listRes = await connection.api?.sessions?.list({ cursor: '' })
+        const list = listRes as { result?: { value?: { items?: Array<{ sessionId: string }> } } } | undefined
+        const sessionId = list?.result?.value?.items?.[0]?.sessionId
+        if (sessionId === undefined || cancelled) return
+        const modelsRes = await connection.api?.sessions?.models({ sessionId })
+        const models = modelsRes as { result?: { value?: { current?: { provider?: string; model?: string } } } } | undefined
+        const model = models?.result?.value?.current?.model
+        if (model !== undefined && !cancelled) setCurrentModel(model)
+      } catch {
+        /* 轮询失败保持上次值 */
+      }
+    }
+    void tick()
+    const timer = window.setInterval(() => { void tick() }, 5000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, 'usage-dashboard: model subscription')
 
   // Conversation dock recorder: invisible seat that watches tokenUsage and
   // reports deltas. Uses its own dock id so it never collides with the
