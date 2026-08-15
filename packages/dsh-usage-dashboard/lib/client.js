@@ -638,25 +638,22 @@ window.__ModuleLoader__.load({
 				});
 			} catch {}
 		}
-		/** 会话内模型（从 connection 会话选择读取，尽力而为）。 */
+		/** 当前模型（由入口从连接层更新，尽力而为）。 */
 		let currentModel = "unknown";
 		/**
 		* The invisible recorder seat. Compares the tokenUsage projection against
 		* the last reported value; on growth (a response settled) it uploads the
-		* delta. Runs only while the conversation is active.
+		* delta. Runs only while a session is active.
 		* @param props - framework runtime share.
 		* @returns null (renders nothing).
 		*/
 		const UsageRecorder = (0, react.memo)(function UsageRecorder(props) {
-			const session = props.useSession((s) => ({
-				id: s.id,
-				title: s.title
-			}));
+			const session = props.useSession((s) => ({ sessionId: s.sessionId }));
 			const usage = props.useProjection("tokenUsage");
 			const lastRef = (0, react.useRef)(null);
 			const lastUploadRef = (0, react.useRef)(0);
 			(0, react.useEffect)(() => {
-				if (session.id === void 0 || usage === void 0) return;
+				if (session.sessionId === void 0 || usage === void 0) return;
 				const total = usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens;
 				const prev = lastRef.current;
 				lastRef.current = usage;
@@ -667,18 +664,14 @@ window.__ModuleLoader__.load({
 				lastUploadRef.current = now;
 				const input = usage.uncachedInputTokens + usage.cacheReadTokens;
 				postRecord({
-					sessionId: session.id,
-					sessionTitle: session.title ?? "",
+					sessionId: session.sessionId,
+					sessionTitle: "",
 					model: currentModel,
 					inputTokens: input - (prev.uncachedInputTokens + prev.cacheReadTokens),
 					outputTokens: usage.outputTokens - prev.outputTokens,
 					cacheReadTokens: usage.cacheReadTokens - prev.cacheReadTokens
 				});
-			}, [
-				session.id,
-				session.title,
-				usage
-			]);
+			}, [session.sessionId, usage]);
 			return null;
 		});
 		//#endregion

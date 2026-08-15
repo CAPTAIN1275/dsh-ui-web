@@ -18,7 +18,7 @@ interface TokenUsageProjection {
 
 /** Props injected by the conversation dock (framework runtime share). */
 export interface UsageRecorderProps {
-  useSession: <S>(selector: (s: { id?: string; title?: string }) => S) => S
+  useSession: <S>(selector: (s: { sessionId?: string }) => S) => S
   useProjection: <K extends string>(key: K) => unknown
 }
 
@@ -42,7 +42,7 @@ async function postRecord(record: {
   }
 }
 
-/** 会话内模型（从 connection 会话选择读取，尽力而为）。 */
+/** 当前模型（由入口从连接层更新，尽力而为）。 */
 let currentModel = 'unknown'
 
 /** 供入口设置当前模型（连接层回调）。 */
@@ -53,18 +53,18 @@ export function setCurrentModel(model: string | undefined): void {
 /**
  * The invisible recorder seat. Compares the tokenUsage projection against
  * the last reported value; on growth (a response settled) it uploads the
- * delta. Runs only while the conversation is active.
+ * delta. Runs only while a session is active.
  * @param props - framework runtime share.
  * @returns null (renders nothing).
  */
 export const UsageRecorder = memo(function UsageRecorder(props: UsageRecorderProps): null {
-  const session = props.useSession((s) => ({ id: s.id, title: s.title }))
+  const session = props.useSession((s) => ({ sessionId: s.sessionId }))
   const usage = props.useProjection('tokenUsage') as TokenUsageProjection | undefined
   const lastRef = useRef<TokenUsageProjection | null>(null)
   const lastUploadRef = useRef<number>(0)
 
   useEffect(() => {
-    if (session.id === undefined || usage === undefined) return
+    if (session.sessionId === undefined || usage === undefined) return
     const total = usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
     const prev = lastRef.current
     lastRef.current = usage
@@ -79,14 +79,14 @@ export const UsageRecorder = memo(function UsageRecorder(props: UsageRecorderPro
     lastUploadRef.current = now
     const input = usage.uncachedInputTokens + usage.cacheReadTokens
     void postRecord({
-      sessionId: session.id,
-      sessionTitle: session.title ?? '',
+      sessionId: session.sessionId,
+      sessionTitle: '',
       model: currentModel,
       inputTokens: input - (prev.uncachedInputTokens + prev.cacheReadTokens),
       outputTokens: usage.outputTokens - prev.outputTokens,
       cacheReadTokens: usage.cacheReadTokens - prev.cacheReadTokens,
     })
-  }, [session.id, session.title, usage])
+  }, [session.sessionId, usage])
 
   return null
 })
