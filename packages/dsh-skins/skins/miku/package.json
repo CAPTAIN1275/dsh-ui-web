@@ -1,6 +1,6 @@
 {
   "name": "@captain1275/dsh-client-ui-skin-miku",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Bundled skin inside @captain1275/dsh-skins (@captain1275/dsh-client-ui-skin-miku).",
   "type": "module",
   "main": "lib/index.js",
