@@ -12,6 +12,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
+import { estimateCost } from './cost.ts'
 
 /** 稳定插件名（对应 cordis.patch.yml 的 insert id）。 */
 export const name = 'ui-usage-dashboard'
@@ -270,13 +271,28 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
   }
   if (url.pathname === `${USAGE_API_PREFIX}/summary` && req.method === 'GET') {
     const store = readUsage()
+    const modelCosts = Object.fromEntries(
+      Object.entries(store.byModel).map(([model, b]) => [
+        model,
+        estimateCost(model, b.inputTokens, b.outputTokens, b.cacheReadTokens),
+      ]),
+    )
+    const totalCost = Object.values(modelCosts).reduce((a, b) => a + b, 0)
+    const sessions = sessionRanking(store, 20).map((s) => ({
+      ...s,
+      cost: estimateCost(s.model, store.bySession[s.id]?.inputTokens ?? 0, store.bySession[s.id]?.outputTokens ?? 0, store.bySession[s.id]?.cacheReadTokens ?? 0),
+    }))
     sendJson(res, 200, {
       ok: true,
       total: store.total,
       byModel: store.byModel,
       recent: recentDays(store, 14),
-      sessions: sessionRanking(store, 20),
+      sessions,
       byDayCount: Object.keys(store.byDay).length,
+      cost: {
+        total: Math.round(totalCost * 100) / 100,
+        byModel: modelCosts,
+      },
     })
     return
   }

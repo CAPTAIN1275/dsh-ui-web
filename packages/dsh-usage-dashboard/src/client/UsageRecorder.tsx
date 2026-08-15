@@ -38,6 +38,7 @@ const SETTLE_MS = 2000
 /** 上报当前快照到宿主（replace 语义：同会话覆盖，不累加）。 */
 async function postSnapshot(snapshot: {
   sessionId: string
+  sessionTitle: string
   model: string
   inputTokens: number
   outputTokens: number
@@ -57,9 +58,17 @@ async function postSnapshot(snapshot: {
 /** 当前模型（由入口从连接层更新，尽力而为）。 */
 let currentModel = 'unknown'
 
+/** 当前会话标题（由入口从连接层更新，尽力而为）。 */
+let currentTitle = ''
+
 /** 供入口设置当前模型（连接层回调）。 */
 export function setCurrentModel(model: string | undefined): void {
   if (typeof model === 'string' && model.length > 0) currentModel = model
+}
+
+/** 供入口设置当前会话标题（连接层回调）。 */
+export function setCurrentTitle(title: string | undefined): void {
+  if (typeof title === 'string' && title.length > 0) currentTitle = title
 }
 
 /**
@@ -72,7 +81,7 @@ export const UsageRecorder = memo(function UsageRecorder(props: UsageRecorderPro
   const usage = props.useProjection('tokenUsage') as TokenUsageProjection | undefined
   const lastTotalRef = useRef<number>(-1)
   const settleTimerRef = useRef<number | null>(null)
-  const lastSeenRef = useRef<{ sessionId: string; input: number; output: number; cache: number } | null>(null)
+  const lastSeenRef = useRef<{ sessionId: string; title: string; input: number; output: number; cache: number } | null>(null)
 
   // Flush one snapshot after growth settles (a response completed).
   const flush = (): void => {
@@ -81,6 +90,7 @@ export const UsageRecorder = memo(function UsageRecorder(props: UsageRecorderPro
     if (seen === null) return
     void postSnapshot({
       sessionId: seen.sessionId,
+      sessionTitle: seen.title,
       model: currentModel,
       inputTokens: seen.input,
       outputTokens: seen.output,
@@ -105,6 +115,7 @@ export const UsageRecorder = memo(function UsageRecorder(props: UsageRecorderPro
     // timer. Debounce 1s of streaming growth, then flush once settled.
     lastSeenRef.current = {
       sessionId: sid,
+      title: currentTitle,
       input: usage.uncachedInputTokens + usage.cacheReadTokens,
       output: usage.outputTokens,
       cache: usage.cacheReadTokens,

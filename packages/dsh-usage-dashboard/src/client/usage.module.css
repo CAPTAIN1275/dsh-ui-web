@@ -82,7 +82,7 @@
 /* 彩色统计卡片 */
 .statGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
 
@@ -270,10 +270,20 @@
 
 .sessionTokens {
   flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: #e6eaff;
+}
+
+.sessionCost {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(230, 234, 255, 0.55);
 }
 
 /* 空态 / 错误 */

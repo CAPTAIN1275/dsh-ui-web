@@ -9,7 +9,7 @@ window.__ModuleLoader__.load({
 		let react_dom = require("react-dom");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		//#region \0dsh-css:D:\Desktop\DeepSeek Harness\dsh-web-ui-0.1.10\packages\dsh-usage-dashboard\src\client\usage.module.css.mjs
-		const css$2 = ".lkZm-a_overlay{z-index:2147483001;justify-content:center;align-items:center;display:flex;position:fixed;inset:0}.lkZm-a_mask{-webkit-backdrop-filter:blur(6px);background:#050814b8;position:absolute;inset:0}.lkZm-a_panel{z-index:1;box-sizing:border-box;color:#e6eaff;background:linear-gradient(165deg,#141a34f5,#0a0e1efa);border:1px solid #8ca0ff40;border-radius:20px;flex-direction:column;width:880px;max-width:calc(100vw - 48px);max-height:calc(100vh - 48px);padding:22px 26px;font-size:13px;display:flex;position:relative;overflow:auto;box-shadow:0 18px 60px #0000008c,inset 0 1px #ffffff0f}.lkZm-a_header{justify-content:space-between;align-items:center;margin-bottom:16px;display:flex}.lkZm-a_title{background:linear-gradient(90deg,#f472b6,#fb923c,#facc15,#4ade80,#22d3ee,#818cf8);color:#0000;-webkit-background-clip:text;background-clip:text;margin:0;font-size:18px;font-weight:700}.lkZm-a_close{color:#b9c2e8;cursor:pointer;background:#8ca0ff1f;border:none;border-radius:8px;flex:none;justify-content:center;align-items:center;width:30px;height:30px;transition:background .12s,color .12s;display:inline-flex}.lkZm-a_close:hover{color:#fff;background:#8ca0ff3d}.lkZm-a_body{flex-direction:column;gap:18px;display:flex}.lkZm-a_statGrid{grid-template-columns:repeat(3,1fr);gap:12px;display:grid}.lkZm-a_statCard{border:1px solid;border-radius:14px;flex-direction:column;gap:3px;padding:14px 16px;display:flex}.lkZm-a_statValue{font-variant-numeric:tabular-nums;font-size:26px;font-weight:800;line-height:1.1}.lkZm-a_statLabel{color:#e6eaffd9;font-size:12px;font-weight:600}.lkZm-a_statSub{color:#e6eaff8c;font-size:11px}.lkZm-a_section{flex-direction:column;gap:6px;display:flex}.lkZm-a_sectionTitle{color:#e6eaff;font-size:13px;font-weight:700}.lkZm-a_sectionSub{color:#e6eaff80;font-size:11px}.lkZm-a_twoCol{grid-template-columns:1fr 1.2fr;align-items:start;gap:20px;display:grid}.lkZm-a_chart{width:100%;height:auto;margin-top:4px}.lkZm-a_axisLabel{fill:#e6eaff73;font-size:9px}.lkZm-a_donutWrap{align-items:center;gap:16px;display:flex}.lkZm-a_donut{flex:none;width:150px;height:150px}.lkZm-a_donutTotal{fill:#e6eaff;font-size:16px;font-weight:800}.lkZm-a_donutLabel{fill:#e6eaff80;font-size:9px}.lkZm-a_legend{flex-direction:column;gap:5px;min-width:0;display:flex}.lkZm-a_legendRow{align-items:center;gap:7px;font-size:11px;display:flex}.lkZm-a_legendDot{border-radius:3px;flex:none;width:9px;height:9px}.lkZm-a_legendName{text-overflow:ellipsis;white-space:nowrap;color:#e6eaffd9;flex:1;min-width:0;overflow:hidden}.lkZm-a_legendVal{font-variant-numeric:tabular-nums;color:#e6eaff99}.lkZm-a_sessionList{flex-direction:column;gap:9px;max-height:320px;display:flex;overflow:auto}.lkZm-a_sessionRow{align-items:center;gap:10px;display:flex}.lkZm-a_sessionRank{text-align:center;flex:none;width:20px;font-size:14px;font-weight:800}.lkZm-a_sessionInfo{flex-direction:column;flex:1;gap:2px;min-width:0;display:flex}.lkZm-a_sessionName{color:#e6eaff;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;overflow:hidden}.lkZm-a_sessionMeta{color:#e6eaff80;font-size:10px}.lkZm-a_sessionBar{background:#8ca0ff1f;border-radius:999px;height:4px;margin-top:2px;overflow:hidden}.lkZm-a_sessionBarFill{border-radius:999px;height:100%;transition:width .4s}.lkZm-a_sessionTokens{font-variant-numeric:tabular-nums;color:#e6eaff;flex:none;font-size:12px;font-weight:700}.lkZm-a_empty{flex-direction:column;align-items:center;gap:8px;padding:60px 0;display:flex}.lkZm-a_emptyTitle{color:#e6eaffbf;font-size:15px;font-weight:700}.lkZm-a_emptyHint{color:#e6eaff73;text-align:center;font-size:12px;line-height:1.6}.lkZm-a_error{color:#fca5a5;background:#f8717124;border:1px solid #f8717159;border-radius:10px;padding:10px 14px;font-size:12px}@media (width<=720px){.lkZm-a_panel{border-radius:0;width:100%;max-width:100vw;max-height:100vh;padding:16px}.lkZm-a_statGrid,.lkZm-a_twoCol{grid-template-columns:1fr}}";
+		const css$2 = ".lkZm-a_overlay{z-index:2147483001;justify-content:center;align-items:center;display:flex;position:fixed;inset:0}.lkZm-a_mask{-webkit-backdrop-filter:blur(6px);background:#050814b8;position:absolute;inset:0}.lkZm-a_panel{z-index:1;box-sizing:border-box;color:#e6eaff;background:linear-gradient(165deg,#141a34f5,#0a0e1efa);border:1px solid #8ca0ff40;border-radius:20px;flex-direction:column;width:880px;max-width:calc(100vw - 48px);max-height:calc(100vh - 48px);padding:22px 26px;font-size:13px;display:flex;position:relative;overflow:auto;box-shadow:0 18px 60px #0000008c,inset 0 1px #ffffff0f}.lkZm-a_header{justify-content:space-between;align-items:center;margin-bottom:16px;display:flex}.lkZm-a_title{background:linear-gradient(90deg,#f472b6,#fb923c,#facc15,#4ade80,#22d3ee,#818cf8);color:#0000;-webkit-background-clip:text;background-clip:text;margin:0;font-size:18px;font-weight:700}.lkZm-a_close{color:#b9c2e8;cursor:pointer;background:#8ca0ff1f;border:none;border-radius:8px;flex:none;justify-content:center;align-items:center;width:30px;height:30px;transition:background .12s,color .12s;display:inline-flex}.lkZm-a_close:hover{color:#fff;background:#8ca0ff3d}.lkZm-a_body{flex-direction:column;gap:18px;display:flex}.lkZm-a_statGrid{grid-template-columns:repeat(4,1fr);gap:12px;display:grid}.lkZm-a_statCard{border:1px solid;border-radius:14px;flex-direction:column;gap:3px;padding:14px 16px;display:flex}.lkZm-a_statValue{font-variant-numeric:tabular-nums;font-size:26px;font-weight:800;line-height:1.1}.lkZm-a_statLabel{color:#e6eaffd9;font-size:12px;font-weight:600}.lkZm-a_statSub{color:#e6eaff8c;font-size:11px}.lkZm-a_section{flex-direction:column;gap:6px;display:flex}.lkZm-a_sectionTitle{color:#e6eaff;font-size:13px;font-weight:700}.lkZm-a_sectionSub{color:#e6eaff80;font-size:11px}.lkZm-a_twoCol{grid-template-columns:1fr 1.2fr;align-items:start;gap:20px;display:grid}.lkZm-a_chart{width:100%;height:auto;margin-top:4px}.lkZm-a_axisLabel{fill:#e6eaff73;font-size:9px}.lkZm-a_donutWrap{align-items:center;gap:16px;display:flex}.lkZm-a_donut{flex:none;width:150px;height:150px}.lkZm-a_donutTotal{fill:#e6eaff;font-size:16px;font-weight:800}.lkZm-a_donutLabel{fill:#e6eaff80;font-size:9px}.lkZm-a_legend{flex-direction:column;gap:5px;min-width:0;display:flex}.lkZm-a_legendRow{align-items:center;gap:7px;font-size:11px;display:flex}.lkZm-a_legendDot{border-radius:3px;flex:none;width:9px;height:9px}.lkZm-a_legendName{text-overflow:ellipsis;white-space:nowrap;color:#e6eaffd9;flex:1;min-width:0;overflow:hidden}.lkZm-a_legendVal{font-variant-numeric:tabular-nums;color:#e6eaff99}.lkZm-a_sessionList{flex-direction:column;gap:9px;max-height:320px;display:flex;overflow:auto}.lkZm-a_sessionRow{align-items:center;gap:10px;display:flex}.lkZm-a_sessionRank{text-align:center;flex:none;width:20px;font-size:14px;font-weight:800}.lkZm-a_sessionInfo{flex-direction:column;flex:1;gap:2px;min-width:0;display:flex}.lkZm-a_sessionName{color:#e6eaff;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;overflow:hidden}.lkZm-a_sessionMeta{color:#e6eaff80;font-size:10px}.lkZm-a_sessionBar{background:#8ca0ff1f;border-radius:999px;height:4px;margin-top:2px;overflow:hidden}.lkZm-a_sessionBarFill{border-radius:999px;height:100%;transition:width .4s}.lkZm-a_sessionTokens{font-variant-numeric:tabular-nums;color:#e6eaff;flex-direction:column;flex:none;align-items:flex-end;gap:2px;font-size:12px;font-weight:700;display:flex}.lkZm-a_sessionCost{color:#e6eaff8c;font-size:10px;font-weight:600}.lkZm-a_empty{flex-direction:column;align-items:center;gap:8px;padding:60px 0;display:flex}.lkZm-a_emptyTitle{color:#e6eaffbf;font-size:15px;font-weight:700}.lkZm-a_emptyHint{color:#e6eaff73;text-align:center;font-size:12px;line-height:1.6}.lkZm-a_error{color:#fca5a5;background:#f8717124;border:1px solid #f8717159;border-radius:10px;padding:10px 14px;font-size:12px}@media (width<=720px){.lkZm-a_panel{border-radius:0;width:100%;max-width:100vw;max-height:100vh;padding:16px}.lkZm-a_statGrid,.lkZm-a_twoCol{grid-template-columns:1fr}}";
 		const tagId$2 = "@captain1275/dsh-usage-dashboard/usage.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
@@ -45,6 +45,7 @@ window.__ModuleLoader__.load({
 			"sectionTitle": "lkZm-a_sectionTitle",
 			"sessionBar": "lkZm-a_sessionBar",
 			"sessionBarFill": "lkZm-a_sessionBarFill",
+			"sessionCost": "lkZm-a_sessionCost",
 			"sessionInfo": "lkZm-a_sessionInfo",
 			"sessionList": "lkZm-a_sessionList",
 			"sessionMeta": "lkZm-a_sessionMeta",
@@ -143,6 +144,12 @@ window.__ModuleLoader__.load({
 		function hexToRgba(hex, alpha) {
 			const v = parseInt(hex.slice(1), 16);
 			return `rgba(${v >> 16 & 255}, ${v >> 8 & 255}, ${v & 255}, ${alpha})`;
+		}
+		/** 费用格式化：¥X.XX，小额保留 4 位。 */
+		function fmtCost(n) {
+			if (n >= 100) return `¥${Math.round(n)}`;
+			if (n >= 1) return `¥${n.toFixed(2)}`;
+			return `¥${n.toFixed(4)}`;
 		}
 		/** 拉取看板数据。 */
 		async function fetchSummary() {
@@ -382,6 +389,12 @@ window.__ModuleLoader__.load({
 											value: fmt(summary.total.cacheReadTokens),
 											sub: "缓存命中",
 											color: RAINBOW[2]
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StatCard, {
+											label: "估算费用",
+											value: fmtCost(summary.cost?.total ?? 0),
+											sub: "按 DeepSeek 定价估算",
+											color: RAINBOW[3]
 										})
 									]
 								}),
@@ -455,9 +468,12 @@ window.__ModuleLoader__.load({
 																})
 															]
 														}),
-														/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+														/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 															className: usage_module_css_default.sessionTokens,
-															children: fmt(s.totalTokens)
+															children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: fmt(s.totalTokens) }), s.cost !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+																className: usage_module_css_default.sessionCost,
+																children: fmtCost(s.cost)
+															})]
 														})
 													]
 												}, s.id);
@@ -652,9 +668,15 @@ window.__ModuleLoader__.load({
 		}
 		/** 当前模型（由入口从连接层更新，尽力而为）。 */
 		let currentModel = "unknown";
+		/** 当前会话标题（由入口从连接层更新，尽力而为）。 */
+		let currentTitle = "";
 		/** 供入口设置当前模型（连接层回调）。 */
 		function setCurrentModel(model) {
 			if (typeof model === "string" && model.length > 0) currentModel = model;
+		}
+		/** 供入口设置当前会话标题（连接层回调）。 */
+		function setCurrentTitle(title) {
+			if (typeof title === "string" && title.length > 0) currentTitle = title;
 		}
 		/**
 		* The invisible recorder seat.
@@ -673,6 +695,7 @@ window.__ModuleLoader__.load({
 				if (seen === null) return;
 				postSnapshot({
 					sessionId: seen.sessionId,
+					sessionTitle: seen.title,
 					model: currentModel,
 					inputTokens: seen.input,
 					outputTokens: seen.output,
@@ -693,6 +716,7 @@ window.__ModuleLoader__.load({
 				if (total <= prev) return;
 				lastSeenRef.current = {
 					sessionId: sid,
+					title: currentTitle,
 					input: usage.uncachedInputTokens + usage.cacheReadTokens,
 					output: usage.outputTokens,
 					cache: usage.cacheReadTokens
@@ -824,7 +848,9 @@ window.__ModuleLoader__.load({
 				let cancelled = false;
 				const tick = async () => {
 					try {
-						const sessionId = (await connection.api?.sessions?.list({ cursor: "" }))?.result?.value?.items?.[0]?.sessionId;
+						const item = (await connection.api?.sessions?.list({ cursor: "" }))?.result?.value?.items?.[0];
+						const sessionId = item?.sessionId;
+						if (item?.title !== void 0 && !cancelled) setCurrentTitle(item.title);
 						if (sessionId === void 0 || cancelled) return;
 						const model = (await connection.api?.sessions?.models({ sessionId }))?.result?.value?.current?.model;
 						if (model !== void 0 && !cancelled) setCurrentModel(model);

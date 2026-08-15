@@ -15,8 +15,9 @@ export interface UsageSummary {
   total: { inputTokens: number; outputTokens: number; cacheReadTokens: number; calls: number }
   byModel: Record<string, { inputTokens: number; outputTokens: number; cacheReadTokens: number; calls: number }>
   recent: Array<{ day: string; inputTokens: number; outputTokens: number; calls: number }>
-  sessions: Array<{ id: string; title: string; model: string; lastTs: number; totalTokens: number; calls: number }>
+  sessions: Array<{ id: string; title: string; model: string; lastTs: number; totalTokens: number; calls: number; cost: number }>
   byDayCount: number
+  cost: { total: number; byModel: Record<string, number> }
 }
 
 /** 看板彩色盘（五颜六色）。 */
@@ -36,6 +37,13 @@ function hexToRgba(hex: string, alpha: number): string {
   const g = (v >> 8) & 255
   const b = v & 255
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+/** 费用格式化：¥X.XX，小额保留 4 位。 */
+function fmtCost(n: number): string {
+  if (n >= 100) return `¥${Math.round(n)}`
+  if (n >= 1) return `¥${n.toFixed(2)}`
+  return `¥${n.toFixed(4)}`
 }
 
 /** 拉取看板数据。 */
@@ -192,6 +200,7 @@ export function DashboardPanel(props: { onClose: () => void }): ReactElement {
               <StatCard label={t('usage.total')} value={fmt(totalTokens)} sub={`${fmt(summary.total.inputTokens)} in / ${fmt(summary.total.outputTokens)} out`} color={RAINBOW[0]} />
               <StatCard label={t('usage.calls')} value={fmt(summary.total.calls)} sub={`${summary.byDayCount} 天有记录`} color={RAINBOW[1]} />
               <StatCard label={t('usage.cache')} value={fmt(summary.total.cacheReadTokens)} sub="缓存命中" color={RAINBOW[2]} />
+              <StatCard label="估算费用" value={fmtCost(summary.cost?.total ?? 0)} sub="按 DeepSeek 定价估算" color={RAINBOW[3]} />
             </div>
 
             <div className={css.section}>
@@ -222,7 +231,10 @@ export function DashboardPanel(props: { onClose: () => void }): ReactElement {
                             <div className={css.sessionBarFill} style={{ width: `${pct}%`, background: color }} />
                           </div>
                         </div>
-                        <span className={css.sessionTokens}>{fmt(s.totalTokens)}</span>
+                        <div className={css.sessionTokens}>
+                          <span>{fmt(s.totalTokens)}</span>
+                          {s.cost !== undefined && <span className={css.sessionCost}>{fmtCost(s.cost)}</span>}
+                        </div>
                       </div>
                     )
                   })}

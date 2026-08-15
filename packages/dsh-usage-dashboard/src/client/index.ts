@@ -16,7 +16,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { mountUsageEntry } from './UsageEntry.tsx'
-import { UsageRecorder, setCurrentModel } from './UsageRecorder.tsx'
+import { UsageRecorder, setCurrentModel, setCurrentTitle } from './UsageRecorder.tsx'
 import { UsageSettingsCard, type UsageSettingsCardProps } from './UsageSettingsCard.tsx'
 import { NS, en, zh } from './locales.ts'
 
@@ -78,8 +78,10 @@ export function apply(ctx: ClientContext): void {
     const tick = async (): Promise<void> => {
       try {
         const listRes = await connection.api?.sessions?.list({ cursor: '' })
-        const list = listRes as { result?: { value?: { items?: Array<{ sessionId: string }> } } } | undefined
-        const sessionId = list?.result?.value?.items?.[0]?.sessionId
+        const list = listRes as { result?: { value?: { items?: Array<{ sessionId: string; title?: string }> } } } | undefined
+        const item = list?.result?.value?.items?.[0]
+        const sessionId = item?.sessionId
+        if (item?.title !== undefined && !cancelled) setCurrentTitle(item.title)
         if (sessionId === undefined || cancelled) return
         const modelsRes = await connection.api?.sessions?.models({ sessionId })
         const models = modelsRes as { result?: { value?: { current?: { provider?: string; model?: string } } } } | undefined

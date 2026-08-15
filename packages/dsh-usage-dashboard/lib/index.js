@@ -1,6 +1,51 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
+//#region src/cost.ts
+/** DeepSeek 官方定价（2025 年主流价格，元/百万 token）。 */
+const DEEPSEEK_RATES = {
+	inputPerM: 2,
+	outputPerM: 8,
+	cachePerM: .5
+};
+const DEEPSEEK_REASONER_RATES = {
+	inputPerM: 4,
+	outputPerM: 16,
+	cachePerM: 1
+};
+const GENERIC_RATES = {
+	inputPerM: 2,
+	outputPerM: 8,
+	cachePerM: .5
+};
+/**
+* 按模型名取单价。模型名含 "reasoner"/"r1" 用推理档，含 "deepseek" 用标准档，
+* 其余回退通用档。
+* @param model - 模型标识（如 deepseek/deepseek-chat）。
+* @returns 单价。
+*/
+function ratesForModel(model) {
+	const m = model.toLowerCase();
+	if (m.includes("reasoner") || m.includes("/r1") || m.includes("-r1")) return DEEPSEEK_REASONER_RATES;
+	if (m.includes("deepseek")) return DEEPSEEK_RATES;
+	return GENERIC_RATES;
+}
+/**
+* 估算一次用量的费用（元）。
+* @param model - 模型标识。
+* @param inputTokens - 输入 token（不含缓存）。
+* @param outputTokens - 输出 token。
+* @param cacheReadTokens - 缓存命中 token。
+* @param rates - 可选单价覆盖（测试用）。
+* @returns 估算费用（元，保留 4 位）。
+*/
+function estimateCost(model, inputTokens, outputTokens, cacheReadTokens, rates = ratesForModel(model)) {
+	const input = inputTokens / 1e6 * rates.inputPerM;
+	const output = outputTokens / 1e6 * rates.outputPerM;
+	const cache = cacheReadTokens / 1e6 * rates.cachePerM;
+	return Math.round((input + output + cache) * 1e4) / 1e4;
+}
+//#endregion
 //#region src/index.ts
 /** 稳定插件名（对应 cordis.patch.yml 的 insert id）。 */
 const name = "ui-usage-dashboard";
@@ -198,13 +243,23 @@ function handle(req, res) {
 	}
 	if (url.pathname === `/api/usage/summary` && req.method === "GET") {
 		const store = readUsage();
+		const modelCosts = Object.fromEntries(Object.entries(store.byModel).map(([model, b]) => [model, estimateCost(model, b.inputTokens, b.outputTokens, b.cacheReadTokens)]));
+		const totalCost = Object.values(modelCosts).reduce((a, b) => a + b, 0);
+		const sessions = sessionRanking(store, 20).map((s) => ({
+			...s,
+			cost: estimateCost(s.model, store.bySession[s.id]?.inputTokens ?? 0, store.bySession[s.id]?.outputTokens ?? 0, store.bySession[s.id]?.cacheReadTokens ?? 0)
+		}));
 		sendJson(res, 200, {
 			ok: true,
 			total: store.total,
 			byModel: store.byModel,
 			recent: recentDays(store, 14),
-			sessions: sessionRanking(store, 20),
-			byDayCount: Object.keys(store.byDay).length
+			sessions,
+			byDayCount: Object.keys(store.byDay).length,
+			cost: {
+				total: Math.round(totalCost * 100) / 100,
+				byModel: modelCosts
+			}
 		});
 		return;
 	}
