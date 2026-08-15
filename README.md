@@ -48,6 +48,15 @@ SSH 运维、右侧文件/变更面板、Git 图谱、移动端远程控制、De
 
 ![人格设定](docs/persona-settings.png)
 
+### 用量看板
+
+- **彩色统计卡**：累计 token、调用次数、缓存命中、估算费用（按 DeepSeek 官方定价）
+- **近 14 天趋势**：每日 token 消耗柱状图
+- **模型分布**：各 provider/model 用量环形图 + 图例
+- **会话排行**：Top 20 会话（标题 / 模型 / 调用数 / token / 费用）
+- **自动记录**：对话时自动采集 token 用量（会话快照替换语义，不双计），存 `~/.dsh/usage.json`
+- **侧边栏入口**：彩色柱状按钮打开全屏看板
+
 ### 功能插件
 
 | 插件 | 功能 |
@@ -58,7 +67,8 @@ SSH 运维、右侧文件/变更面板、Git 图谱、移动端远程控制、De
 | **dsh-git-graph** | 会话头部 git 分支选择器 + 提交图 |
 | **dsh-remote-web-ui** | 移动端远程控制：扫码配对、设备限额、cloudflared 隧道、手机端 SPA |
 | **dsh-live-stats** | 实时 token 估算与生成速度 |
-| **dsh-full-stats** | 完整统计行：覆盖官方统计（不省略）+ 运行状态指示 + 自定义状态文本 |
+| **dsh-full-stats** | 完整统计行：覆盖官方统计（不省略）+ 运行状态指示 + 自定义状态文本（含替换官方 Deep diving...） |
+| **dsh-usage-dashboard** | 用量看板：彩色统计卡 / 近 14 天趋势 / 模型分布 / 会话排行 / 费用估算 |
 | **dsh-web-ui-settings** | 设置页「Web UI 插件」配置组 + 「人格设定」+「关于」版权页 |
 | **dsh-web-ui-all** | 聚合包：一键安装全部插件 |
 
@@ -76,7 +86,7 @@ aurora / skin-center），支持皮肤启用互斥管理与一键切换。
 
 ```bash
 # 在 DSH profile 目录（~/.dsh/profiles/web）安装聚合包
-npm install @captain1275/dsh-web-ui-all@0.2.2
+npm install @captain1275/dsh-web-ui-all@0.2.3
 ```
 
 然后在 profile 的 `package.json` 里把 `@captain1275/dsh-web-ui-all` 加入

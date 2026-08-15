@@ -62,6 +62,17 @@ once through the aggregate package.
 
 ![Persona settings](docs/persona-settings.png)
 
+### Usage dashboard
+
+- **Colorful stat cards**: total tokens, call count, cache hits, and estimated
+  cost (DeepSeek official pricing)
+- **14-day trend**: daily token consumption bar chart
+- **Model distribution**: donut chart + legend per provider/model
+- **Session ranking**: top 20 sessions (title / model / calls / tokens / cost)
+- **Auto recording**: per-response token usage collected while chatting
+  (snapshot-replace semantics, no double counting), stored in `~/.dsh/usage.json`
+- **Sidebar entry**: colorful bar button opens the full-screen dashboard
+
 ### Plugins
 
 | Plugin | What it does |
@@ -72,7 +83,8 @@ once through the aggregate package.
 | **dsh-git-graph** | Git branch selector + commit graph in the conversation header |
 | **dsh-remote-web-ui** | Mobile remote control: QR pairing, device caps, cloudflared tunnel, phone SPA |
 | **dsh-live-stats** | Live token estimates and generation throughput |
-| **dsh-full-stats** | Full stats line: overrides the official one (no truncation) + running indicator + custom status text |
+| **dsh-full-stats** | Full stats line: overrides the official one (no truncation) + running indicator + custom status text (incl. replacing the official Deep diving...) |
+| **dsh-usage-dashboard** | Usage dashboard: colorful stat cards / 14-day trend / model distribution / session ranking / cost estimate |
 | **dsh-web-ui-settings** | "Web UI Plugins" settings group + a "Persona" section + an "About" license page |
 | **dsh-web-ui-all** | Aggregate package: installs the whole family at once |
 
@@ -91,7 +103,7 @@ miku / trading / whale-song) come from the upstream dsh-web-ui.
 
 ```bash
 # in the DSH profile dir (~/.dsh/profiles/web)
-npm install @captain1275/dsh-web-ui-all@0.2.2
+npm install @captain1275/dsh-web-ui-all@0.2.3
 ```
 
 Then add `@captain1275/dsh-web-ui-all` to `dsh.profile.bundles` in the

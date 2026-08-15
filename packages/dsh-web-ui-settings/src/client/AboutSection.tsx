@@ -40,7 +40,7 @@ export function AboutSection(): ReactElement {
 
       <div className={css.block}>
         <div className={css.blockTitle}>版本与许可</div>
-        <Row label="插件版本" value="0.2.2" />
+        <Row label="插件版本" value="0.2.3" />
         <Row label="主体代码" value="zhu1090093659（linxin）dsh-web-ui" badge="Apache-2.0" />
         <Row label="增强维护" value="@CAPTAIN1275" />
       </div>
