@@ -113,10 +113,12 @@ export const UsageRecorder = memo(function UsageRecorder(props: UsageRecorderPro
     if (total <= prev) return
     // Growth observed: remember the latest snapshot and (re)arm the settle
     // timer. Debounce 1s of streaming growth, then flush once settled.
+    // inputTokens = UNCACHED input only; cacheReadTokens is reported
+    // separately so cost estimation never double-bills cached tokens.
     lastSeenRef.current = {
       sessionId: sid,
       title: currentTitle,
-      input: usage.uncachedInputTokens + usage.cacheReadTokens,
+      input: usage.uncachedInputTokens,
       output: usage.outputTokens,
       cache: usage.cacheReadTokens,
     }

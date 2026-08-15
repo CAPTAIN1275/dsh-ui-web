@@ -717,7 +717,7 @@ window.__ModuleLoader__.load({
 				lastSeenRef.current = {
 					sessionId: sid,
 					title: currentTitle,
-					input: usage.uncachedInputTokens + usage.cacheReadTokens,
+					input: usage.uncachedInputTokens,
 					output: usage.outputTokens,
 					cache: usage.cacheReadTokens
 				};

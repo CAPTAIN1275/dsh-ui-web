@@ -2,11 +2,11 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 //#region src/cost.ts
-/** DeepSeek 官方定价（2025 年主流价格，元/百万 token）。 */
+/** DeepSeek 官方定价（2026-08 起 V4 系列，元/百万 token）。 */
 const DEEPSEEK_RATES = {
-	inputPerM: 2,
-	outputPerM: 8,
-	cachePerM: .5
+	inputPerM: 3,
+	outputPerM: 6,
+	cachePerM: 1
 };
 const DEEPSEEK_REASONER_RATES = {
 	inputPerM: 4,
@@ -14,9 +14,9 @@ const DEEPSEEK_REASONER_RATES = {
 	cachePerM: 1
 };
 const GENERIC_RATES = {
-	inputPerM: 2,
-	outputPerM: 8,
-	cachePerM: .5
+	inputPerM: 3,
+	outputPerM: 6,
+	cachePerM: 1
 };
 /**
 * 按模型名取单价。模型名含 "reasoner"/"r1" 用推理档，含 "deepseek" 用标准档，

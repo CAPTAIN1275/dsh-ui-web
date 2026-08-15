@@ -15,10 +15,10 @@ export interface CostRates {
   cachePerM: number
 }
 
-/** DeepSeek 官方定价（2025 年主流价格，元/百万 token）。 */
-export const DEEPSEEK_RATES: CostRates = { inputPerM: 2, outputPerM: 8, cachePerM: 0.5 }
+/** DeepSeek 官方定价（2026-08 起 V4 系列，元/百万 token）。 */
+export const DEEPSEEK_RATES: CostRates = { inputPerM: 3, outputPerM: 6, cachePerM: 1 }
 export const DEEPSEEK_REASONER_RATES: CostRates = { inputPerM: 4, outputPerM: 16, cachePerM: 1 }
-export const GENERIC_RATES: CostRates = { inputPerM: 2, outputPerM: 8, cachePerM: 0.5 }
+export const GENERIC_RATES: CostRates = { inputPerM: 3, outputPerM: 6, cachePerM: 1 }
 
 /**
  * 按模型名取单价。模型名含 "reasoner"/"r1" 用推理档，含 "deepseek" 用标准档，

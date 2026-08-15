@@ -23,20 +23,20 @@ describe('ratesForModel', () => {
 })
 
 describe('estimateCost', () => {
-  it('computes 1M input at the deepseek rate = 2 yuan', () => {
-    expect(estimateCost('deepseek/deepseek-chat', 1_000_000, 0, 0)).toBe(2)
+  it('computes 1M input at the deepseek rate = 3 yuan', () => {
+    expect(estimateCost('deepseek/deepseek-chat', 1_000_000, 0, 0)).toBe(3)
   })
 
   it('computes output and cache portions', () => {
-    // 1M output at 8/M + 1M cache at 0.5/M + 1M input at 2/M = 10.5
-    expect(estimateCost('deepseek/deepseek-chat', 1_000_000, 1_000_000, 1_000_000)).toBe(10.5)
+    // 1M output at 6/M + 1M cache at 1/M + 1M input at 3/M = 10
+    expect(estimateCost('deepseek/deepseek-chat', 1_000_000, 1_000_000, 1_000_000)).toBe(10)
   })
 
   it('handles fractional token counts', () => {
-    expect(estimateCost('deepseek/deepseek-chat', 250_000, 0, 0)).toBe(0.5)
+    expect(estimateCost('deepseek/deepseek-chat', 250_000, 0, 0)).toBe(0.75)
   })
 
   it('rounds to 4 decimals', () => {
-    expect(estimateCost('deepseek/deepseek-chat', 123_456, 0, 0)).toBeCloseTo(0.2469, 3)
+    expect(estimateCost('deepseek/deepseek-chat', 123_456, 0, 0)).toBeCloseTo(0.3704, 3)
   })
 })
