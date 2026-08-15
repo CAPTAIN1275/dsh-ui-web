@@ -1,0 +1,6 @@
+# dsh-usage-dashboard bundle patch: inserts the usage dashboard into the web
+# profile roster. The browser half registers the sidebar entry (colorful
+# usage panel) and the token-recorder dock seat.
+- insert:
+    - id: ui-usage-dashboard
+      name: '@captain1275/dsh-usage-dashboard'

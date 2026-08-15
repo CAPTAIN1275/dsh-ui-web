@@ -42,6 +42,11 @@
     - id: live-stats
       name: '@captain1275/dsh-live-stats'
 
+# from ../dsh-usage-dashboard
+- insert:
+    - id: ui-usage-dashboard
+      name: '@captain1275/dsh-usage-dashboard'
+
 # from ../dsh-ssh
 - insert:
     - id: ssh

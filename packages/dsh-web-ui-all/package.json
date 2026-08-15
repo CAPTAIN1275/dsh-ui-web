@@ -26,6 +26,7 @@
     "@captain1275/dsh-pet": "workspace:*",
     "@captain1275/dsh-remote-web-ui": "workspace:*",
     "@captain1275/dsh-live-stats": "workspace:*",
+    "@captain1275/dsh-usage-dashboard": "workspace:*",
     "@captain1275/dsh-ssh": "workspace:*",
     "@captain1275/dsh-client-ui-web-ui-settings": "workspace:*",
     "@captain1275/dsh-skins": "workspace:*"
