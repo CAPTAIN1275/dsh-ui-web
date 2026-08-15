@@ -56,6 +56,26 @@
   cursor: default;
 }
 
+/* Update badge: a small dot on the trigger's top-right corner when a newer
+   npm release exists (registry installs only). Positioned relative to the
+   button so it works in both the wide row and the 56px rail. */
+.trigger {
+  position: relative;
+}
+
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dsw-alias-danger, #f87171);
+  border: 1.5px solid var(--dsw-alias-bg-layer-2, #0b0f1e);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
 .panel {
   position: relative;
   z-index: 1;

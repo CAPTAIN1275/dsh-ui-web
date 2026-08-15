@@ -42,10 +42,16 @@ class FakeEventSource {
   }
 }
 
-/** fetch stub answering the pair endpoints. */
-function mockFetch(issue: { ok: boolean; status?: number; code?: string; url?: string; token?: string; expiresAt?: number; lanAddresses?: string[] }) {
+/** fetch stub answering the pair endpoints + the update status probe. */
+function mockFetch(issue: { ok: boolean; status?: number; code?: string; url?: string; token?: string; expiresAt?: number; lanAddresses?: string[] }, updateStatus?: unknown) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
+    if (url === '/api/update/status') {
+      const status = updateStatus === undefined
+        ? { mode: 'npm', packages: [], outdated: false }
+        : updateStatus
+      return new Response(JSON.stringify(status), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
     const status = init?.method === 'POST' && url === '/api/pair/issue' && !issue.ok ? (issue.status ?? 409) : 200
     const body = url === '/api/pair/issue' && issue.ok
       ? { ok: true, url: issue.url, token: issue.token, expiresAt: issue.expiresAt, lanAddresses: issue.lanAddresses ?? ['192.168.1.5'] }
@@ -56,8 +62,8 @@ function mockFetch(issue: { ok: boolean; status?: number; code?: string; url?: s
   })
 }
 
-function mount(issue: { ok: boolean; status?: number; code?: string; url?: string; token?: string; expiresAt?: number; lanAddresses?: string[] } = { ok: true, url: 'http://192.168.1.5:3080/?pair=tok-1', token: 'tok-1', expiresAt: Date.now() + 60_000, lanAddresses: ['192.168.1.5'] }) {
-  const fetch = mockFetch(issue)
+function mount(issue: { ok: boolean; status?: number; code?: string; url?: string; token?: string; expiresAt?: number; lanAddresses?: string[] } = { ok: true, url: 'http://192.168.1.5:3080/?pair=tok-1', token: 'tok-1', expiresAt: Date.now() + 60_000, lanAddresses: ['192.168.1.5'] }, updateStatus?: unknown) {
+  const fetch = mockFetch(issue, updateStatus)
   vi.stubGlobal('fetch', fetch)
   vi.stubGlobal('EventSource', FakeEventSource)
   const view = render(
@@ -96,8 +102,8 @@ describe('RemoteEntry', () => {
     expect(screen.getByRole('button', { name: 'Refresh QR' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Copy link' })).toBeTruthy()
     // The issue payload carries the current workspace for the deep link.
-    const init = fetch.mock.calls[0]?.[1] as RequestInit
-    expect(JSON.parse(String(init.body))).toEqual({ workspaceId: 'ws-1' })
+    const issueCall = fetch.mock.calls.find(call => call[0] === '/api/pair/issue')?.[1] as RequestInit
+    expect(JSON.parse(String(issueCall.body))).toEqual({ workspaceId: 'ws-1' })
   })
 
   it('shows the lan-required banner instead of a QR when the bind is loopback-only', async () => {
@@ -182,6 +188,43 @@ describe('RemoteEntry', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Copy link' }))
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('http://192.168.1.5:3080/?pair=tok-1'))
     await waitFor(() => expect(screen.getByText('Copied')).toBeTruthy())
+  })
+})
+
+describe('update badge', () => {
+  it('shows the badge when a newer npm release exists', async () => {
+    const updateStatus = {
+      mode: 'npm',
+      profileName: 'web',
+      anchor: '@captain1275/dsh-web-ui-all',
+      packages: [{ name: '@captain1275/dsh-web-ui-all', current: '0.2.0', latest: '0.2.1', outdated: true }],
+      outdated: true,
+    }
+    mount({ ok: true }, updateStatus)
+    await waitFor(() => expect(document.querySelector('[data-testid="update-badge"]')).not.toBeNull())
+  })
+
+  it('hides the badge when up to date', async () => {
+    const updateStatus = {
+      mode: 'npm',
+      profileName: 'web',
+      anchor: '@captain1275/dsh-web-ui-all',
+      packages: [{ name: '@captain1275/dsh-web-ui-all', current: '0.2.1', latest: '0.2.1', outdated: false }],
+      outdated: false,
+    }
+    mount({ ok: true }, updateStatus)
+    await waitFor(() => expect(document.querySelector('[data-testid="update-badge"]')).toBeNull())
+  })
+
+  it('hides the badge in link (dev) mode even when npm is ahead', async () => {
+    const updateStatus = {
+      mode: 'link',
+      anchor: '@captain1275/dsh-web-ui-all',
+      packages: [{ name: '@captain1275/dsh-web-ui-all', current: '0.2.0', latest: '0.2.1', outdated: true }],
+      outdated: true,
+    }
+    mount({ ok: true }, updateStatus)
+    await waitFor(() => expect(document.querySelector('[data-testid="update-badge"]')).toBeNull())
   })
 })
 

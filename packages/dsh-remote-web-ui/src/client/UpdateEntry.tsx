@@ -29,7 +29,32 @@ export interface UpdateEntryProps {
 export function UpdateEntry({ wide, t }: UpdateEntryProps) {
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<UpdateView>({ kind: "checking" })
+  const [hasUpdate, setHasUpdate] = useState(false)
   const runToken = useRef(0)
+  const badgeToken = useRef(0)
+
+  // Silent badge probe: on mount (and on a 30-minute cadence while mounted),
+  // peek at the registry without opening the panel. The dot shows only for
+  // registry installs (npm mode) with a strictly newer release — dev/link
+  // installs cannot self-update, so a badge there would be noise.
+  useEffect(() => {
+    const probe = async (): Promise<void> => {
+      const token = ++badgeToken.current
+      try {
+        const status = await fetchUpdateStatus()
+        if (token !== badgeToken.current) return
+        setHasUpdate(status.mode === "npm" && status.outdated === true)
+      } catch {
+        if (token === badgeToken.current) setHasUpdate(false)
+      }
+    }
+    void probe()
+    const timer = setInterval(() => { void probe() }, 30 * 60_000)
+    return () => {
+      badgeToken.current++
+      clearInterval(timer)
+    }
+  }, [])
 
   const check = useCallback(async (): Promise<void> => {
     setView({ kind: "checking" })
@@ -84,6 +109,7 @@ export function UpdateEntry({ wide, t }: UpdateEntryProps) {
         onClick={openPanel}
       >
         <IconDownloadOutline16 size={wide ? 16 : 18} />
+        {hasUpdate && <span className={css.badge} data-testid="update-badge" aria-hidden="true" />}
       </button>
       {open && createPortal((
         <div className={css.overlay} role="presentation">
