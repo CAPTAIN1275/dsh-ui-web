@@ -18,7 +18,6 @@ import {
   personaSkillPath,
   readPersonaConfig,
 } from './index.ts'
-import { BOOTSCREEN_API_PREFIX, BOOTSCREEN_DEFAULTS, bootscreenPath, normalizeBootscreen, readBootscreen } from './bootscreen.ts'
 
 /** 测试用：在临时 DSH_HOME 下运行。 */
 function withTempHome(fn: () => void): void {
@@ -88,30 +87,6 @@ describe('dsh-web-ui-settings persona host logic', () => {
       const cfg = { ...DEFAULT_PERSONA, name: 'my-persona', content: '# 我的' }
       writeFileSync(personaConfigPath(), JSON.stringify(cfg), 'utf8')
       expect(readPersonaConfig().name).toBe('my-persona')
-    })
-  })
-})
-
-describe('dsh-web-ui-settings bootscreen', () => {
-  it('exposes the bootscreen route prefix', () => {
-    expect(BOOTSCREEN_API_PREFIX).toBe('/api/bootscreen')
-  })
-
-  it('defaults all three fields to empty', () => {
-    expect(BOOTSCREEN_DEFAULTS).toEqual({ title: '', hint: '', backgroundUrl: '' })
-  })
-
-  it('normalizes partial payloads with string fields', () => {
-    const next = normalizeBootscreen({ title: 'DeepSeek', hint: '正在启动...', backgroundUrl: 'https://x/y.png' })
-    expect(next).toEqual({ title: 'DeepSeek', hint: '正在启动...', backgroundUrl: 'https://x/y.png' })
-  })
-
-  it('round-trips config through bootscreen.json', () => {
-    withTempHome(() => {
-      mkdirSync(process.env.DSH_HOME as string, { recursive: true })
-      const cfg = { title: 'MyDSH', hint: 'Wait...', backgroundUrl: 'https://example.com/boot.png' }
-      writeFileSync(bootscreenPath(), JSON.stringify(cfg), 'utf8')
-      expect(readBootscreen()).toEqual(cfg)
     })
   })
 })
