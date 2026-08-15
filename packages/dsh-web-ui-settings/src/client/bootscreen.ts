@@ -83,8 +83,9 @@ function applyOnce(config: BootScreenConfig): void {
 }
 
 /**
- * 挂载启动屏替换器。MutationObserver 监听 body 变化——启动屏在插件加载
- * 期间/重载时会重新渲染，替换会随之生效。返回 disposer。
+ * 挂载启动屏替换器。MutationObserver 监听 body 的节点增删与文本变化——
+ * 启动屏在插件加载期间会被 React 反复重渲染（官方文本被写回），监听
+ * characterData 才能把替换拉回来。返回 disposer。
  * @returns 卸载函数。
  */
 export async function mountBootScreenReplacer(): Promise<() => void> {
@@ -94,6 +95,6 @@ export async function mountBootScreenReplacer(): Promise<() => void> {
   }
   applyOnce(config)
   const observer = new MutationObserver(() => applyOnce(config))
-  observer.observe(document.body, { childList: true, subtree: true })
+  observer.observe(document.body, { childList: true, characterData: true, subtree: true })
   return () => observer.disconnect()
 }
