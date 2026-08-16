@@ -263,6 +263,65 @@ export function AuroraBackgroundSection() {
           onChange={(e) => write({ blur: Number(e.target.value) })}
         />
       </div>
+      <GlassSliders />
+    </div>
+  )
+}
+
+/**
+ * 液态玻璃调节（照搬 aqua 的 blur/frost 机制）：滑块写 localStorage
+ * （dsh.ui-skin-aurora.blur/frost，AquaLayer 读取），并派发 AURORA_EVENT
+ * 让 aurora 皮肤即时应用。滑块值只在本地保存（浏览器 localStorage）。
+ */
+function GlassSliders(): JSX.Element {
+  const readNum = (key: string, fallback: number): number => {
+    try {
+      const raw = localStorage.getItem(key)
+      const n = raw === null ? Number.NaN : Number(raw)
+      return Number.isFinite(n) ? n : fallback
+    } catch {
+      return fallback
+    }
+  }
+  const [blur, setBlur] = useState(() => readNum('dsh.ui-skin-aurora.blur', 14))
+  const [frost, setFrost] = useState(() => readNum('dsh.ui-skin-aurora.frost', 50))
+
+  const applyGlass = (key: string, value: number, set: (v: number) => void): void => {
+    set(value)
+    try {
+      localStorage.setItem(key, String(value))
+    } catch {
+      /* localStorage 不可用时仅本次生效 */
+    }
+    window.dispatchEvent(new Event(AURORA_EVENT))
+  }
+
+  return (
+    <div className={cls('auroraGlass')}>
+      <div className={cls('auroraField')}>
+        <span className={cls('auroraFieldLabel')}>玻璃模糊：{blur}px</span>
+        <input
+          className={cls('auroraRange')}
+          type="range"
+          min={0}
+          max={40}
+          step={1}
+          value={blur}
+          onChange={(e) => applyGlass('dsh.ui-skin-aurora.blur', Number(e.target.value), setBlur)}
+        />
+      </div>
+      <div className={cls('auroraField')}>
+        <span className={cls('auroraFieldLabel')}>玻璃磨砂：{frost}</span>
+        <input
+          className={cls('auroraRange')}
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={frost}
+          onChange={(e) => applyGlass('dsh.ui-skin-aurora.frost', Number(e.target.value), setFrost)}
+        />
+      </div>
     </div>
   )
 }

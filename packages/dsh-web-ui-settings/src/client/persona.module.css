@@ -14,6 +14,23 @@
   gap: 8px;
 }
 
+.presetBtn {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary, #eef1ff);
+  background: var(--dsw-alias-interactive-bg-primary, rgba(122, 162, 255, 0.2));
+  border: 1px solid var(--dsw-alias-border-l2, rgba(140, 160, 255, 0.3));
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.presetBtn:hover {
+  background: var(--dsw-alias-interactive-bg-hover, rgba(122, 162, 255, 0.3));
+  border-color: var(--dsw-alias-brand-primary, #7aa2ff);
+}
+
 .switchRow {
   display: inline-flex;
   align-items: center;

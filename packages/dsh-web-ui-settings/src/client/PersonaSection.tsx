@@ -15,7 +15,15 @@ export interface PersonaConfigView {
   content: string
 }
 
+/** 一个内置人格预设。 */
+export interface PersonaPresetView {
+  id: string
+  label: string
+  persona: PersonaConfigView
+}
+
 const PERSONA_CONFIG_URL = '/api/persona/config'
+const PERSONA_PRESETS_URL = '/api/persona/presets'
 
 /** 从宿主读取当前人格配置。 */
 async function fetchConfig(): Promise<PersonaConfigView> {
@@ -23,6 +31,18 @@ async function fetchConfig(): Promise<PersonaConfigView> {
   if (!response.ok) throw new Error(`persona config GET failed: ${response.status}`)
   const data = (await response.json()) as { ok: boolean; config: PersonaConfigView }
   return data.config
+}
+
+/** 从宿主读取内置人格预设。 */
+async function fetchPresets(): Promise<PersonaPresetView[]> {
+  try {
+    const response = await fetch(PERSONA_PRESETS_URL)
+    if (!response.ok) return []
+    const data = (await response.json()) as { ok: boolean; presets: PersonaPresetView[] }
+    return Array.isArray(data.presets) ? data.presets : []
+  } catch {
+    return []
+  }
 }
 
 /** 保存人格配置到宿主。 */
@@ -46,6 +66,7 @@ async function saveConfig(config: PersonaConfigView): Promise<PersonaConfigView>
 export function PersonaSection(): ReactElement {
   const [config, setConfig] = useState<PersonaConfigView | null>(null)
   const [draft, setDraft] = useState<PersonaConfigView | null>(null)
+  const [presets, setPresets] = useState<PersonaPresetView[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -57,10 +78,25 @@ export function PersonaSection(): ReactElement {
         setDraft(cfg)
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
+    void fetchPresets().then(setPresets)
   }, [])
 
   const update = useCallback((patch: Partial<PersonaConfigView>) => {
     setDraft((prev) => (prev === null ? prev : { ...prev, ...patch }))
+    setSaved(false)
+  }, [])
+
+  /** 一键填充预设到草稿（不直接保存，可编辑后保存）。 */
+  const applyPreset = useCallback((preset: PersonaPresetView) => {
+    setDraft((prev) => {
+      if (prev === null) return prev
+      return {
+        enabled: prev.enabled,
+        name: preset.persona.name,
+        description: preset.persona.description,
+        content: preset.persona.content,
+      }
+    })
     setSaved(false)
   }, [])
 
@@ -101,6 +137,23 @@ export function PersonaSection(): ReactElement {
           <span>启用人格（常驻生效）</span>
         </label>
       </div>
+
+      {presets.length > 0 && (
+        <div className={css.row}>
+          <span className={css.label}>预设：</span>
+          {presets.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className={css.presetBtn}
+              onClick={() => applyPreset(preset)}
+              title="填充预设内容到下方表单（可继续编辑后保存）"
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={css.field}>
         <label className={css.label} htmlFor="persona-name">技能名（小写字母/数字/短横线）</label>

@@ -249,9 +249,22 @@ export function normalizeConfig(raw: Partial<PersonaConfig>): PersonaConfig | un
   return { enabled, name, description, content }
 }
 
-/** 请求分发：GET/PUT /api/persona/config。 */
+/** 内置人格预设（一键填充草稿，可继续编辑后保存）。 */
+export const PERSONA_PRESETS: Array<{ id: string; label: string; persona: PersonaConfig }> = [
+  {
+    id: 'catgirl',
+    label: '猫娘（小咪）',
+    persona: DEFAULT_PERSONA,
+  },
+]
+
+/** 请求分发：GET/PUT /api/persona/config, GET /api/persona/presets。 */
 function handle(req: IncomingMessage, res: ServerResponse): void {
   const url = new URL(req.url ?? '/', 'http://dsh.local')
+  if (url.pathname === `${PERSONA_API_PREFIX}/presets` && req.method === 'GET') {
+    sendJson(res, 200, { ok: true, presets: PERSONA_PRESETS })
+    return
+  }
   if (url.pathname === `${PERSONA_API_PREFIX}/config` && req.method === 'GET') {
     sendJson(res, 200, { ok: true, config: readPersonaConfig() })
     return

@@ -3,7 +3,9 @@
 /* ---- 深色模式（默认）：背景幕很透（图片清晰可见），面板中性暗色半透明 ---- */
 body[data-dsh-aurora] {
   --dsw-alias-bg-base: rgba(5, 8, 26, 0.28);
-  --dsw-specific-sidebar-fill: rgba(5, 8, 26, 0.35);
+  /* 侧边栏内部填充改透明：外层玻璃（aqua sidebarCol 磨砂+圆角）负责底色，
+     内部不再透出深色直角框。 */
+  --dsw-specific-sidebar-fill: transparent;
   --dsw-specific-input-major: rgba(8, 10, 22, 0.42);
   --dsw-specific-sidebar-nav-item-hover: rgba(255, 255, 255, 0.08);
   --dsw-specific-sidebar-nav-item-active: rgba(122, 162, 255, 0.18);
@@ -29,7 +31,8 @@ body[data-dsh-aurora] {
 /* ---- 浅色模式：背景幕很透，白色半透明面板 + 深色文字 ---- */
 body[data-dsh-aurora]:not([data-ds-dark-theme]) {
   --dsw-alias-bg-base: rgba(250, 252, 255, 0.32);
-  --dsw-specific-sidebar-fill: rgba(250, 252, 255, 0.4);
+  /* 同深色：内部填充透明，外层玻璃负责侧边栏底色。 */
+  --dsw-specific-sidebar-fill: transparent;
   --dsw-specific-input-major: rgba(250, 252, 255, 0.5);
   --dsw-specific-sidebar-nav-item-hover: rgba(15, 20, 45, 0.06);
   --dsw-specific-sidebar-nav-item-active: rgba(59, 91, 216, 0.14);
@@ -52,11 +55,12 @@ body[data-dsh-aurora]:not([data-ds-dark-theme]) {
   --dsw-alias-button-primary-hover: #2f4ac4;
 }
 
-/* ---- 右侧面板（aionui 文件/变更）tokens：表面值与左侧边栏一致 ---- */
+/* ---- 右侧面板（aionui 文件/变更）tokens：底色交给外层 details 玻璃，
+   内部填充改透明（避免深色直角框盖住玻璃）。交互反馈（hover/选中）保留。 ---- */
 body[data-dsh-aurora][data-ds-dark-theme] {
-  --aion-bg-base: rgba(5, 8, 26, 0.3);
-  --aion-bg-1: rgba(5, 8, 26, 0.35);
-  --aion-bg-2: rgba(5, 8, 26, 0.3);
+  --aion-bg-base: transparent;
+  --aion-bg-1: transparent;
+  --aion-bg-2: transparent;
   --aion-bg-3: rgba(140, 160, 255, 0.16);
   --aion-bg-hover: rgba(255, 255, 255, 0.06);
   --aion-bg-active: rgba(255, 255, 255, 0.1);
@@ -65,9 +69,9 @@ body[data-dsh-aurora][data-ds-dark-theme] {
   --aion-border-base: rgba(140, 160, 255, 0.16);
 }
 body[data-dsh-aurora]:not([data-ds-dark-theme]) {
-  --aion-bg-base: rgba(250, 252, 255, 0.35);
-  --aion-bg-1: rgba(250, 252, 255, 0.4);
-  --aion-bg-2: rgba(250, 252, 255, 0.35);
+  --aion-bg-base: transparent;
+  --aion-bg-1: transparent;
+  --aion-bg-2: transparent;
   --aion-bg-3: rgba(20, 30, 80, 0.12);
   --aion-bg-hover: rgba(15, 20, 45, 0.06);
   --aion-bg-active: rgba(15, 20, 45, 0.1);
@@ -117,6 +121,19 @@ body[data-dsh-aurora] button[class*="newSession"]:hover {
   background: var(--dsw-alias-interactive-bg-hover);
 }
 
+/* 侧边栏背景模糊层（独立 fixed 层）：sidebarCol 不加 backdrop-filter（否则
+   捕获设置弹窗），这里用 body 子级的独立层模糊侧边栏背后的背景幕——磨砂
+   玻璃 + 透过看模糊背景，设置弹窗正常。
+   两个关键点：只写标准 backdrop-filter（-webkit- 前缀在用户浏览器不渲染）；
+   带一点背景色（全透明元素 Chromium 不渲染 backdrop-filter）。 */
+body[data-dsh-aurora] [data-aurora-sidebar-blur] {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(var(--dsh-aurora-blur, 14px));
+}
+body[data-dsh-aurora][data-ds-dark-theme] [data-aurora-sidebar-blur] {
+  background: rgba(0, 0, 0, 0.06);
+}
+
 /* ---- 输入框毛玻璃：参考登录弹窗玻璃卡片（blur 30px + 半透明底 + 细边框 + 内高光） ---- */
 body[data-dsh-aurora] [data-composer-card] {
   background: rgba(16, 25, 38, 0.42);
@@ -133,6 +150,12 @@ body[data-dsh-aurora]:not([data-ds-dark-theme]) [data-composer-card] {
   box-shadow: 0 8px 32px rgba(20, 30, 80, 0.14), inset 0 1px rgba(255, 255, 255, 0.8);
 }
 
+/* 去掉官方 composerSeat 的底部渐变遮罩（半透明 bg-base 会让它变成
+   从输入框顶部延伸到页面底部的淡淡渐变）。 */
+body[data-dsh-aurora] [class*="composerSeat"] {
+  background: transparent !important;
+}
+
 /* ---- 模型 trigger：模型名后显示推理等级，格式「模型名 · 等级」 ---- */
 body[data-dsh-aurora] [class*="triggerEffort"]::before {
   content: '· ';
@@ -143,17 +166,8 @@ body[data-dsh-aurora] [class*="triggerEffort"] {
   color: var(--dsw-alias-label-secondary, #b9c2e8);
 }
 
-/* ---- 用户消息气泡：毛玻璃透明（替换官方实色底） ---- */
-body[data-dsh-aurora] [class*="userRow"] [class*="bubble"] {
-  background: rgba(94, 124, 255, 0.24);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(140, 160, 255, 0.18);
-}
-body[data-dsh-aurora]:not([data-ds-dark-theme]) [class*="userRow"] [class*="bubble"] {
-  background: rgba(255, 255, 255, 0.42);
-  border: 1px solid rgba(20, 30, 80, 0.14);
-}
+/* 消息气泡玻璃已由 aqua 玻璃层接管（aqua.module.css 的 [class*='bubble']，
+   滑块联动）——这里删掉旧的固定值规则避免冲突。 */
 
 /* ---- 设置卡片（插件配置中心） ---- */
 .auroraCard {

@@ -15,10 +15,16 @@ import { createRoot, type Root } from 'react-dom/client'
 import { createElement } from 'react'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import { EffortPanel } from './effort/EffortPanel.tsx'
+// 液态玻璃：aqua（DSH-Transparent-UI-Plugin）机制照搬（见 aqua/ 目录）。
+// AquaLayer 挂 html 属性 + blur/frost 变量；玻璃调节（blur/frost）由
+// 皮肤中心极光卡片提供（localStorage + AURORA_EVENT 驱动本层）。
+import { AquaLayer } from './aqua/theme-layer.ts'
+// aqua 玻璃样式表（side-effect 注入）。
+import './aqua/aqua.module.css'
 import css from './aurora.module.css'
 
-/** 需要的客户端服务：connection（模型目录读写）、sessions（当前会话）。 */
-export const inject: string[] = ['connection', 'sessions']
+/** 需要的客户端服务：connection/sessions（aurora 背景与 Effort）、theme（aqua 层）。 */
+export const inject: string[] = ['connection', 'sessions', 'theme']
 
 /** 配置变更事件（皮肤中心卡片写入后派发，本半区监听重绘）。 */
 export const AURORA_EVENT = 'dshc-aurora-config'
@@ -70,7 +76,6 @@ function auroraGradient(dark: boolean): string {
     ? [
         'radial-gradient(1200px 800px at 15% 8%, rgba(90,120,255,0.38), transparent 60%)',
         'radial-gradient(1000px 700px at 85% 18%, rgba(0,200,180,0.24), transparent 55%)',
-        'radial-gradient(800px 700px at 60% 115%, rgba(160,80,255,0.15), transparent 60%)',
         'linear-gradient(180deg, #05081a 0%, #0c1234 55%, #111736 100%)',
       ].join(',')
     : [
@@ -88,7 +93,115 @@ function auroraGradient(dark: boolean): string {
  */
 export function apply(ctx: ClientContext): void {
   const body = document.body
+  // token 配色（body 作用域，官方基础 token 定义在 body 上）。
   body.dataset.dshAurora = ''
+
+  // 液态玻璃层（aqua 机制照搬）：先挂载（ambient 背景层先入 DOM），
+  // aurora 的自定义背景层随后挂载，保证用户背景盖在 aqua 的 ambient 之上。
+  const glass = new AquaLayer(ctx)
+  glass.setEnabled(true)
+
+  // 侧边栏背景模糊层：sidebarCol 不加 backdrop-filter（会捕获设置弹窗），
+  // 用 body 子级的独立 fixed 层（z-index 0，低于侧边栏 9）模糊侧边栏背后的
+  // 背景幕；弹窗 z-index 高、不在该层 DOM 内，不会被捕获。
+  // 模糊层精确匹配悬浮卡片区域（位置/大小/圆角），不会在卡片外露出直角层。
+  const sidebarBlur = document.createElement('div')
+  sidebarBlur.dataset.auroraSidebarBlur = ''
+  sidebarBlur.style.cssText = 'position: fixed; left: 0; top: 0; width: 0; height: 0; z-index: 0; pointer-events: none;'
+  body.appendChild(sidebarBlur)
+  let blurObserver: ResizeObserver | null = null
+  const syncSidebarBlur = (): void => {
+    const col = document.querySelector<HTMLElement>('[class*="sidebarCol"]')
+    if (col === null) return
+    const rect = col.getBoundingClientRect()
+    sidebarBlur.style.left = `${rect.left}px`
+    sidebarBlur.style.top = `${rect.top}px`
+    sidebarBlur.style.width = `${rect.width}px`
+    sidebarBlur.style.height = `${rect.height}px`
+    sidebarBlur.style.borderRadius = '20px'
+  }
+  // apply 早于官方 shell 渲染 sidebarCol：等它出现再同步宽度 + 挂 ResizeObserver。
+  const sidebarWaitObserver = new MutationObserver(() => {
+    syncSidebarBlur()
+    if (blurObserver === null && typeof ResizeObserver !== 'undefined') {
+      const col = document.querySelector<HTMLElement>('[class*="sidebarCol"]')
+      if (col !== null) {
+        blurObserver = new ResizeObserver(syncSidebarBlur)
+        blurObserver.observe(col)
+      }
+    }
+  })
+
+  // 侧边栏收起/展开动画（JS 驱动）：CSS transition 在 React 重建节点时
+  // 有概率不触发——用 Web Animations API 直接对 sidebarCol 做 margin 动画
+  // （真实收缩/展开 + overshoot 弹性曲线），稳定触发。
+  // 折叠状态持久化：存 localStorage，刷新后自动恢复。
+  // 恢复时提前隐藏侧边栏列，避免"刷新先展开、加载好才收起"的闪烁。
+  const SIDEBAR_COLLAPSED_KEY = 'dsh.ui-skin-aurora.sidebar-collapsed'
+  let restorePending = false
+  let restoreHideStyle: HTMLStyleElement | null = null
+  try {
+    restorePending = localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'
+  } catch { /* ignore */ }
+  if (restorePending) {
+    restoreHideStyle = document.createElement('style')
+    restoreHideStyle.textContent = '[data-dsh-frame] [class*="sidebarCol"] { visibility: hidden; }'
+    document.head.appendChild(restoreHideStyle)
+  }
+  let sidebarCollapseObserver: MutationObserver | null = null
+  const bounceSidebar = (): void => {
+    const col = document.querySelector<HTMLElement>('[class*="sidebarCol"]')
+    const frame = document.querySelector<HTMLElement>('[data-dsh-frame]')
+    if (frame === null) return
+    const collapsed = frame.hasAttribute('data-sidebar-collapsed')
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? 'true' : 'false')
+    } catch { /* localStorage 不可用则仅本次生效 */ }
+    // 恢复完成：已处于折叠态，移除隐藏、跳过动画。
+    if (restorePending && collapsed) {
+      restorePending = false
+      restoreHideStyle?.remove()
+      restoreHideStyle = null
+      return
+    }
+    if (col === null || typeof col.animate !== 'function') return
+    // JS 弹性兜底：scaleX 轻微弹跳（合成器动画，React 重建节点也可见）。
+    // 收缩/展开的主动画由 CSS margin/padding transition 提供。
+    col.animate(
+      [
+        { transform: 'scaleX(1)' },
+        { transform: collapsed ? 'scaleX(0.97)' : 'scaleX(1.03)' },
+        { transform: 'scaleX(1)' },
+      ],
+      { duration: 340, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' },
+    )
+  }
+  // 刷新后恢复折叠状态：读 localStorage，若存了折叠且当前未折叠则点官方折叠按钮。
+  const restoreSidebarCollapsed = (): void => {
+    try {
+      if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) !== 'true') return
+      const frame = document.querySelector<HTMLElement>('[data-dsh-frame]')
+      if (frame !== null && !frame.hasAttribute('data-sidebar-collapsed')) {
+        const toggle = document.querySelector<HTMLElement>('[class*="toggle"]')
+        toggle?.click()
+      }
+    } catch { /* ignore */ }
+  }
+  const observeFrameCollapse = (): void => {
+    if (sidebarCollapseObserver !== null) return
+    const frame = document.querySelector<HTMLElement>('[data-dsh-frame]')
+    if (frame === null) return
+    sidebarCollapseObserver = new MutationObserver(bounceSidebar)
+    sidebarCollapseObserver.observe(frame, { attributes: true, attributeFilter: ['data-sidebar-collapsed'] })
+    // frame 出现后尽早恢复持久化的折叠状态（等官方初始渲染完成）。
+    window.setTimeout(restoreSidebarCollapsed, 150)
+  }
+  // 等 frame 出现再挂监听。
+  const collapseWaitObserver = new MutationObserver(observeFrameCollapse)
+  collapseWaitObserver.observe(body, { childList: true, subtree: true })
+  observeFrameCollapse()
+  sidebarWaitObserver.observe(body, { childList: true, subtree: true })
+  syncSidebarBlur()
 
   let backdrop: HTMLElement | null = null
   let videoEl: HTMLVideoElement | null = null
@@ -139,8 +252,24 @@ export function apply(ctx: ClientContext): void {
     backdrop = layer
   }
 
+  /** 读 localStorage 玻璃值（皮肤中心极光卡片写入），应用到 AquaLayer。 */
+  const syncGlass = (): void => {
+    const readNum = (key: string, fallback: number): number => {
+      try {
+        const raw = localStorage.getItem(key)
+        const n = raw === null ? Number.NaN : Number(raw)
+        return Number.isFinite(n) ? n : fallback
+      } catch {
+        return fallback
+      }
+    }
+    glass.setBlur(readNum('dsh.ui-skin-aurora.blur', 14))
+    glass.setFrost(readNum('dsh.ui-skin-aurora.frost', 50))
+  }
+
   const refresh = (): void => {
     void fetchConfig().then((cfg) => renderBackdrop(cfg))
+    syncGlass()
   }
 
   // 皮肤中心卡片写入后联动重绘。
@@ -211,6 +340,11 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(
     () => () => {
       delete body.dataset.dshAurora
+      sidebarWaitObserver.disconnect()
+      collapseWaitObserver.disconnect()
+      sidebarCollapseObserver?.disconnect()
+      blurObserver?.disconnect()
+      sidebarBlur.remove()
       observer.disconnect()
       window.removeEventListener(AURORA_EVENT, onConfig)
       document.removeEventListener('click', onDocClick, true)

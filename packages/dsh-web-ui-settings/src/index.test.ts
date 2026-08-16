@@ -10,6 +10,7 @@ import { join } from 'node:path'
 import { en, zh, type WebUIPluginsKey } from './client/locales.ts'
 import {
   DEFAULT_PERSONA,
+  PERSONA_PRESETS,
   SKILL_NAME_RE,
   applyPersonaSkill,
   normalizeConfig,
@@ -88,5 +89,20 @@ describe('dsh-web-ui-settings persona host logic', () => {
       writeFileSync(personaConfigPath(), JSON.stringify(cfg), 'utf8')
       expect(readPersonaConfig().name).toBe('my-persona')
     })
+  })
+})
+
+describe('dsh-web-ui-settings persona presets', () => {
+  it('ships the catgirl preset with a valid skill name and body', () => {
+    const presets = PERSONA_PRESETS
+    expect(presets.length).toBeGreaterThan(0)
+    const catgirl = presets.find((p) => p.id === 'catgirl')
+    expect(catgirl).toBeDefined()
+    expect(SKILL_NAME_RE.test(catgirl!.persona.name)).toBe(true)
+    expect(catgirl!.persona.description.length).toBeGreaterThan(0)
+    expect(catgirl!.persona.content.length).toBeGreaterThan(0)
+    // 预设内容不含具体情绪标签（如 <<兴奋>>），只允许「禁止使用」规则里的抽象写法。
+    expect(catgirl!.persona.content).not.toContain('<<兴奋>>')
+    expect(catgirl!.persona.content).not.toContain('<<难过>>')
   })
 })

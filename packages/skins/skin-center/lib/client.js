@@ -502,8 +502,70 @@ window.__ModuleLoader__.load({
 							value: cfg.blur,
 							onChange: (e) => write({ blur: Number(e.target.value) })
 						})]
-					})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(GlassSliders, {})
 				]
+			});
+		}
+		/**
+		* 液态玻璃调节（照搬 aqua 的 blur/frost 机制）：滑块写 localStorage
+		* （dsh.ui-skin-aurora.blur/frost，AquaLayer 读取），并派发 AURORA_EVENT
+		* 让 aurora 皮肤即时应用。滑块值只在本地保存（浏览器 localStorage）。
+		*/
+		function GlassSliders() {
+			const readNum = (key, fallback) => {
+				try {
+					const raw = localStorage.getItem(key);
+					const n = raw === null ? NaN : Number(raw);
+					return Number.isFinite(n) ? n : fallback;
+				} catch {
+					return fallback;
+				}
+			};
+			const [blur, setBlur] = (0, react.useState)(() => readNum("dsh.ui-skin-aurora.blur", 14));
+			const [frost, setFrost] = (0, react.useState)(() => readNum("dsh.ui-skin-aurora.frost", 50));
+			const applyGlass = (key, value, set) => {
+				set(value);
+				try {
+					localStorage.setItem(key, String(value));
+				} catch {}
+				window.dispatchEvent(new Event(AURORA_EVENT));
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: cls("auroraGlass"),
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: cls("auroraField"),
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+						className: cls("auroraFieldLabel"),
+						children: [
+							"玻璃模糊：",
+							blur,
+							"px"
+						]
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+						className: cls("auroraRange"),
+						type: "range",
+						min: 0,
+						max: 40,
+						step: 1,
+						value: blur,
+						onChange: (e) => applyGlass("dsh.ui-skin-aurora.blur", Number(e.target.value), setBlur)
+					})]
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: cls("auroraField"),
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+						className: cls("auroraFieldLabel"),
+						children: ["玻璃磨砂：", frost]
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+						className: cls("auroraRange"),
+						type: "range",
+						min: 0,
+						max: 100,
+						step: 1,
+						value: frost,
+						onChange: (e) => applyGlass("dsh.ui-skin-aurora.frost", Number(e.target.value), setFrost)
+					})]
+				})]
 			});
 		}
 		//#endregion

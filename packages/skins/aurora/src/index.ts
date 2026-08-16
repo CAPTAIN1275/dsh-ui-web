@@ -9,7 +9,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import { homedir } from 'node:os'
 
@@ -156,6 +156,8 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
   }
 
   // 本地媒体静态服务：GET /api/skin-aurora/media/<file>。
+  // 支持 HTTP Range（视频流式播放）：浏览器请求视频时带 Range 头，必须
+  // 返回 206 Partial Content，否则整个视频要下完才能播、进度条拖不动。
   if (pathname.startsWith(`${AURORA_API_PREFIX}/media/`) && req.method === 'GET') {
     const filename = pathname.slice(`${AURORA_API_PREFIX}/media/`.length)
     // 防路径穿越：只允许文件名（不含斜杠）。
@@ -165,10 +167,43 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
     }
     const filePath = join(mediaDir(), filename)
     try {
-      const data = readFileSync(filePath)
       const mime = mimeFromExt(extname(filename))
-      res.writeHead(200, { 'content-type': mime, 'cache-control': 'public, max-age=31536000, immutable' })
-      res.end(data)
+      const stat = statSync(filePath)
+      const total = stat.size
+      const base = {
+        'content-type': mime,
+        'accept-ranges': 'bytes',
+        'cache-control': 'public, max-age=31536000, immutable',
+      }
+      // Range: bytes=start-end / bytes=start- / bytes=-suffix。
+      const range = req.headers.range
+      const match = typeof range === 'string' ? /^bytes=(\d*)-(\d*)$/.exec(range) : null
+      if (match !== null) {
+        const start = match[1] === '' ? 0 : Number.parseInt(match[1], 10)
+        let end = match[2] === '' ? total - 1 : Number.parseInt(match[2], 10)
+        if (Number.isNaN(start) || Number.isNaN(end)) {
+          res.writeHead(416, { 'content-range': `bytes */${total}` })
+          res.end()
+          return
+        }
+        if (end >= total) end = total - 1
+        if (start > end || start >= total) {
+          res.writeHead(416, { 'content-range': `bytes */${total}` })
+          res.end()
+          return
+        }
+        const length = end - start + 1
+        res.writeHead(206, {
+          ...base,
+          'content-range': `bytes ${start}-${end}/${total}`,
+          'content-length': length,
+        })
+        createReadStream(filePath, { start, end }).pipe(res)
+        return
+      }
+      // 无 Range：全量返回（图片/动图走这里）。
+      res.writeHead(200, { ...base, 'content-length': total })
+      createReadStream(filePath).pipe(res)
     } catch {
       sendJson(res, 404, { ok: false, error: 'not found' })
     }

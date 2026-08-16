@@ -18,7 +18,7 @@
     "id": "ui-skin-aurora",
     "bundleWired": true
   },
-  "order": 99,
+  "order": 1.5,
   "preview": {
     "light": "packages/skins/aurora/preview/light.png",
     "dark": "packages/skins/aurora/preview/dark.png"
