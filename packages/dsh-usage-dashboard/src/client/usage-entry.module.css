@@ -50,7 +50,7 @@
   display: none;
 }
 
-/* 手机端查看弹窗 */
+/* 手机端查看弹窗（玻璃质感） */
 .phoneOverlay {
   position: fixed;
   inset: 0;
@@ -58,18 +58,36 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   padding: 16px;
 }
 
 .phoneCard {
   width: 320px;
   max-width: 100%;
-  border-radius: 14px;
-  background: var(--dsw-alias-bg-layer-1, #1a1f2e);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, #1a1f2e) 82%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--dsw-alias-border-l2, rgba(128, 128, 128, 0.35));
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px rgba(255, 255, 255, 0.08);
   padding: 16px;
+}
+
+.phoneQrBox {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.phoneQr {
+  width: 168px;
+  height: 168px;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px;
 }
 
 .phoneHead {

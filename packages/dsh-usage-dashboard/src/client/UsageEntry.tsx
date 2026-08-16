@@ -14,6 +14,7 @@
  * @module @captain1275/dsh-usage-dashboard/client/UsageEntry
  */
 import { createRoot, type Root } from 'react-dom/client'
+import QRCode from 'qrcode'
 import { DashboardPanel } from './DashboardPanel.tsx'
 import css from './usage-entry.module.css'
 import { t } from './locales.ts'
@@ -119,7 +120,8 @@ function openPhonePanel(): void {
   host.innerHTML = `
     <div class="${css.phoneCard}">
       <div class="${css.phoneHead}"><span>手机端查看</span><button class="${css.phoneClose}" aria-label="关闭">×</button></div>
-      <p class="${css.phoneHint}">手机连同一 Wi-Fi，浏览器打开以下地址：</p>
+      <div class="${css.phoneQrBox}"><img class="${css.phoneQr}" alt="二维码" hidden /></div>
+      <p class="${css.phoneHint}">手机连同一 Wi-Fi，扫码或浏览器打开以下地址：</p>
       <div class="${css.phoneAddrs}">加载中…</div>
       <button class="${css.phoneCopy}">复制地址</button>
     </div>`
@@ -135,18 +137,34 @@ function openPhonePanel(): void {
     }).catch(() => { /* ignore */ })
   })
   const addrsBox = host.querySelector<HTMLElement>(`.${css.phoneAddrs}`)
+  const qrImg = host.querySelector<HTMLImageElement>(`.${css.phoneQr}`)
   void fetch('/api/usage/lan').then(r => r.json()).then((data) => {
     if (addrsBox === null || !host.isConnected) return
+    const d = data as { ok?: boolean; addresses?: string[] }
+    if (d?.ok !== true || !Array.isArray(d.addresses)) {
+      addrsBox.textContent = '获取局域网地址失败（请重启 dsh 后重试）'
+      return
+    }
     const port = location.port !== '' ? `:${location.port}` : ''
-    const urls = ((data as { addresses?: string[] }).addresses ?? []).map(ip => `http://${ip}${port}`)
+    const urls = d.addresses.map(ip => `http://${ip}${port}`)
     if (urls.length === 0) {
       addrsBox.textContent = '未检测到局域网地址（请检查网络）'
       return
     }
     phoneCopyUrl = urls[0] ?? ''
     addrsBox.innerHTML = urls.map(u => `<div class="${css.phoneAddr}"><code>${u}</code></div>`).join('')
+    // 二维码：扫第一个地址（192 网段优先）。
+    if (qrImg !== null) {
+      void QRCode.toDataURL(phoneCopyUrl, { width: 168, margin: 1, errorCorrectionLevel: 'M' })
+        .then(dataUrl => {
+          if (!host.isConnected) return
+          qrImg.src = dataUrl
+          qrImg.hidden = false
+        })
+        .catch(() => { /* 二维码生成失败，地址仍可复制 */ })
+    }
   }).catch(() => {
-    if (addrsBox !== null && host.isConnected) addrsBox.textContent = '获取局域网地址失败'
+    if (addrsBox !== null && host.isConnected) addrsBox.textContent = '获取局域网地址失败（请重启 dsh 后重试）'
   })
 }
 
