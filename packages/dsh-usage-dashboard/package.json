@@ -1,7 +1,7 @@
 {
   "name": "@captain1275/dsh-usage-dashboard",
   "description": "Usage dashboard for DSH web: colorful per-session / per-day / per-model token usage charts and history (local persistence via ~/.dsh/usage.json).",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "type": "module",
   "main": "lib/index.js",
   "exports": {

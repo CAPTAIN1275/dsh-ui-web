@@ -1,7 +1,7 @@
 {
   "name": "@captain1275/dsh-client-ui-skin-aurora",
   "description": "极光（Aurora）皮肤：支持自定义背景图片（URL / 透明度 / 模糊）与极光渐变背景，半透明毛玻璃面板，浅色 / 深色两套调色板。",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "type": "module",
   "main": "lib/index.js",
   "exports": {

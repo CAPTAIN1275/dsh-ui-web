@@ -1,6 +1,6 @@
 {
   "name": "@captain1275/dsh-live-stats",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Live token estimates and generation throughput for DSH Web",
   "type": "module",
   "main": "lib/index.js",
