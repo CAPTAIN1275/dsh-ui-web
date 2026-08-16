@@ -360,7 +360,9 @@ export function apply(ctx: Context): void {
   ctx.inject(['webServer'], (httpCtx) => {
     const dispose = httpCtx.webServer.register({ kind: 'prefix', path: PERSONA_API_PREFIX, handler: handle })
     const disposeVersion = httpCtx.webServer.register({ kind: 'prefix', path: VERSION_API_PREFIX, handler: handle })
-    httpCtx.effect(() => {
+    // effect 回调必须返回清理函数（cordis 在上下文销毁时才调用），
+    // 不能写成立即执行的花括号体，否则路由注册后马上被取消。
+    httpCtx.effect(() => () => {
       dispose()
       disposeVersion()
     }, 'ui-web-ui-settings: persona + version routes')
