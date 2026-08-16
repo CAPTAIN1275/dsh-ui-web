@@ -204,9 +204,10 @@ export function apply(ctx: Context, config?: Config): void {
   // sampling stance. The QR can only advertise addresses the fence accepts;
   // every interface gets its own base URL so a multi-homed machine can pick
   // the network the phone can actually reach.
-  const lanBases = ctx.webServer.host === '0.0.0.0'
-    ? lanIPv4Addresses().map(address => ({ address, base: `http://${address}:${String(ctx.webServer.port)}` }))
-    : []
+  // 总是枚举局域网地址（不依赖 --host 0.0.0.0）：dsh 出于安全禁用了
+  // 0.0.0.0，但通过 netsh portproxy / 防火墙放行时局域网同样可达——枚举
+  // 局域网地址让二维码/链接可用，避免误报"手机无法访问"。
+  const lanBases = lanIPv4Addresses().map(address => ({ address, base: `http://${address}:${String(ctx.webServer.port)}` }))
   service.setLanBases(lanBases)
   const lanAddresses = lanBases.map(entry => entry.address)
 
