@@ -359,6 +359,10 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
 export function apply(ctx: Context): void {
   ctx.inject(['webServer'], (httpCtx) => {
     const dispose = httpCtx.webServer.register({ kind: 'prefix', path: PERSONA_API_PREFIX, handler: handle })
-    httpCtx.effect(() => dispose, 'ui-web-ui-settings: persona route')
+    const disposeVersion = httpCtx.webServer.register({ kind: 'prefix', path: VERSION_API_PREFIX, handler: handle })
+    httpCtx.effect(() => {
+      dispose()
+      disposeVersion()
+    }, 'ui-web-ui-settings: persona + version routes')
   })
 }
