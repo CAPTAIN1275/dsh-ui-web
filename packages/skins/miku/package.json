@@ -1,7 +1,7 @@
 {
   "name": "@captain1275/dsh-client-ui-skin-miku",
   "description": "Hot-pluggable 初音未来 (miku) skin for the dsh web GUI: blue-violet-magenta gradients, frosted glass panels and inputs, customizable backdrop art, light & dark themes",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "type": "module",
   "main": "lib/index.js",
   "exports": {

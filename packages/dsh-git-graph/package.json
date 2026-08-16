@@ -1,7 +1,7 @@
 {
   "name": "@captain1275/dsh-client-ui-git-graph",
   "description": "External dsh web GUI plugin: a git branch selector + Git graph in the conversation header's context hole (beside the official workspace selector), with real host-side git operations (switch/create) and guards, as a dsh profile bundle",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "type": "module",
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
