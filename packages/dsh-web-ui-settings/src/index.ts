@@ -3,6 +3,8 @@
  * 注册 `/api/persona/config` 路由（GET 读 / PUT 写），把「人格设定」持久化到
  * `~/.dsh/persona.json`，并在启用时同步生成 `~/.dsh/skills/catgirl-rp/SKILL.md`，
  * 让 DSH 技能系统（dsh-skill-filesystem 用户级根，rank 400）实时热加载人格。
+ * 另注册 `/api/web-ui/version`（GET）：返回当前插件版本 + npm 最新版本，
+ * 供设置页「关于」与 usage-dashboard 的「检查更新」按钮使用。
  * 与 aurora（/api/skin-aurora/config）同模式，绕开 /api 设置桥命名空间白名单。
  * @module @captain1275/dsh-client-ui-web-ui-settings
  */
@@ -29,6 +31,57 @@ export const SKILL_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 /** 路由前缀。 */
 export const PERSONA_API_PREFIX = '/api/persona'
+
+/** 版本检查路由前缀。 */
+export const VERSION_API_PREFIX = '/api/web-ui'
+
+/** npm registry 上聚合包名（检查更新以全家桶聚合包为准）。 */
+export const FAMILY_NPM_PACKAGE = '@captain1275/dsh-web-ui-all'
+
+/** 从自身 package.json 读当前插件版本（bundle 部署在 lib/ 下，package.json 在上一级）。 */
+export function currentPluginVersion(): string {
+  try {
+    const url = new URL('../package.json', import.meta.url)
+    const pkg = JSON.parse(readFileSync(url, 'utf8')) as { version?: string }
+    return typeof pkg.version === 'string' ? pkg.version : '0.0.0'
+  } catch {
+    return '0.0.0'
+  }
+}
+
+/** 简单 semver 比较：a > b。非法/缺失段按 0 处理。 */
+export function isVersionNewer(a: string, b: string): boolean {
+  const pa = a.split('.').map((s) => { const n = Number.parseInt(s, 10); return Number.isNaN(n) ? 0 : n })
+  const pb = b.split('.').map((s) => { const n = Number.parseInt(s, 10); return Number.isNaN(n) ? 0 : n })
+  const len = Math.max(pa.length, pb.length)
+  for (let i = 0; i < len; i++) {
+    const x = pa[i] ?? 0
+    const y = pb[i] ?? 0
+    if (x !== y) return x > y
+  }
+  return false
+}
+
+/** 查 npm registry 的最新版本；网络失败返回 undefined。 */
+export async function fetchLatestFamilyVersion(): Promise<string | undefined> {
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 8000)
+    try {
+      const res = await fetch(`https://registry.npmjs.org/${FAMILY_NPM_PACKAGE}/latest`, {
+        signal: controller.signal,
+        headers: { accept: 'application/json' },
+      })
+      if (!res.ok) return undefined
+      const data = await res.json() as { version?: string }
+      return typeof data.version === 'string' ? data.version : undefined
+    } finally {
+      clearTimeout(timer)
+    }
+  } catch {
+    return undefined
+  }
+}
 
 /** 人格 skill 在用户级技能根的目录名（与 ~/.dsh/skills 下的安装目录一致）。 */
 export const PERSONA_SKILL_DIR = 'catgirl-rp'
@@ -258,9 +311,23 @@ export const PERSONA_PRESETS: Array<{ id: string; label: string; persona: Person
   },
 ]
 
-/** 请求分发：GET/PUT /api/persona/config, GET /api/persona/presets。 */
+/** 请求分发：GET/PUT /api/persona/config, GET /api/persona/presets, GET /api/web-ui/version。 */
 function handle(req: IncomingMessage, res: ServerResponse): void {
   const url = new URL(req.url ?? '/', 'http://dsh.local')
+  if (url.pathname === `${VERSION_API_PREFIX}/version` && req.method === 'GET') {
+    const current = currentPluginVersion()
+    void fetchLatestFamilyVersion().then((latest) => {
+      const outdated = latest !== undefined && isVersionNewer(latest, current)
+      sendJson(res, 200, {
+        ok: true,
+        current,
+        latest: latest ?? null,
+        outdated,
+        error: latest === undefined ? 'npm registry unreachable' : undefined,
+      })
+    })
+    return
+  }
   if (url.pathname === `${PERSONA_API_PREFIX}/presets` && req.method === 'GET') {
     sendJson(res, 200, { ok: true, presets: PERSONA_PRESETS })
     return

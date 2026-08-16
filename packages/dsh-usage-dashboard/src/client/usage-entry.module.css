@@ -167,3 +167,19 @@
 .phoneCopy:hover {
   background: var(--dsw-alias-interactive-bg-hover, rgba(128, 128, 128, 0.2));
 }
+
+/* ---- 检查更新弹窗（复用 phoneCard 玻璃，仅内容区样式） ---- */
+
+.updateStatus {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary, #eee);
+}
+
+.updateRows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}

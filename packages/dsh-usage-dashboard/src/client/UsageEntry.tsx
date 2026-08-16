@@ -25,11 +25,17 @@ export const ENTRY_SELECTOR = '[data-dsh-usage-entry]'
 /** Stable data attribute identifying the phone-view entry row. */
 export const PHONE_SELECTOR = '[data-dsh-phone-entry]'
 
+/** Stable data attribute identifying the update-check entry row. */
+export const UPDATE_SELECTOR = '[data-dsh-update-entry]'
+
 /** Inline icon (matches the shell's 16px nav-icon look): three rainbow bars. */
 const ICON = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="8" width="3" height="5" rx="0.8" fill="#f472b6"/><rect x="7" y="4.5" width="3" height="8.5" rx="0.8" fill="#fb923c"/><rect x="11.5" y="1.5" width="3" height="11.5" rx="0.8" fill="#4ade80"/></svg>'
 
 /** 手机端查看图标（手机 + 信号）。 */
 const PHONE_ICON = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="1.5" width="7" height="13" rx="1.5"/><path d="M7 12.5h2"/><path d="M9.5 4.2 11 5.7l-1.5 1.5"/><path d="M6.5 7.2 5 5.7l1.5-1.5"/></svg>'
+
+/** 检查更新图标（环形箭头）。 */
+const UPDATE_ICON = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.47-3.53"/><path d="M13 2.5V5h-2.5"/></svg>'
 
 /** Find the sidebar shell root element, or undefined while not yet mounted. */
 function sidebarRoot(): HTMLElement | undefined {
@@ -97,6 +103,19 @@ function createPhoneEntry(): HTMLButtonElement {
   entry.setAttribute('title', '手机端查看')
   entry.innerHTML = `<span class="${css.entryIcon}">${PHONE_ICON}</span><span class="${css.entryLabel}">手机端查看</span>`
   entry.addEventListener('click', () => { openPhonePanel() })
+  return entry
+}
+
+/** 检查更新入口：点击弹出版本检查结果。 */
+function createUpdateEntry(): HTMLButtonElement {
+  const entry = document.createElement('button')
+  entry.type = 'button'
+  entry.dataset.dshUpdateEntry = ''
+  entry.className = css.entry
+  entry.setAttribute('aria-label', '检查更新')
+  entry.setAttribute('title', '检查更新')
+  entry.innerHTML = `<span class="${css.entryIcon}">${UPDATE_ICON}</span><span class="${css.entryLabel}">检查更新</span>`
+  entry.addEventListener('click', () => { openUpdatePanel() })
   return entry
 }
 
@@ -205,14 +224,78 @@ function placePhone(root: HTMLElement, phone: HTMLButtonElement): boolean {
   return true
 }
 
+/** 检查更新入口：插到手机端查看按钮（data-dsh-phone-entry）正下方。 */
+function placeUpdate(root: HTMLElement, update: HTMLButtonElement): boolean {
+  const phone = root.querySelector<HTMLElement>('[data-dsh-phone-entry]')
+  if (phone === null) return false
+  if (update.parentElement !== root) {
+    root.insertBefore(update, phone.nextElementSibling)
+  }
+  return true
+}
+
+/** 检查更新弹窗（单实例，样式与手机端查看同款玻璃）。 */
+let updateHost: HTMLDivElement | undefined
+
+/** 关闭检查更新弹窗。 */
+export function closeUpdatePanel(): void {
+  updateHost?.remove()
+  updateHost = undefined
+}
+
+/** 打开检查更新弹窗：host /api/web-ui/version 返回当前与最新版本。 */
+function openUpdatePanel(): void {
+  if (updateHost !== undefined) return
+  const host = document.createElement('div')
+  host.dataset.dshUpdateOverlay = ''
+  host.className = css.phoneOverlay
+  host.innerHTML = `
+    <div class="${css.phoneCard}">
+      <div class="${css.phoneHead}"><span>检查更新</span><button class="${css.phoneClose}" aria-label="关闭">×</button></div>
+      <div class="${css.updateStatus}">检查中…</div>
+      <div class="${css.updateRows}">
+        <div class="${css.phoneAddr}"><code>当前版本：…</code></div>
+        <div class="${css.phoneAddr}"><code>最新版本：…</code></div>
+      </div>
+    </div>`
+  document.body.appendChild(host)
+  updateHost = host
+  host.querySelector(`.${css.phoneClose}`)?.addEventListener('click', closeUpdatePanel)
+  host.addEventListener('click', (e) => { if (e.target === host) closeUpdatePanel() })
+  const statusEl = host.querySelector<HTMLElement>(`.${css.updateStatus}`)
+  const rowsEl = host.querySelector<HTMLElement>(`.${css.updateRows}`)
+  void fetch('/api/web-ui/version').then(r => r.json()).then((data) => {
+    if (!host.isConnected) return
+    const d = data as { ok?: boolean; current?: string; latest?: string | null; outdated?: boolean; error?: string }
+    if (d?.ok !== true || typeof d.current !== 'string') {
+      if (statusEl !== null) statusEl.textContent = '检查失败（请重启 dsh 后重试）'
+      return
+    }
+    const latest = d.latest ?? '未知'
+    if (rowsEl !== null) {
+      rowsEl.innerHTML = `
+        <div class="${css.phoneAddr}"><code>当前版本：${d.current}</code></div>
+        <div class="${css.phoneAddr}"><code>最新版本：${latest}</code></div>`
+    }
+    if (statusEl !== null) {
+      if (d.outdated === true) statusEl.textContent = `发现新版本 ${latest}，请更新`
+      else if (d.error !== undefined) statusEl.textContent = `已是最新版本 ${d.current}（离线，无法核对）`
+      else statusEl.textContent = `已是最新版本 ${d.current}`
+    }
+  }).catch(() => {
+    if (statusEl !== null && host.isConnected) statusEl.textContent = '检查失败（请重启 dsh 后重试）'
+  })
+}
+
 /**
- * Mount the sidebar entries (usage + phone view), waiting for the shell to
- * render and self-healing on later React re-renders.
+ * Mount the sidebar entries (usage + phone view + update check), waiting for
+ * the shell to render and self-healing on later React re-renders.
  * @returns disposer removing the entries and their observers.
  */
 export function mountUsageEntry(): () => void {
   const entry = createEntry()
   const phoneEntry = createPhoneEntry()
+  const updateEntry = createUpdateEntry()
   let root: HTMLElement | undefined
   let placed = false
 
@@ -223,7 +306,7 @@ export function mountUsageEntry(): () => void {
       placed = false
     }
     if (placed) {
-      if (document.body.contains(entry) && document.body.contains(phoneEntry)) return
+      if (document.body.contains(entry) && document.body.contains(phoneEntry) && document.body.contains(updateEntry)) return
       rootObserver.disconnect()
       root = undefined
       placed = false
@@ -232,7 +315,8 @@ export function mountUsageEntry(): () => void {
     if (root === undefined) return
     const okEntry = placeEntry(root, entry)
     const okPhone = placePhone(root, phoneEntry)
-    placed = okEntry && okPhone
+    const okUpdate = placeUpdate(root, updateEntry)
+    placed = okEntry && okPhone && okUpdate
     if (placed) {
       rootObserver.observe(root, { childList: true, subtree: true })
     }
@@ -250,8 +334,8 @@ export function mountUsageEntry(): () => void {
       tryPlace()
       return
     }
-    if (!root.contains(entry) || !root.contains(phoneEntry)) {
-      placed = placeEntry(root, entry) && placePhone(root, phoneEntry)
+    if (!root.contains(entry) || !root.contains(phoneEntry) || !root.contains(updateEntry)) {
+      placed = placeEntry(root, entry) && placePhone(root, phoneEntry) && placeUpdate(root, updateEntry)
     }
   })
 
@@ -262,7 +346,9 @@ export function mountUsageEntry(): () => void {
     rootObserver.disconnect()
     entry.remove()
     phoneEntry.remove()
+    updateEntry.remove()
     closeDashboard()
     closePhonePanel()
+    closeUpdatePanel()
   }
 }

@@ -13,6 +13,8 @@ import {
   PERSONA_PRESETS,
   SKILL_NAME_RE,
   applyPersonaSkill,
+  currentPluginVersion,
+  isVersionNewer,
   normalizeConfig,
   personaConfigPath,
   personaSkillDisabledPath,
@@ -104,5 +106,21 @@ describe('dsh-web-ui-settings persona presets', () => {
     // 预设内容不含具体情绪标签（如 <<兴奋>>），只允许「禁止使用」规则里的抽象写法。
     expect(catgirl!.persona.content).not.toContain('<<兴奋>>')
     expect(catgirl!.persona.content).not.toContain('<<难过>>')
+  })
+})
+
+describe('dsh-web-ui-settings version helpers', () => {
+  it('compares semver correctly', () => {
+    expect(isVersionNewer('0.2.6', '0.2.5')).toBe(true)
+    expect(isVersionNewer('0.2.6', '0.2.6')).toBe(false)
+    expect(isVersionNewer('0.2.5', '0.2.6')).toBe(false)
+    expect(isVersionNewer('0.10.0', '0.9.9')).toBe(true)
+    expect(isVersionNewer('1.0.0', '0.99.99')).toBe(true)
+    expect(isVersionNewer('bad', '0.2.6')).toBe(false)
+    expect(isVersionNewer('0.2.6', 'bad')).toBe(true)
+  })
+
+  it('reads a plausible version from the package manifest', () => {
+    expect(currentPluginVersion()).toMatch(/^\d+\.\d+\.\d+$/)
   })
 })

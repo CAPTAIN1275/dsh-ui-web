@@ -3021,7 +3021,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:D:\Desktop\DeepSeek Harness\dsh-web-ui-0.1.10\packages\dsh-usage-dashboard\src\client\usage-entry.module.css.mjs
-		const css$1 = ".oI3yBG_entry{width:100%;height:32px;color:var(--dsw-alias-label-secondary);cursor:pointer;white-space:nowrap;background:0 0;border:none;border-radius:8px;align-items:center;gap:8px;padding:0 12px;font-size:13px;transition:background-color .12s,color .12s;display:flex}.oI3yBG_entry:hover{background:var(--dsw-specific-sidebar-nav-item-hover);color:var(--dsw-alias-label-primary)}.oI3yBG_entry:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.oI3yBG_entryIcon{flex:none;justify-content:center;align-items:center;display:inline-flex}.oI3yBG_entryLabel{text-overflow:ellipsis;overflow:hidden}[data-dsh-frame][data-sidebar-collapsed] .oI3yBG_entry{justify-content:center;width:100%;padding:0}[data-dsh-frame][data-sidebar-collapsed] .oI3yBG_entryLabel{display:none}.oI3yBG_phoneOverlay{z-index:9999;background:#0000002e;justify-content:center;align-items:center;padding:16px;display:flex;position:fixed;inset:0}.oI3yBG_phoneCard{backdrop-filter:blur(30px);background:#1019266b;border:1px solid #ffffff14;border-radius:14px;width:320px;max-width:100%;padding:16px;box-shadow:0 8px 32px #0000004d,inset 0 1px #ffffff0f}.oI3yBG_phoneQrBox{justify-content:center;margin-bottom:10px;display:flex}.oI3yBG_phoneQr{-webkit-user-drag:none;-webkit-user-select:none;user-select:none;background:#fff;border-radius:10px;width:168px;height:168px;padding:8px}.oI3yBG_phoneHead{color:var(--dsw-alias-label-primary,#eee);justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;font-size:14px;font-weight:600;display:flex}.oI3yBG_phoneClose{color:var(--dsw-alias-label-tertiary,#888);cursor:pointer;background:0 0;border:none;padding:4px;font-size:16px;line-height:1}.oI3yBG_phoneClose:hover{color:var(--dsw-alias-label-primary,#eee)}.oI3yBG_phoneHint{color:var(--dsw-alias-label-secondary,#999);margin:0 0 10px;font-size:12px}.oI3yBG_phoneAddrs{flex-direction:column;gap:6px;margin-bottom:12px;display:flex}.oI3yBG_phoneAddr{align-items:center;gap:8px;display:flex}.oI3yBG_phoneAddr code{color:var(--dsw-alias-label-primary,#eee);background:var(--dsw-alias-bg-layer-2,#80808026);text-overflow:ellipsis;white-space:nowrap;border-radius:6px;flex:1;padding:6px 8px;font-size:13px;overflow:hidden}.oI3yBG_phoneCopy{border:1px solid var(--dsw-alias-border-l2,#80808059);background:var(--dsw-alias-bg-layer-2,#80808026);color:var(--dsw-alias-label-primary,#eee);cursor:pointer;border-radius:6px;width:100%;padding:6px 12px;font-size:12px}.oI3yBG_phoneCopy:hover{background:var(--dsw-alias-interactive-bg-hover,#80808033)}";
+		const css$1 = ".oI3yBG_entry{width:100%;height:32px;color:var(--dsw-alias-label-secondary);cursor:pointer;white-space:nowrap;background:0 0;border:none;border-radius:8px;align-items:center;gap:8px;padding:0 12px;font-size:13px;transition:background-color .12s,color .12s;display:flex}.oI3yBG_entry:hover{background:var(--dsw-specific-sidebar-nav-item-hover);color:var(--dsw-alias-label-primary)}.oI3yBG_entry:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.oI3yBG_entryIcon{flex:none;justify-content:center;align-items:center;display:inline-flex}.oI3yBG_entryLabel{text-overflow:ellipsis;overflow:hidden}[data-dsh-frame][data-sidebar-collapsed] .oI3yBG_entry{justify-content:center;width:100%;padding:0}[data-dsh-frame][data-sidebar-collapsed] .oI3yBG_entryLabel{display:none}.oI3yBG_phoneOverlay{z-index:9999;background:#0000002e;justify-content:center;align-items:center;padding:16px;display:flex;position:fixed;inset:0}.oI3yBG_phoneCard{backdrop-filter:blur(30px);background:#1019266b;border:1px solid #ffffff14;border-radius:14px;width:320px;max-width:100%;padding:16px;box-shadow:0 8px 32px #0000004d,inset 0 1px #ffffff0f}.oI3yBG_phoneQrBox{justify-content:center;margin-bottom:10px;display:flex}.oI3yBG_phoneQr{-webkit-user-drag:none;-webkit-user-select:none;user-select:none;background:#fff;border-radius:10px;width:168px;height:168px;padding:8px}.oI3yBG_phoneHead{color:var(--dsw-alias-label-primary,#eee);justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;font-size:14px;font-weight:600;display:flex}.oI3yBG_phoneClose{color:var(--dsw-alias-label-tertiary,#888);cursor:pointer;background:0 0;border:none;padding:4px;font-size:16px;line-height:1}.oI3yBG_phoneClose:hover{color:var(--dsw-alias-label-primary,#eee)}.oI3yBG_phoneHint{color:var(--dsw-alias-label-secondary,#999);margin:0 0 10px;font-size:12px}.oI3yBG_phoneAddrs{flex-direction:column;gap:6px;margin-bottom:12px;display:flex}.oI3yBG_phoneAddr{align-items:center;gap:8px;display:flex}.oI3yBG_phoneAddr code{color:var(--dsw-alias-label-primary,#eee);background:var(--dsw-alias-bg-layer-2,#80808026);text-overflow:ellipsis;white-space:nowrap;border-radius:6px;flex:1;padding:6px 8px;font-size:13px;overflow:hidden}.oI3yBG_phoneCopy{border:1px solid var(--dsw-alias-border-l2,#80808059);background:var(--dsw-alias-bg-layer-2,#80808026);color:var(--dsw-alias-label-primary,#eee);cursor:pointer;border-radius:6px;width:100%;padding:6px 12px;font-size:12px}.oI3yBG_phoneCopy:hover{background:var(--dsw-alias-interactive-bg-hover,#80808033)}.oI3yBG_updateStatus{color:var(--dsw-alias-label-primary,#eee);margin:0 0 10px;font-size:13px;font-weight:600}.oI3yBG_updateRows{flex-direction:column;gap:6px;margin-bottom:4px;display:flex}";
 		const tagId$1 = "@captain1275/dsh-usage-dashboard/usage-entry.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
@@ -3043,7 +3043,9 @@ window.__ModuleLoader__.load({
 			"phoneHint": "oI3yBG_phoneHint",
 			"phoneOverlay": "oI3yBG_phoneOverlay",
 			"phoneQr": "oI3yBG_phoneQr",
-			"phoneQrBox": "oI3yBG_phoneQrBox"
+			"phoneQrBox": "oI3yBG_phoneQrBox",
+			"updateRows": "oI3yBG_updateRows",
+			"updateStatus": "oI3yBG_updateStatus"
 		};
 		//#endregion
 		//#region src/client/UsageEntry.tsx
@@ -3066,6 +3068,8 @@ window.__ModuleLoader__.load({
 		const ICON = "<svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"2.5\" y=\"8\" width=\"3\" height=\"5\" rx=\"0.8\" fill=\"#f472b6\"/><rect x=\"7\" y=\"4.5\" width=\"3\" height=\"8.5\" rx=\"0.8\" fill=\"#fb923c\"/><rect x=\"11.5\" y=\"1.5\" width=\"3\" height=\"11.5\" rx=\"0.8\" fill=\"#4ade80\"/></svg>";
 		/** 手机端查看图标（手机 + 信号）。 */
 		const PHONE_ICON = "<svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"4.5\" y=\"1.5\" width=\"7\" height=\"13\" rx=\"1.5\"/><path d=\"M7 12.5h2\"/><path d=\"M9.5 4.2 11 5.7l-1.5 1.5\"/><path d=\"M6.5 7.2 5 5.7l1.5-1.5\"/></svg>";
+		/** 检查更新图标（环形箭头）。 */
+		const UPDATE_ICON = "<svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 8a5 5 0 1 1-1.47-3.53\"/><path d=\"M13 2.5V5h-2.5\"/></svg>";
 		/** Find the sidebar shell root element, or undefined while not yet mounted. */
 		function sidebarRoot() {
 			const column = document.querySelector("[data-pane=\"sidebar\"], [class*=\"sidebarCol\"]");
@@ -3122,6 +3126,20 @@ window.__ModuleLoader__.load({
 			entry.innerHTML = `<span class="${usage_entry_module_css_default.entryIcon}">${PHONE_ICON}</span><span class="${usage_entry_module_css_default.entryLabel}">手机端查看</span>`;
 			entry.addEventListener("click", () => {
 				openPhonePanel();
+			});
+			return entry;
+		}
+		/** 检查更新入口：点击弹出版本检查结果。 */
+		function createUpdateEntry() {
+			const entry = document.createElement("button");
+			entry.type = "button";
+			entry.dataset.dshUpdateEntry = "";
+			entry.className = usage_entry_module_css_default.entry;
+			entry.setAttribute("aria-label", "检查更新");
+			entry.setAttribute("title", "检查更新");
+			entry.innerHTML = `<span class="${usage_entry_module_css_default.entryIcon}">${UPDATE_ICON}</span><span class="${usage_entry_module_css_default.entryLabel}">检查更新</span>`;
+			entry.addEventListener("click", () => {
+				openUpdatePanel();
 			});
 			return entry;
 		}
@@ -3215,14 +3233,70 @@ window.__ModuleLoader__.load({
 			if (phone.parentElement !== root) root.insertBefore(phone, usage.nextElementSibling);
 			return true;
 		}
+		/** 检查更新入口：插到手机端查看按钮（data-dsh-phone-entry）正下方。 */
+		function placeUpdate(root, update) {
+			const phone = root.querySelector("[data-dsh-phone-entry]");
+			if (phone === null) return false;
+			if (update.parentElement !== root) root.insertBefore(update, phone.nextElementSibling);
+			return true;
+		}
+		/** 检查更新弹窗（单实例，样式与手机端查看同款玻璃）。 */
+		let updateHost;
+		/** 关闭检查更新弹窗。 */
+		function closeUpdatePanel() {
+			updateHost?.remove();
+			updateHost = void 0;
+		}
+		/** 打开检查更新弹窗：host /api/web-ui/version 返回当前与最新版本。 */
+		function openUpdatePanel() {
+			if (updateHost !== void 0) return;
+			const host = document.createElement("div");
+			host.dataset.dshUpdateOverlay = "";
+			host.className = usage_entry_module_css_default.phoneOverlay;
+			host.innerHTML = `
+    <div class="${usage_entry_module_css_default.phoneCard}">
+      <div class="${usage_entry_module_css_default.phoneHead}"><span>检查更新</span><button class="${usage_entry_module_css_default.phoneClose}" aria-label="关闭">×</button></div>
+      <div class="${usage_entry_module_css_default.updateStatus}">检查中…</div>
+      <div class="${usage_entry_module_css_default.updateRows}">
+        <div class="${usage_entry_module_css_default.phoneAddr}"><code>当前版本：…</code></div>
+        <div class="${usage_entry_module_css_default.phoneAddr}"><code>最新版本：…</code></div>
+      </div>
+    </div>`;
+			document.body.appendChild(host);
+			updateHost = host;
+			host.querySelector(`.${usage_entry_module_css_default.phoneClose}`)?.addEventListener("click", closeUpdatePanel);
+			host.addEventListener("click", (e) => {
+				if (e.target === host) closeUpdatePanel();
+			});
+			const statusEl = host.querySelector(`.${usage_entry_module_css_default.updateStatus}`);
+			const rowsEl = host.querySelector(`.${usage_entry_module_css_default.updateRows}`);
+			fetch("/api/web-ui/version").then((r) => r.json()).then((data) => {
+				if (!host.isConnected) return;
+				const d = data;
+				if (d?.ok !== true || typeof d.current !== "string") {
+					if (statusEl !== null) statusEl.textContent = "检查失败（请重启 dsh 后重试）";
+					return;
+				}
+				const latest = d.latest ?? "未知";
+				if (rowsEl !== null) rowsEl.innerHTML = `
+        <div class="${usage_entry_module_css_default.phoneAddr}"><code>当前版本：${d.current}</code></div>
+        <div class="${usage_entry_module_css_default.phoneAddr}"><code>最新版本：${latest}</code></div>`;
+				if (statusEl !== null) if (d.outdated === true) statusEl.textContent = `发现新版本 ${latest}，请更新`;
+				else if (d.error !== void 0) statusEl.textContent = `已是最新版本 ${d.current}（离线，无法核对）`;
+				else statusEl.textContent = `已是最新版本 ${d.current}`;
+			}).catch(() => {
+				if (statusEl !== null && host.isConnected) statusEl.textContent = "检查失败（请重启 dsh 后重试）";
+			});
+		}
 		/**
-		* Mount the sidebar entries (usage + phone view), waiting for the shell to
-		* render and self-healing on later React re-renders.
+		* Mount the sidebar entries (usage + phone view + update check), waiting for
+		* the shell to render and self-healing on later React re-renders.
 		* @returns disposer removing the entries and their observers.
 		*/
 		function mountUsageEntry() {
 			const entry = createEntry();
 			const phoneEntry = createPhoneEntry();
+			const updateEntry = createUpdateEntry();
 			let root;
 			let placed = false;
 			const tryPlace = () => {
@@ -3232,7 +3306,7 @@ window.__ModuleLoader__.load({
 					placed = false;
 				}
 				if (placed) {
-					if (document.body.contains(entry) && document.body.contains(phoneEntry)) return;
+					if (document.body.contains(entry) && document.body.contains(phoneEntry) && document.body.contains(updateEntry)) return;
 					rootObserver.disconnect();
 					root = void 0;
 					placed = false;
@@ -3241,7 +3315,8 @@ window.__ModuleLoader__.load({
 				if (root === void 0) return;
 				const okEntry = placeEntry(root, entry);
 				const okPhone = placePhone(root, phoneEntry);
-				placed = okEntry && okPhone;
+				const okUpdate = placeUpdate(root, updateEntry);
+				placed = okEntry && okPhone && okUpdate;
 				if (placed) rootObserver.observe(root, {
 					childList: true,
 					subtree: true
@@ -3260,7 +3335,7 @@ window.__ModuleLoader__.load({
 					tryPlace();
 					return;
 				}
-				if (!root.contains(entry) || !root.contains(phoneEntry)) placed = placeEntry(root, entry) && placePhone(root, phoneEntry);
+				if (!root.contains(entry) || !root.contains(phoneEntry) || !root.contains(updateEntry)) placed = placeEntry(root, entry) && placePhone(root, phoneEntry) && placeUpdate(root, updateEntry);
 			});
 			tryPlace();
 			return () => {
@@ -3268,8 +3343,10 @@ window.__ModuleLoader__.load({
 				rootObserver.disconnect();
 				entry.remove();
 				phoneEntry.remove();
+				updateEntry.remove();
 				closeDashboard();
 				closePhonePanel();
+				closeUpdatePanel();
 			};
 		}
 		//#endregion

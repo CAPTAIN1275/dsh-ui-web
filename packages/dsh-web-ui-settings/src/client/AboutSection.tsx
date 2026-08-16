@@ -1,9 +1,10 @@
 /**
  * 设置页「关于」section：展示全家桶版本、作者与许可、第三方资源版权。
  * 注册进官方 `settings.section`（与通用/模型/插件/Agent 预设同级）。
+ * 版本号从 host 路由 /api/web-ui/version 读取（不再硬编码，bump 后自动跟随）。
  * @module @captain1275/dsh-client-ui-web-ui-settings/client/AboutSection
  */
-import type { ReactElement } from 'react'
+import { useEffect, useState, type ReactElement } from 'react'
 import css from './about.module.css'
 
 /** 一行信息：标签 + 内容（可选徽章 / 链接）。 */
@@ -23,8 +24,28 @@ function Row(props: { label: string; value: string; badge?: string; href?: strin
   )
 }
 
+/** 版本检查结果（host /api/web-ui/version）。 */
+interface VersionInfo {
+  current?: string
+  latest?: string | null
+  outdated?: boolean
+}
+
 /** 版权信息区块。 */
 export function AboutSection(): ReactElement {
+  const [version, setVersion] = useState<string>('…')
+
+  useEffect(() => {
+    let alive = true
+    void fetch('/api/web-ui/version')
+      .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<VersionInfo> })
+      .then((d) => {
+        if (alive && typeof d.current === 'string' && d.current.length > 0) setVersion(d.current)
+      })
+      .catch(() => { if (alive) setVersion('未知') })
+    return () => { alive = false }
+  }, [])
+
   return (
     <div className={css.about}>
       <div>
@@ -40,7 +61,7 @@ export function AboutSection(): ReactElement {
 
       <div className={css.block}>
         <div className={css.blockTitle}>版本与许可</div>
-        <Row label="插件版本" value="0.2.4" />
+        <Row label="插件版本" value={version} />
         <Row label="主体代码" value="zhu1090093659（linxin）dsh-web-ui" badge="Apache-2.0" />
         <Row label="增强维护" value="@CAPTAIN1275" />
       </div>
