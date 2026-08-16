@@ -1,6 +1,6 @@
 {
   "name": "@captain1275/dsh-client-ui-skin-trading",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Bundled skin inside @captain1275/dsh-skins (@captain1275/dsh-client-ui-skin-trading).",
   "type": "module",
   "main": "lib/index.js",
