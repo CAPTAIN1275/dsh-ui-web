@@ -60,10 +60,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* 遮罩尽量轻：太重会把卡片背后的 aurora 背景压黑，
-     卡片 blur 就拿不到彩色底，看起来就不像输入框毛玻璃。 */
+  /* 遮罩层不能带 backdrop-filter：卡片套在里面时，Chrome 里子元素的
+     backdrop-filter 拿不到页面本身（嵌套 backdrop root 失效），玻璃模糊
+     就变成普通磨砂。遮罩只留轻背景，让卡片的 blur(30px) 直接作用于页面。 */
   background: rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(6px);
   padding: 16px;
 }
 
