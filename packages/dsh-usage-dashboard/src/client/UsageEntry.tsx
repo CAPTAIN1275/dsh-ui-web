@@ -14,7 +14,7 @@
  * @module @captain1275/dsh-usage-dashboard/client/UsageEntry
  */
 import { createRoot, type Root } from 'react-dom/client'
-import QRCode from 'qrcode'
+import qrcode from 'qrcode-generator'
 import { DashboardPanel } from './DashboardPanel.tsx'
 import css from './usage-entry.module.css'
 import { t } from './locales.ts'
@@ -155,13 +155,17 @@ function openPhonePanel(): void {
     addrsBox.innerHTML = urls.map(u => `<div class="${css.phoneAddr}"><code>${u}</code></div>`).join('')
     // 二维码：扫第一个地址（192 网段优先）。
     if (qrImg !== null) {
-      void QRCode.toDataURL(phoneCopyUrl, { width: 168, margin: 1, errorCorrectionLevel: 'M' })
-        .then(dataUrl => {
-          if (!host.isConnected) return
-          qrImg.src = dataUrl
-          qrImg.hidden = false
-        })
-        .catch(() => { /* 二维码生成失败，地址仍可复制 */ })
+      // qrcode-generator（纯浏览器，无 node 依赖）：生成二维码 data URL。
+      try {
+        const qr = qrcode(0, 'M')
+        qr.addData(phoneCopyUrl)
+        qr.make()
+        const dataUrl = qr.createDataURL(8, 8)
+        qrImg.src = dataUrl
+        qrImg.hidden = false
+      } catch {
+        /* 二维码生成失败，地址仍可复制 */
+      }
     }
   }).catch(() => {
     if (addrsBox !== null && host.isConnected) addrsBox.textContent = '获取局域网地址失败（请重启 dsh 后重试）'
