@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { homedir } from "node:os";
+import { homedir, networkInterfaces } from "node:os";
 //#region src/cost.ts
 /** DeepSeek 官方定价（2026-08，元/百万 token，来源 api-docs.deepseek.com/quick_start/pricing）。 */
 /** deepseek-v4-flash：缓存命中 0.02 / 缓存未命中 1 / 输出 2。 */
@@ -259,6 +259,19 @@ function handle(req, res) {
 			ok: false,
 			error: e instanceof Error ? e.message : String(e)
 		}));
+		return;
+	}
+	if (url.pathname === `/api/usage/lan` && req.method === "GET") {
+		const rank = (ip) => {
+			if (ip.startsWith("192.168.")) return 0;
+			if (ip.startsWith("10.")) return 1;
+			if (/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return 2;
+			return 3;
+		};
+		sendJson(res, 200, {
+			ok: true,
+			addresses: Object.values(networkInterfaces()).flat().filter((iface) => iface !== void 0 && iface.family === "IPv4" && !iface.internal).map((iface) => iface.address).sort((a, b) => rank(a) - rank(b))
+		});
 		return;
 	}
 	if (url.pathname === `/api/usage/summary` && req.method === "GET") {

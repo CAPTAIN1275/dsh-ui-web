@@ -11,7 +11,7 @@ import type {} from '@deepseek-ai/dsh-host-webserver'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { homedir } from 'node:os'
+import { homedir, networkInterfaces } from 'node:os'
 import { estimateCost } from './cost.ts'
 
 /** 稳定插件名（对应 cordis.patch.yml 的 insert id）。 */
@@ -269,8 +269,23 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
       .catch((e) => sendJson(res, 400, { ok: false, error: e instanceof Error ? e.message : String(e) }))
     return
   }
-  if (url.pathname === `${USAGE_API_PREFIX}/summary` && req.method === 'GET') {
-    const store = readUsage()
+  // 局域网地址（手机端查看弹窗用）：私有网段优先（192.168 最前，
+  // 10. / 172.16-31. 次之，VPN/虚拟网卡排后）。
+  if (url.pathname === `${USAGE_API_PREFIX}/lan` && req.method === 'GET') {
+    const rank = (ip: string): number => {
+      if (ip.startsWith('192.168.')) return 0
+      if (ip.startsWith('10.')) return 1
+      if (/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return 2
+      return 3
+    }
+    const addresses = Object.values(networkInterfaces()).flat()
+      .filter((iface): iface is NonNullable<typeof iface> => iface !== undefined && iface.family === 'IPv4' && !iface.internal)
+      .map(iface => iface.address)
+      .sort((a, b) => rank(a) - rank(b))
+    sendJson(res, 200, { ok: true, addresses })
+    return
+  }
+  if (url.pathname === `${USAGE_API_PREFIX}/summary` && req.method === 'GET') {    const store = readUsage()
     const modelCosts = Object.fromEntries(
       Object.entries(store.byModel).map(([model, b]) => [
         model,
