@@ -580,12 +580,18 @@ importers:
       '@captain1275/dsh-client-ui-git-graph':
         specifier: workspace:*
         version: link:../dsh-git-graph
+      '@captain1275/dsh-client-ui-skin-aurora':
+        specifier: workspace:*
+        version: link:../skins/aurora
       '@captain1275/dsh-client-ui-task-board':
         specifier: workspace:*
         version: link:../dsh-task-board
       '@captain1275/dsh-client-ui-web-ui-settings':
         specifier: workspace:*
         version: link:../dsh-web-ui-settings
+      '@captain1275/dsh-full-stats':
+        specifier: workspace:*
+        version: link:../dsh-full-stats
       '@captain1275/dsh-live-stats':
         specifier: workspace:*
         version: link:../dsh-live-stats

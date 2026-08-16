@@ -27,4 +27,6 @@ deps:
   - ../dsh-usage-dashboard
   - ../dsh-ssh
   - ../dsh-web-ui-settings
+  - ../dsh-full-stats
   - ../dsh-skins
+  - ../skins/aurora
