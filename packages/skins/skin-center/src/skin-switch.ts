@@ -286,6 +286,19 @@ export function stripManaged(patch: string): string {
 }
 
 /**
+ * Drop a stray empty-array placeholder that the DSH boot writes into a fresh
+ * `~/.dsh/cordis.patch.yml` (a top-level `[]`). Older skin switches appended
+ * the managed section right after it, leaving `[]` as a first YAML document —
+ * the boot then fails with "end of the stream or a document separator is
+ * expected". The placeholder is removed wherever it sits at the start of the
+ * file (comment lines before it are preserved); real content is untouched.
+ * @param patch - raw patch file text.
+ */
+export function stripEmptyPlaceholder(patch: string): string {
+  return patch.replace(/^((?:[ \t]*#[^\n]*(?:\r?\n|$))*)[ \t]*\[\]\s*(?:\r?\n|$)/, '$1')
+}
+
+/**
  * Render the managed section for a target skin (null = official stock look:
  * every skin disabled, no insert row). A wired active skin also needs no
  * insert row —the bundle layer already provides it.
@@ -565,7 +578,7 @@ export function useSkin(name: string, opts: { home?: string; profile?: string; r
     if (problem !== null) throw new Error(problem)
   }
 
-  const patch = stripLegacySkinRows(stripManaged(readPatch(paths.patchPath)))
+  const patch = stripEmptyPlaceholder(stripLegacySkinRows(stripManaged(readPatch(paths.patchPath))))
   const next = `${patch.replace(/\s+$/, '')}\n\n${renderManaged(official ? null : name, registry)}\n`
   writePatchAtomic(paths.patchPath, next)
 

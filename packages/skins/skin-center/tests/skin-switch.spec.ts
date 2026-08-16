@@ -24,6 +24,7 @@ import {
   MANAGED_END,
   renderManaged,
   stripManaged,
+  stripEmptyPlaceholder,
   currentActive,
   loadRegistry,
   wiredNames,
@@ -141,6 +142,37 @@ describe('pure patch helpers', () => {
     const registry = miniRegistry()
     const patch = `${MANAGED_START}\n- id: ui-skin-xp\n  disabled: true\n`
     expect(() => stripManaged(patch)).toThrow(/unterminated/)
+  })
+
+  it('stripEmptyPlaceholder drops a bare [] boot placeholder', () => {
+    expect(stripEmptyPlaceholder('[]\n')).toBe('')
+    expect(stripEmptyPlaceholder('# dsh profile root\n[]\n')).toBe('# dsh profile root\n')
+    expect(stripEmptyPlaceholder('# header\n[]\n# footer\n')).toBe('# header\n# footer\n')
+    // Real content is never touched.
+    const real = '# header\n- id: other\n  name: \'x\'\n'
+    expect(stripEmptyPlaceholder(real)).toBe(real)
+  })
+
+  it('stripEmptyPlaceholder removes a stray [] left before the managed section', () => {
+    const broken = `[]\n${MANAGED_START}\n- id: ui-skin-xp\n  disabled: true\n${MANAGED_END}\n`
+    expect(stripEmptyPlaceholder(broken)).toBe(`${MANAGED_START}\n- id: ui-skin-xp\n  disabled: true\n${MANAGED_END}\n`)
+    // CRLF variant (Windows).
+    const brokenCrlf = `[]\r\n${MANAGED_START}\r\n- id: ui-skin-xp\r\n  disabled: true\r\n${MANAGED_END}\r\n`
+    const fixed = stripEmptyPlaceholder(brokenCrlf)
+    expect(fixed.startsWith(MANAGED_START)).toBe(true)
+    expect(fixed).not.toMatch(/\[\]/)
+  })
+
+  it('useSkin on a fresh HOME whose boot patch is the [] placeholder yields valid YAML', () => {
+    const h = fakeHome()
+    const patch = patchPath(h)
+    writeFileSync(patch, '# dsh profile root\n[]\n')
+    useSkin('official', { home: h })
+    const after = readFileSync(patch, 'utf8')
+    // The managed section must be the only content: no stray [] document.
+    expect(after).not.toMatch(/\[\]/)
+    expect(after).toContain(MANAGED_START)
+    expect(after).toContain(MANAGED_END)
   })
 
   it('currentActive returns null when every skin is disabled (stock look)', () => {
