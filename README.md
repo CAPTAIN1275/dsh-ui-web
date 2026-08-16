@@ -68,7 +68,6 @@ SSH 运维、右侧文件/变更面板、Git 图谱、移动端远程控制、De
 | **dsh-ssh** | SSH 运维：主机管理、远程执行、SFTP 传输、隧道、集群并发、Web 终端 |
 | **dsh-aionui-panel** | 右侧「预览 / 文件 / 变更」面板：文件树、多格式预览、git 操作、文件拖拽 |
 | **dsh-git-graph** | 会话头部 git 分支选择器 + 提交图 |
-| **dsh-remote-web-ui** | 移动端远程控制：扫码配对、设备限额、cloudflared 隧道、手机端 SPA |
 | **dsh-live-stats** | 实时 token 估算与生成速度 |
 | **dsh-full-stats** | 完整统计行：覆盖官方统计（不省略）+ 运行状态指示 + 自定义状态文本（含替换官方 Deep diving...） |
 | **dsh-usage-dashboard** | 用量看板：彩色统计卡 / 近 14 天趋势 / 模型分布 / 会话排行 / 费用估算 |
@@ -138,7 +137,7 @@ node scripts/link-profile.mjs
 ```
 packages/
 ├─ dsh-task-board / dsh-ssh / dsh-aionui-panel / dsh-git-graph
-├─ dsh-pet / dsh-remote-web-ui / dsh-live-stats / dsh-full-stats
+├─ dsh-pet / dsh-live-stats / dsh-full-stats
 ├─ dsh-web-ui-settings / dsh-web-ui-all / dsh-skins
 └─ skins/            # 皮肤源码（aurora、miku、ths 等）
 scripts/             # 构建 / 注册表 / 链接工具

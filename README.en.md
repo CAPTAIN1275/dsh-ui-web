@@ -82,7 +82,6 @@ once through the aggregate package.
 | **dsh-ssh** | SSH ops: host store, remote exec, SFTP, tunnels, cluster runs, web terminal |
 | **dsh-aionui-panel** | Right-side preview/file/change panel: file tree, multi-format preview, git ops, file drag |
 | **dsh-git-graph** | Git branch selector + commit graph in the conversation header |
-| **dsh-remote-web-ui** | Mobile remote control: QR pairing, device caps, cloudflared tunnel, phone SPA |
 | **dsh-live-stats** | Live token estimates and generation throughput |
 | **dsh-full-stats** | Full stats line: overrides the official one (no truncation) + running indicator + custom status text (incl. replacing the official Deep diving...) |
 | **dsh-usage-dashboard** | Usage dashboard: colorful stat cards / 14-day trend / model distribution / session ranking / cost estimate |
@@ -154,7 +153,7 @@ node scripts/link-profile.mjs
 ```
 packages/
 ├─ dsh-task-board / dsh-ssh / dsh-aionui-panel / dsh-git-graph
-├─ dsh-pet / dsh-remote-web-ui / dsh-live-stats / dsh-full-stats
+├─ dsh-pet / dsh-live-stats / dsh-full-stats
 ├─ dsh-web-ui-settings / dsh-web-ui-all / dsh-skins
 └─ skins/            # skin sources (aurora, miku, ths, etc.)
 scripts/             # build / registry / link tools

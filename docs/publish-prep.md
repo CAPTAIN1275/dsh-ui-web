@@ -4,14 +4,13 @@
 > **红线（务必遵守）**：发布动作仍须先经仓库维护者明确批准，并按 registry 规范
 > 操作（`npm pack --dry-run` 级别的演练可先行）�?
 ## 一、范�?
-`packages/` �?`packages/skins/` 下共 19 个插件包（截至快照日）：
+`packages/` �?`packages/skins/` 下共 18 个插件包（截至快照日）：
 
 | 目录 | 包名 | 当前版本 | private |
 | --- | --- | --- | --- |
 | packages/dsh-task-board | @captain1275/dsh-client-ui-task-board | 0.1.1 | true |
 | packages/dsh-git-graph | @captain1275/dsh-client-ui-git-graph | 0.1.1 | true |
 | packages/dsh-pet | @captain1275/dsh-pet | 0.1.1 | true |
-| packages/dsh-remote-web-ui | @captain1275/dsh-remote-web-ui | 0.1.1 | true |
 | packages/dsh-live-stats | @captain1275/dsh-live-stats | 0.1.1 | true |
 | packages/dsh-ssh | @captain1275/dsh-ssh | 0.1.1 | true |
 | packages/dsh-aionui-panel | @captain1275/dsh-client-ui-aionui-panel | 0.1.1 | true |
@@ -38,7 +37,7 @@
    的依赖方（peerDeps/deps 引用），需在依赖它的包之前发布�?   **（发布动作本身，无法提前修复；发布顺序已排定�?*
    [已确认] **已失�?*�?026-08-12 调整移除 code-kline / ui-code-kline 包后�?   该发布依赖不再存在，无需处理�?
 ### [建议] 建议项（registry 安装兼容性）�?[已确认] 已修�?
-5. **peerDeps 版本声明不匹�?*：git-graph / live-stats / pet / remote-web-ui
+5. **peerDeps 版本声明不匹�?*：git-graph / live-stats / pet
    �?`@deepseek-ai/*` peerDeps
    已从�?`^0.0.1` 系列改为 **`^0.1.0-rc.6`**（与 npm 已发布版本匹配，避免 ERESOLVE）�?
 ### [卫生] 卫生�?

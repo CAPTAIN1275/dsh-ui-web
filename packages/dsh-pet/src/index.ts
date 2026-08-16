@@ -115,7 +115,7 @@ export function apply(ctx: Context, config: PetConfig = {}): void {
   // The browser half talks to the pet through same-origin JSON endpoints and
   // loads the atlas from the pet's own media route (RPC domains are
   // platform-registered, so the pet serves its own API — the same pattern as
-  // dsh-remote-web-ui's /api/pair family). The routes are registered while
+  // the live-stats / usage-dashboard route families). The routes are registered while
   // the plugin is enabled; toggling the setting off makes the pet API
   // disappear until it is re-enabled.
   const routes = makePetRoutes({ service, packageRoot: petPackageRoot(import.meta.url) })

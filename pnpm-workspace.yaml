@@ -8,9 +8,6 @@ packages:
 autoInstallPeers: false
 
 allowBuilds:
-  # The cloudflared postinstall downloads the platform binary (the auto-tunnel
-  # feature ships its own tunnel client — users install nothing).
-  cloudflared: true
   cpu-features: true
   esbuild: true
   ssh2: true

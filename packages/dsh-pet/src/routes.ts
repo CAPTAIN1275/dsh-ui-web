@@ -3,7 +3,7 @@
  * same-origin JSON endpoints (`/api/pet/*`) and loads the whale-girl atlas
  * from `/pet/whale/*`. The `/plugins/` endpoint only serves client bundles
  * and RPC domains are platform-registered, so the pet serves its own API
- * and media — the same pattern as dsh-remote-web-ui's `/api/pair` family.
+ * and media — the same pattern as the live-stats / usage-dashboard route families.
  * @module @captain1275/dsh-pet/routes
  */
 

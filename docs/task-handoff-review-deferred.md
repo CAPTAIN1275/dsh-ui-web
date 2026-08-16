@@ -10,7 +10,7 @@
 
 ## 0. 背景与现状
 
-- 已完成：全插件（aionui-panel / git-graph / pet / live-stats / remote-web-ui /
+- 已完成：全插件（aionui-panel / git-graph / pet / live-stats /
   task-board / web-ui-settings / skins）与构建脚本的安全、正确性、性能修复，
   全部通过 `pnpm -r typecheck` 与 `pnpm -r test`。
 - 本文 4 项是审查中被判定为「架构级 / 生成器级重构」而刻意没有动手的项。

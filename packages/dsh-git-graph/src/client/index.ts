@@ -184,7 +184,7 @@ export function apply(ctx: ClientContext): void {
 
     // Declaration-aware with a fallback. A bare register() would throw on
     // shells that dropped the hole (SDK SlotCore.register rejects undeclared
-    // slots), so both seats route through inject like the pet / remote-web-ui
+    // slots), so both seats route through inject like the pet / live-stats
     // entries. The preferred context wait resolves the moment the shell
     // declares the hole; when it never does (rc.6), the fallback disposes
     // that wait and moves the chip to the dock. Exactly one seat mounts: a

@@ -32,11 +32,6 @@
     - id: pet
       name: '@captain1275/dsh-pet'
 
-# from ../dsh-remote-web-ui
-- insert:
-    - id: remote-web-ui
-      name: '@captain1275/dsh-remote-web-ui'
-
 # from ../dsh-live-stats
 - insert:
     - id: live-stats
