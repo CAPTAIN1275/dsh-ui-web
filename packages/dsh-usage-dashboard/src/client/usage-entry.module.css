@@ -91,6 +91,10 @@
   border-radius: 10px;
   background: #fff;
   padding: 8px;
+  /* 二维码不是装饰图：禁止被当作图片拖动/长按保存。 */
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .phoneHead {

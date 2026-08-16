@@ -120,7 +120,7 @@ function openPhonePanel(): void {
   host.innerHTML = `
     <div class="${css.phoneCard}">
       <div class="${css.phoneHead}"><span>手机端查看</span><button class="${css.phoneClose}" aria-label="关闭">×</button></div>
-      <div class="${css.phoneQrBox}"><img class="${css.phoneQr}" alt="二维码" hidden /></div>
+      <div class="${css.phoneQrBox}"><img class="${css.phoneQr}" alt="二维码" draggable="false" hidden /></div>
       <p class="${css.phoneHint}">手机连同一 Wi-Fi，扫码或浏览器打开以下地址：</p>
       <div class="${css.phoneAddrs}">加载中…</div>
       <button class="${css.phoneCopy}">复制地址</button>
