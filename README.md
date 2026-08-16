@@ -11,7 +11,9 @@ DSH Web UI 全家桶为 DeepSeek Harness 的 Web 界面提供一系列插件与�
 SSH 运维、右侧文件/变更面板、Git 图谱、移动端远程控制、DeepSeek 娘看板娘（养成系）、实时令牌统计，
 以及皮肤中心。所有插件既可独立安装，也可通过聚合包一次装齐。
 
-**极光 Aurora 皮肤效果（深色 / 浅色）**
+**极光 Aurora 皮肤效果（液态玻璃 / 深色 / 浅色）**
+
+![极光液态玻璃](docs/aurora-glass.png)
 
 ![aurora-dark](packages/skins/aurora/preview/dark.png)
 
