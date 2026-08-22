@@ -1,7 +1,7 @@
 {
   "name": "@captain1275/dsh-full-stats",
   "description": "完整统计行：覆盖官方会话统计行（不省略）+ 运行状态指示点，显示轮/步、LLM/工具耗时、首 token、速度、缓存命中与输入输出 token。",
-  "version": "0.2.9",
+  "version": "0.3.0",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
