@@ -17,7 +17,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: pulls the settings-surface Context merge (ctx.settingsScope).
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import { BoardController } from '../core/controller.ts'
-import { ExecutionService } from '../core/execution.ts'
+import { ExecutionService, type ExecutionHistoryEvent } from '../core/execution.ts'
 import { SchedulerService } from '../core/scheduler.ts'
 import { LocalStorageTaskStore } from '../core/store.ts'
 import { mountBoard } from './board-mount.tsx'
@@ -117,7 +117,7 @@ export function apply(ctx: ClientContext): void {
             maxMessages: 20,
           })
           return response.result.ok
-            ? { events: response.result.value.events.map(entry => entry.event) }
+            ? { events: response.result.value.events.map((entry: { event: ExecutionHistoryEvent }) => entry.event) }
             : undefined
         },
       },

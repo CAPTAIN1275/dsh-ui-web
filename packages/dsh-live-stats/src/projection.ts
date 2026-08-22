@@ -2,12 +2,22 @@ import { z } from 'zod'
 // Type-only: pulls the session-projection map table (merge-extensible) so the
 // liveTokenUsage projection key registers against it (augmentation lives in
 // @deepseek-ai/dsh-token-meter/projection).
-import type {} from '@deepseek-ai/dsh-session-projection/types'
+import type {
+  SessionProjectionMap,
+  SessionProjectionStateMap,
+} from '@deepseek-ai/dsh-session-projection/types'
+// Loads the local map-table augmentation (src/types/token-meter.d.ts) into
+// this program; without a real reference the type-only import is elided and
+// the augmentation is never applied.
+import type {
+  LiveTokenUsageProjection,
+  TokenUsageProjection,
+} from '@deepseek-ai/dsh-token-meter/client'
+import type {} from './types/token-meter.d.ts'
 import type { Message, StreamChunk, TokenUsage } from '@deepseek-ai/dsh-llm'
 import type { EpochHeader, SessionEvent, SurfaceEvent } from '@deepseek-ai/dsh-session'
 import { isSurfaceEvent } from '@deepseek-ai/dsh-session'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
-import type { LiveTokenUsageProjection, TokenUsageProjection } from '@deepseek-ai/dsh-token-meter/client'
 import {
   estimateContentTokens,
   estimateHeaderTokens,
@@ -82,7 +92,7 @@ interface SettledSample {
   tokensPerSecond: number | undefined
 }
 
-interface State {
+export interface State {
   settled: TokenUsageProjection
   settledEstimates: number
   last: SettledSample | null
@@ -266,12 +276,23 @@ function view(state: State): LiveTokenUsageProjection {
  * @param spec - resolved estimator settings for the fold.
  * @returns the replayable `liveTokenUsage` projection definition.
  */
+/**
+ * The map-table entries this unit owns, re-read through the augmented rc.2
+ * tables so the register overloads see the same symbol identity (the
+ * type-only imports above load the augmentation).
+ */
+export type LiveTokenUsageStateMapEntry = SessionProjectionStateMap['liveTokenUsage']
+
 export function createLiveTokenUsageProjectionDefinition(
   spec: EstimatorSpec,
 ): ProjectionDefinition<'liveTokenUsage', State> {
   return {
     key: 'liveTokenUsage',
-    schema: projectionSchema,
+    // rc.2 renames `schema` to `stateSchema` and parses it on persisted-state
+    // restore. The fold state is in-memory only (surface is a Map, not JSON),
+    // so the strict wire schema validates the served view and the state
+    // schema is a permissive passthrough.
+    stateSchema: z.any() as unknown as z.ZodType<State>,
     init: () => ({
       settled: zeroBuckets(),
       settledEstimates: 0,
@@ -281,7 +302,7 @@ export function createLiveTokenUsageProjectionDefinition(
       header: undefined,
       active: null,
     }),
-    apply: (state, event: SessionEvent) => {
+    apply: (state: State, event: SessionEvent) => {
       let next = state
       if (event.type === 'step/start') {
         next = {
@@ -385,7 +406,12 @@ export function createLiveTokenUsageProjectionDefinition(
       if (isSurfaceEvent(event)) next = { ...next, ...applySurface(next, event, spec) }
       return next
     },
-    view,
     stateVersion: 2,
+    // rc.2: snapshot() only surfaces units with a wire view; without it the
+    // projection registers host-only and the live TPS row reads nothing.
+    wire: {
+      viewSchema: projectionSchema,
+      view: (state: State): LiveTokenUsageProjection => view(state),
+    },
   }
 }

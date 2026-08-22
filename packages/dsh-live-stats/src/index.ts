@@ -61,7 +61,21 @@ export function apply(ctx: Context, config: Config = {}): void {
       ...(source.blockOverhead === undefined ? {} : { blockOverhead: source.blockOverhead }),
       ...(source.roleOverhead === undefined ? {} : { roleOverhead: source.roleOverhead }),
     })
-    disposeProjection = ctx.sessionProjections.register(createLiveTokenUsageProjectionDefinition(spec))
+    const definition = createLiveTokenUsageProjectionDefinition(spec)
+    // rc.2: the wire overload requires a non-optional `wire`; reconstruct the
+    // object with an explicit wire so the required-wire overload matches
+    // (ProjectionDefinition itself keeps wire optional).
+    disposeProjection = ctx.sessionProjections.register({
+      key: definition.key,
+      stateSchema: definition.stateSchema,
+      init: definition.init,
+      apply: definition.apply,
+      stateVersion: definition.stateVersion,
+      wire: {
+        viewSchema: definition.wire!.viewSchema,
+        view: definition.wire!.view,
+      },
+    })
   }
 
   installSettingsSection(ctx, LIVE_STATS_SETTINGS_NAMESPACE, Config, config ?? {}, {

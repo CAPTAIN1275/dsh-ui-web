@@ -20,20 +20,6 @@ declare module '@deepseek-ai/dsh-token-meter/client' {
     cacheWriteTokens: number
   }
 
-  /** Newest request pressure paired with the newest known route capacity. */
-  export interface ContextPressureProjection {
-    pressureTokens?: number
-    projectedTokens?: number
-    contextWindow?: number
-  }
-
-  /** Heuristic system/tools/message composition of the next request. */
-  export interface ContextBreakdownProjection {
-    systemTokens: number
-    toolsTokens: number
-    messageTokens: number
-  }
-
   /** Live per-step token estimates plus generation throughput. */
   export interface LiveTokenUsageProjection extends TokenUsageProjection {
     /** True while any active step's buckets are heuristic estimates. */
@@ -47,6 +33,26 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
   interface SessionProjectionMap {
     /** Live per-step token estimates plus generation throughput. */
     liveTokenUsage: import('@deepseek-ai/dsh-token-meter/client').LiveTokenUsageProjection
+  }
+
+  interface SessionProjectionStateMap {
+    /** Internal fold state of the liveTokenUsage unit (src/projection.ts). */
+    liveTokenUsage: import('../projection.ts').State
+  }
+}
+
+// rc.2's root module re-exports the map table from ./types; augmenting the
+// submodule alone does not widen the root's generic constraint, so augment
+// the package root too (same symbol identity per the SDK's own docs).
+declare module '@deepseek-ai/dsh-session-projection' {
+  interface SessionProjectionMap {
+    /** Live per-step token estimates plus generation throughput. */
+    liveTokenUsage: import('@deepseek-ai/dsh-token-meter/client').LiveTokenUsageProjection
+  }
+
+  interface SessionProjectionStateMap {
+    /** Internal fold state of the liveTokenUsage unit (src/projection.ts). */
+    liveTokenUsage: import('../projection.ts').State
   }
 }
 
