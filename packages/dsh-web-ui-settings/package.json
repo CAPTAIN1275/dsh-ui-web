@@ -44,6 +44,7 @@
     "typescript": "~5.7.2",
     "@deepseek-ai/dsh-api-remotes": "^0.1.1-rc.2",
     "@deepseek-ai/dsh-client-connection": "^0.1.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-settings-plugins": "^0.1.1-rc.2",
     "@deepseek-ai/dsh-host-webserver": "^0.1.1-rc.2",
     "@deepseek-ai/dsh-settings": "^0.1.1-rc.2",
     "@types/node": "^22.20.0",

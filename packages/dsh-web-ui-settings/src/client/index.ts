@@ -13,6 +13,10 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: pulls the settings-surface SlotMap merge (the 'settings.section'
 // entry) and the ctx.settingsScope Context merge.
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+// Type-only: loads the official keyed declaration of 'settings.plugin.item'
+// (rc.2+, ui-settings-plugins owns the slot type home) so the group-card
+// registration above typechecks against the real slot kind.
+import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import { AboutSection } from './AboutSection.tsx'
 import { PersonaSection } from './PersonaSection.tsx'
 import { WebUIPluginsCard } from './WebUIPluginsCard.tsx'
@@ -34,11 +38,10 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      */
     'web-ui.plugin.item': { kind: 'list'; scope: 'root'; owner: SettingsPluginItemOwnerProps }
     /**
-     * The plugin configuration section's card seat, declared by
-     * ui-plugin-config. Spelled here with the same shape so this package can
-     * register its group card without depending on the sibling UI package.
+     * The plugin configuration section's card seat is declared by the official
+     * ui-settings-plugins package as a KEYED slot in rc.2+ (keyed by the
+     * settings namespace); do not re-declare it here with a different kind.
      */
-    'settings.plugin.item': { kind: 'list'; scope: 'root'; owner: SettingsPluginItemOwnerProps }
   }
 }
 
@@ -60,8 +63,9 @@ export function apply(ctx: ClientContext): void {
 
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item',
-    id: 'web-ui-plugins',
-    order: 90,
+    // rc.2: settings.plugin.item is a keyed slot (keyed by the settings
+    // namespace); the old list-style `id`/`order` no longer apply.
+    key: 'web-ui-plugins',
     locale: 'web-ui-plugins',
     children: { 'web-ui.plugin.item': { kind: 'list', scope: 'root' } },
   }, WebUIPluginsCard))
