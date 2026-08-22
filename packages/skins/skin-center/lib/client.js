@@ -1341,10 +1341,9 @@ window.__ModuleLoader__.load({
 					set: (opacity) => background.set(opacity)
 				}
 			});
-			ctx.slots.inject("web-ui.plugin.item", () => ctx.slots.register({
-				name: "web-ui.plugin.item",
-				id: "skins",
-				order: 110,
+			ctx.slots.inject("settings.plugin.item", () => ctx.slots.register({
+				name: "settings.plugin.item",
+				key: SKIN_BACKGROUND_NS,
 				locale: NS,
 				inject: injected
 			}, SkinCenter));

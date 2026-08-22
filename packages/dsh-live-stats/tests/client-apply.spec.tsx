@@ -32,9 +32,9 @@ describe('live-stats client apply', () => {
       },
     }
     apply(ctx as never)
-    // The card mounts into the Web UI plugin group; the TPS line mounts into
-    // the composer dock (the shipped stats-line seat, whose standard kit
-    // supplies useProjection) so the live throughput row actually renders.
-    expect(injected).toEqual(['web-ui.plugin.item', 'conversation.composer.dock'])
+    // The settings card mounts DIRECTLY into the official keyed settings.card
+    // slot (rc.2+); the TPS line mounts into the composer dock (the shipped
+    // stats-line seat, whose standard kit supplies useProjection).
+    expect(injected).toEqual(['settings.plugin.item', 'conversation.composer.dock'])
   })
 })

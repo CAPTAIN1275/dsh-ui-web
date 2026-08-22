@@ -5,6 +5,9 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 // name the 'settings.*' holes) and the ctx.settingsScope Context merge.
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+// Type-only: loads the official keyed 'settings.plugin.item' slot declaration
+// (rc.2+, owned by ui-settings-plugins) for the direct card registration.
+import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-token-meter/client'
 import { LiveStatsSettingsCard, LiveStatsSettingsCardController, type LiveStatsSettings } from './LiveStatsSettingsCard.tsx'
 import { TpsLineDockEntry } from './TpsLine.tsx'
@@ -21,12 +24,10 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
   interface SlotMap {
     /**
-     * The child slot the Web UI plugin group declares; this card registers
-     * into the group instead of the top-level `settings.plugin.item` list.
-     * Spelled here with the same shape so this package can register without
-     * depending on the sibling UI package.
+     * rc.2+: the settings card registers DIRECTLY into the official keyed
+     * `settings.plugin.item` slot, keyed by this plugin's settings namespace.
+     * The old rc.6 group/child-slot pattern (web-ui.plugin.item) is gone.
      */
-    'web-ui.plugin.item': { kind: 'list'; scope: 'root'; owner: SettingsPluginItemOwnerProps }
   }
 }
 
@@ -73,10 +74,9 @@ export function apply(ctx: ClientContext): void {
   const liveStatsSettings = new LiveStatsSettingsCardController(
     binder.bind<LiveStatsSettings>({ namespace: LIVE_STATS_NS }),
   )
-  ctx.slots.inject('web-ui.plugin.item', () => ctx.slots.register({
-    name: 'web-ui.plugin.item',
-    id: 'live-stats',
-    order: 110,
+  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
+    name: 'settings.plugin.item',
+    key: LIVE_STATS_NS,
     locale: NS,
     inject: () => liveStatsSettings.inject(),
   }, LiveStatsSettingsCard))

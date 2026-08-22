@@ -15,6 +15,8 @@ import type { ClientContext, SettingsScope, SettingsScopeSpec } from '@deepseek-
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: pulls the settings-surface Context merge (ctx.settingsScope).
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+// Type-only: loads the official keyed 'settings.plugin.item' slot declaration.
+import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { PetDisplayConfig } from '../persist.ts'
@@ -78,12 +80,10 @@ export type { PetSettingsCardFace, PetSettingsCardState } from './PetSettingsCar
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
     /**
-     * The child slot the Web UI plugin group declares; this card registers
-     * into the group instead of the top-level `settings.plugin.item` list.
-     * Spelled here with the same shape so this package can register without
-     * depending on the sibling UI package.
+     * rc.2+: the pet settings card registers DIRECTLY into the official keyed
+     * `settings.plugin.item` slot, keyed by the `pet` namespace. The old rc.6
+     * group/child-slot pattern (web-ui.plugin.item) is gone.
      */
-    'web-ui.plugin.item': { kind: 'list'; scope: 'root'; owner: SettingsPluginItemOwnerProps }
   }
 }
 
@@ -125,12 +125,11 @@ export function apply(ctx: ClientContext): void {
   }
 
   // Plugin configuration card: one staged form over the `pet` settings
-  // namespace, contributed to the Web UI plugin group.
+  // namespace, registered directly into the official keyed settings card slot.
   const petSettings = new PetSettingsCardController(settingsScope)
-  ctx.slots.inject('web-ui.plugin.item', () => ctx.slots.register({
-    name: 'web-ui.plugin.item',
-    id: 'pet-settings',
-    order: 140,
+  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
+    name: 'settings.plugin.item',
+    key: PET_SETTINGS_NS,
     locale: NS,
     inject: () => petSettings.inject(),
   }, PetSettingsCard))
