@@ -4,7 +4,7 @@ import { lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSy
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
-//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-settings@0_52495af71738a1095726249ceff4fd7b/node_modules/@deepseek-ai/dsh-settings/lib/index.js
+//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-settings@0_02aaf429ec98c58247037e2222c17a8f/node_modules/@deepseek-ai/dsh-settings/lib/index.js
 /**
 * Structural secret redaction for settings values. `role('secret')` fields are
 * removed from a value before it crosses a wire boundary; a sidecar records
@@ -421,6 +421,18 @@ function stripManaged(patch) {
 	return patch.slice(0, start) + patch.slice(end + 30);
 }
 /**
+* Drop a stray empty-array placeholder that the DSH boot writes into a fresh
+* `~/.dsh/cordis.patch.yml` (a top-level `[]`). Older skin switches appended
+* the managed section right after it, leaving `[]` as a first YAML document —
+* the boot then fails with "end of the stream or a document separator is
+* expected". The placeholder is removed wherever it sits at the start of the
+* file (comment lines before it are preserved); real content is untouched.
+* @param patch - raw patch file text.
+*/
+function stripEmptyPlaceholder(patch) {
+	return patch.replace(/^((?:[ \t]*#[^\n]*(?:\r?\n|$))*)[ \t]*\[\]\s*(?:\r?\n|$)/, "$1");
+}
+/**
 * Render the managed section for a target skin (null = official stock look:
 * every skin disabled, no insert row). A wired active skin also needs no
 * insert row —the bundle layer already provides it.
@@ -639,7 +651,7 @@ function useSkin(name, opts = {}) {
 		const problem = checkResolvable(entry, paths.profileModulesDir);
 		if (problem !== null) throw new Error(problem);
 	}
-	const next = `${stripLegacySkinRows(stripManaged(readPatch(paths.patchPath))).replace(/\s+$/, "")}\n\n${renderManaged(official ? null : name, registry)}\n`;
+	const next = `${stripEmptyPlaceholder(stripLegacySkinRows(stripManaged(readPatch(paths.patchPath)))).replace(/\s+$/, "")}\n\n${renderManaged(official ? null : name, registry)}\n`;
 	writePatchAtomic(paths.patchPath, next);
 	return official ? "restored the official stock look —the config watcher applies it within seconds; refresh the page to see it." : `skin switched to "${name}" —the config watcher applies it within seconds; refresh the page (or the manifest re-fetches) to see it.`;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@captain1275/dsh-client-ui-skin-aurora",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Bundled skin inside @captain1275/dsh-skins (@captain1275/dsh-client-ui-skin-aurora).",
   "type": "module",
   "main": "lib/index.js",
