@@ -78,7 +78,7 @@ export class LiveStatsSettingsCardController {
 
 /** Props the renderer binds for the live-stats card. */
 export type LiveStatsSettingsCardProps =
-  PropsRuntime<'settings.plugin.item'>
+  PropsRuntime<'web-ui.plugin.item'>
   & PropsLocale<'live-stats'>
   & InjectFace<LiveStatsSettingsCardFace>
 

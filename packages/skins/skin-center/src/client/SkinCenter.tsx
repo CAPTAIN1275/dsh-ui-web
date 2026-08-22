@@ -29,9 +29,9 @@ export interface SkinCenterInjected {
   background: SkinBackgroundHandle
 }
 
-/** Plugin-card component props: keyed-item runtime share + locale seat + injected face. */
+/** Plugin-card component props: group-item runtime share + locale seat + injected face. */
 export type SkinCenterComponentProps =
-  PropsRuntime<'settings.plugin.item'> & PropsLocale<'skinCenter'> & SkinCenterInjected
+  PropsRuntime<'web-ui.plugin.item'> & PropsLocale<'skinCenter'> & SkinCenterInjected
 
 /** The apply target of the official stock-look card. */
 const OFFICIAL = 'official'

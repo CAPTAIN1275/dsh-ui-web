@@ -67,7 +67,7 @@ export class TaskBoardSettingsCardController {
 
 /** Props the renderer binds for the task-board card. */
 export type TaskBoardSettingsCardProps =
-  PropsRuntime<'settings.plugin.item'>
+  PropsRuntime<'web-ui.plugin.item'>
   & PropsLocale<'task-board'>
   & InjectFace<TaskBoardSettingsCardFace>
 

@@ -19,7 +19,10 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import { AboutSection } from './AboutSection.tsx'
 import { PersonaSection } from './PersonaSection.tsx'
+import { WebUIPluginsCard } from './WebUIPluginsCard.tsx'
 import { en, zh, type WebUIPluginsKey } from './locales.ts'
+
+export type { WebUIPluginsCardProps } from './WebUIPluginsCard.tsx'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -29,13 +32,23 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
   interface SlotMap {
     /**
-     * rc.2+: the family plugins register their settings cards DIRECTLY into
-     * the official keyed `settings.plugin.item` slot (keyed by namespace).
-     * The old group-card child slot `web-ui.plugin.item` is gone, and
-     * `settings.plugin.item` is declared by the official ui-settings-plugins
-     * package (do not re-declare it here with a different kind).
+     * The child slot one family plugin card registers into, declared by the
+     * group card. Shape mirrors `settings.plugin.item` so the family plugins
+     * can reuse their existing card implementations.
+     */
+    'web-ui.plugin.item': { kind: 'list'; scope: 'root'; owner: SettingsPluginItemOwnerProps }
+    /**
+     * The plugin configuration section's card seat is declared by the official
+     * ui-settings-plugins package as a KEYED slot in rc.2+ (keyed by the
+     * settings namespace); do not re-declare it here with a different kind.
      */
   }
+}
+
+/** Owner share of a plugin card (the group card supplies nothing). */
+export interface SettingsPluginItemOwnerProps {
+  /** Marker field: card owner props are intentionally empty. */
+  children?: never
 }
 
 /** Required services. */
@@ -48,10 +61,14 @@ export const inject = ['slots', 'locale']
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register('web-ui-plugins', { zh, en }), 'web-ui-settings: dictionaries')
 
-  // rc.2+: the Web UI plugin group card is gone. Each family plugin now
-  // registers its settings card DIRECTLY into the official keyed
-  // `settings.plugin.item` slot (keyed by its own settings namespace), so
-  // the old group-card + child-slot aggregation no longer applies.
+  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
+    name: 'settings.plugin.item',
+    // rc.2: settings.plugin.item is a keyed slot (keyed by the settings
+    // namespace); the old list-style `id`/`order` no longer apply.
+    key: 'web-ui-plugins',
+    locale: 'web-ui-plugins',
+    children: { 'web-ui.plugin.item': { kind: 'list', scope: 'root' } },
+  }, WebUIPluginsCard))
 
   // 设置页「人格设定」section：编辑并启用/禁用常驻人格（写 ~/.dsh/persona.json
   // 并同步生成 ~/.dsh/skills/catgirl-rp/SKILL.md，DSH 技能系统热加载生效）。

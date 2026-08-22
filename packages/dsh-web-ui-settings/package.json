@@ -1,7 +1,7 @@
 {
   "name": "@captain1275/dsh-client-ui-web-ui-settings",
   "description": "Web UI plugin group for the dsh settings page: one card that hosts the dsh-web-ui family plugins' enable switches and configuration forms.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -24,6 +24,9 @@
     }
   },
   "license": "Apache-2.0",
+  "dependencies": {
+    "schemastery": "^3.18.0"
+  },
   "peerDependencies": {
     "react": "^18.2.0",
     "@deepseek-ai/dsh-client-connection": "^0.1.1-rc.2",

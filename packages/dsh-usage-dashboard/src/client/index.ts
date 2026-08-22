@@ -33,10 +33,10 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
   interface SlotMap {
     /**
-     * rc.2+: no settings card is registered (the usage plugin exposes no
-     * editable settings namespace for the keyed settings.plugin.item slot).
-     * The old rc.6 group/child-slot pattern is gone.
+     * The child slot the Web UI plugin group declares; this card registers
+     * into the group instead of the top-level `settings.plugin.item` list.
      */
+    'web-ui.plugin.item': { kind: 'list'; scope: 'root'; owner: SettingsPluginItemOwnerProps }
   }
 }
 
@@ -102,13 +102,17 @@ export function apply(ctx: ClientContext): void {
   // Conversation dock recorder: invisible seat that watches tokenUsage and
   // reports deltas. Uses its own dock id so it never collides with the
   // official/full-stats stats line.
-  // The composer-dock recorder stays (session-scoped, independent of the
-  // settings tab). The former informational settings card is removed: rc.2's
-  // settings.plugin.item is keyed by a settings namespace, and this plugin
-  // exposes no editable namespace (its settings are host-side /api only).
   ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register({
     name: 'conversation.composer.dock',
     id: 'usage-recorder',
     order: 5,
   }, UsageRecorder as never))
+
+  // Web UI plugin group settings card (informational).
+  ctx.slots.inject('web-ui.plugin.item', () => ctx.slots.register({
+    name: 'web-ui.plugin.item',
+    id: 'usage-dashboard',
+    order: 130,
+    locale: NS,
+  }, UsageSettingsCard as never))
 }

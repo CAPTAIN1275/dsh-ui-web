@@ -13,8 +13,6 @@ import type { ThemeRuntime } from '@deepseek-ai/dsh-client-ui-theme/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: pulls the settings-surface Context merge (ctx.settingsScope).
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
-// Type-only: loads the official keyed 'settings.plugin.item' slot declaration.
-import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import { SkinCenter, type SkinCenterInjected } from './SkinCenter.tsx'
 import { BackgroundController, SKIN_BACKGROUND_NS } from './background.ts'
 import { en, zh, type SkinCenterKey } from './locales.ts'
@@ -34,10 +32,12 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
   interface SlotMap {
     /**
-     * rc.2+: the skin-center card registers DIRECTLY into the official keyed
-     * `settings.plugin.item` slot, keyed by the `skin-background` namespace.
-     * The old rc.6 group/child-slot pattern (web-ui.plugin.item) is gone.
+     * The child slot the Web UI plugin group declares; this card registers
+     * into the group instead of the top-level `settings.plugin.item` list.
+     * Spelled here with the same shape so this package can register without
+     * depending on the sibling UI package.
      */
+    'web-ui.plugin.item': { kind: 'list'; scope: 'root'; owner: SettingsPluginItemOwnerProps }
   }
 }
 
@@ -85,9 +85,10 @@ export function apply(ctx: ClientContext): void {
     },
   })
 
-  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
-    name: 'settings.plugin.item',
-    key: SKIN_BACKGROUND_NS,
+  ctx.slots.inject('web-ui.plugin.item', () => ctx.slots.register({
+    name: 'web-ui.plugin.item',
+    id: 'skins',
+    order: 110,
     locale: NS,
     inject: injected,
   }, SkinCenter))

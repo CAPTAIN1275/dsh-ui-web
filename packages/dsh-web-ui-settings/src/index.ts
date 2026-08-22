@@ -10,6 +10,8 @@
  */
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
+import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
+import z from 'schemastery'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -355,8 +357,16 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
   sendJson(res, 404, { ok: false, error: 'not found' })
 }
 
-/** 宿主插件体：注册配置路由（无 webServer 服务时为空操作）。 */
+/** 宿主插件体：注册配置路由 + 组卡 namespace（无 webServer 服务时为空操作）。 */
 export function apply(ctx: Context): void {
+  // 注册 `web-ui-plugins` settings namespace：rc.2 的官方 settings tab 只
+  // 渲染已注册 settings namespace 对应的 settings.plugin.item 卡。组卡是
+  // 聚合展示，不需要真正配置，空 schema 即可让官方 tab 认识它并渲染组卡。
+  installSettingsSection(ctx, settingsNamespace('web-ui-plugins'), z.object({}), {}, {
+    setSource: () => {},
+    onChange: () => {},
+  })
+
   ctx.inject(['webServer'], (httpCtx) => {
     const dispose = httpCtx.webServer.register({ kind: 'prefix', path: PERSONA_API_PREFIX, handler: handle })
     const disposeVersion = httpCtx.webServer.register({ kind: 'prefix', path: VERSION_API_PREFIX, handler: handle })

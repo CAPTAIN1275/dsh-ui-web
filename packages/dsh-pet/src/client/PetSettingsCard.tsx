@@ -90,7 +90,7 @@ export class PetSettingsCardController {
 
 /** Props the renderer binds for the pet settings card. */
 export type PetSettingsCardProps =
-  PropsRuntime<'settings.plugin.item'>
+  PropsRuntime<'web-ui.plugin.item'>
   & PropsLocale<'pet'>
   & InjectFace<PetSettingsCardFace>
 
