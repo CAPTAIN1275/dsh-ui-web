@@ -7,13 +7,21 @@
    is themed by the active (or tried-on) skin automatically. Never use bare
    hex here: a token-less rule is a light-theme-only bug. */
 
-/* The plugin card itself: one disclosure card in the Web UI plugin group. */
+/* The plugin card itself: one disclosure card in the plugin-configuration
+   section. Matches the official PluginCard chrome (rc.2+ renders each plugin
+   card directly in the keyed settings.plugin.item slot): 12px radius,
+   border-l2, bg-layer-3, dimmed border on hover. */
 body[data-dsh-skin-center] .pluginCard {
   list-style: none;
-  border: 1px solid var(--dsw-alias-border-l1, #e2e8f0);
-  border-radius: 8px;
-  background: var(--dsw-alias-bg-layer-2, #ffffff);
+  border: 1px solid var(--dsw-alias-border-l2, #cbd5e1);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-3, #ffffff);
   overflow: hidden;
+  transition: border-color 0.16s, background 0.16s;
+}
+
+body[data-dsh-skin-center] .pluginCard:hover {
+  border-color: var(--dsw-alias-label-dimmed, #94a3b8);
 }
 
 body[data-dsh-skin-center] .cardHeader {
