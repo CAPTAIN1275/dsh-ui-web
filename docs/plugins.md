@@ -70,7 +70,7 @@ pnpm install   # workspace 链接（packages/* �?packages/skins/*�?pnpm -r b
 ```
 
 - **类型来源（只能基于官�?NPM SDK�?*：各包把用到�?`@deepseek-ai/*` 包声明为 `devDependencies`
-  （`^0.1.0-rc.6`；cordis �?`^4.0.1`），TS �?node_modules 自动解析类型
+  （`^0.1.1-rc.2`；cordis �?`^4.0.1`），TS �?node_modules 自动解析类型
   （SDK 包的 `exports["."].types` 统一指向 `lib/types/index.d.ts`，client 半区子路�?  `./client` 同理）�?*禁止** tsconfig `extends` / `paths` / `references` 指向任何 DSH 源码
   checkout（历史形态：`../../../test-zhu1090093659` 相对路径、`~/.dsh/source/current` 绝对
   paths —�?均已废除）。tsconfig 为自包含单项目：`moduleResolution: "bundler"` +
