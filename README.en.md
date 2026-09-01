@@ -6,7 +6,7 @@
 
 > A renamed and enhanced fork of [zhu1090093659/dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui)
 > (Apache-2.0) — a plugin and skin suite for the DeepSeek Harness (DSH) web GUI.
-> All 22 packages are published on npm under the `@captain1275/*` scope.
+> All 21 packages are published on npm under the `@captain1275/*` scope.
 
 The suite adds plugins and skins to the DSH web interface: the Aurora glass skin,
 a task board, SSH operations, a right-side file/change panel, a git graph, mobile

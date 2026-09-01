@@ -5,7 +5,7 @@
 > [English README](README.en.md)
 
 > 基于 [zhu1090093659/dsh-web-ui](https://github.com/zhu1090093659/dsh-web-ui)（Apache-2.0）开发的
-> DeepSeek Harness（DSH）Web UI 插件套件。全套 22 个包已发布到 npm（`@captain1275/*`）。
+> DeepSeek Harness（DSH）Web UI 插件套件。全套 21 个包已发布到 npm（`@captain1275/*`）。
 
 DSH Web UI 全家桶为 DeepSeek Harness 的 Web 界面提供一系列插件与皮肤：极光毛玻璃皮肤、任务看板、
 SSH 运维、右侧文件/变更面板、Git 图谱、移动端远程控制、DeepSeek 娘看板娘（养成系）、实时令牌统计，
