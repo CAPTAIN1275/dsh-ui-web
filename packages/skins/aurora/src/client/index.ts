@@ -10,11 +10,11 @@
  * body[data-dsh-aurora] 作用域声明。
  */
 import type { Context } from '@deepseek-ai/cordis'
-import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import { createRoot, type Root } from 'react-dom/client'
 import { createElement } from 'react'
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import { EffortPanel } from './effort/EffortPanel.tsx'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { ModelSelection } from '@deepseek-ai/dsh-api-session-controller/types'
+import { EffortPanel, type SessionRemoteFace, type SessionSelectionSource } from './effort/EffortPanel.tsx'
 // 液态玻璃：aqua（DSH-Transparent-UI-Plugin）机制照搬（见 aqua/ 目录）。
 // AquaLayer 挂 html 属性 + blur/frost 变量；玻璃调节（blur/frost）由
 // 皮肤中心极光卡片提供（localStorage + AURORA_EVENT 驱动本层）。
@@ -23,8 +23,11 @@ import { AquaLayer } from './aqua/theme-layer.ts'
 import './aqua/aqua.module.css'
 import css from './aurora.module.css'
 
-/** 需要的客户端服务：connection/sessions（aurora 背景与 Effort）、theme（aqua 层）。 */
-export const inject: string[] = ['connection', 'sessions', 'theme']
+/**
+ * 需要的客户端服务：connection/sessions（aurora 背景与 Effort）、theme（aqua 层）、
+ * remote + remote.session（Effort 的模型目录与选择 RPC，官方生成的远程面）。
+ */
+export const inject: string[] = ['connection', 'sessions', 'theme', 'remote', 'remote.session']
 
 /** 配置变更事件（皮肤中心卡片写入后派发，本半区监听重绘）。 */
 export const AURORA_EVENT = 'dshc-aurora-config'
@@ -65,6 +68,44 @@ async function fetchConfig(): Promise<AuroraConfig> {
 
 /** 解析一个模块类名（css-modules 记录按字面量名索引）。 */
 const cls = (name: keyof typeof css): string => css[name] ?? ''
+
+/** 一个目录行的归属计数（`SessionSummary.retainedBy` 的读取切片）。 */
+interface RetainedRow {
+  readonly id?: string
+  readonly retainedBy?: Readonly<Partial<Record<string, number>>> | undefined
+}
+
+/**
+ * 主视图当前会话。0.2.0 删掉了 `SessionListState.current`：视图选择属于工作区 UI，
+ * 以目录行的 `retainedBy.mainView` 标记发布（官方 `dsh-client-ui-settings-general`
+ * 同样按该标记找主会话）。找不到时返回 undefined。
+ * @param sessions - `ctx.sessions` 服务（仅读取目录行）。
+ * @returns 主视图会话 id，或 undefined。
+ */
+function mainViewSessionId(sessions: unknown): string | undefined {
+  const rows = (sessions as {
+    list?: { getSnapshot?(): { byId?: Record<string, RetainedRow | undefined> } }
+  } | undefined)?.list?.getSnapshot?.()?.byId
+  if (rows === undefined) return undefined
+  for (const row of Object.values(rows)) {
+    if (row?.id !== undefined && (row.retainedBy?.mainView ?? 0) > 0) return row.id
+  }
+  return undefined
+}
+
+/** `ctx.sessions` 的投影读取切片（官方 `ISessions.binding().session.projections`）。 */
+interface SessionsProjectionFace {
+  binding(id: string): {
+    session?: {
+      projections?: {
+        faceOf(key: string): {
+          getSnapshot(): unknown
+          subscribe(listener: () => void): () => void
+        }
+      }
+    }
+  } | undefined
+}
 
 function cssEscape(url: string): string {
   return url.replace(/["\\]/g, '\\$&')
@@ -290,6 +331,36 @@ export function apply(ctx: ClientContext): void {
   body.appendChild(host)
   let root: Root | null = null
 
+  // 0.2.0：模型目录与选择都走官方生成的远程面 `ctx.remote.session`
+  // （`ConnectionHandle` 已没有 `api` 半边）。面按插件生命周期缓存一次，
+  // 保持 React props 引用稳定，避免每次开面板都重订阅。
+  let remoteFace: SessionRemoteFace | null = null
+  const sessionRemote = (): SessionRemoteFace | undefined => {
+    if (remoteFace !== null) return remoteFace
+    const remote = ctx.get('remote') as { session?: SessionRemoteFace } | undefined
+    const session = remote?.session
+    if (session === undefined) return undefined
+    remoteFace = session
+    return remoteFace
+  }
+
+  /**
+   * 该会话持久的模型选择投影（投影键 `modelSelection`，取 `next`）。
+   * 0.2.0 的目录里没有 per-session `current`，官方选择器同样以投影为准。
+   */
+  const sessionSelection = (sessionId: string): SessionSelectionSource | undefined => {
+    const sessions = ctx.get('sessions') as SessionsProjectionFace | undefined
+    const face = sessions?.binding?.(sessionId)?.session?.projections?.faceOf?.('modelSelection')
+    if (face === undefined) return undefined
+    return {
+      get: () => {
+        const value = face.getSnapshot() as { next?: ModelSelection | null } | undefined
+        return value?.next ?? undefined
+      },
+      subscribe: (listener) => face.subscribe(listener),
+    }
+  }
+
   const hidePanel = (): void => {
     root?.unmount()
     root = null
@@ -307,9 +378,15 @@ export function apply(ctx: ClientContext): void {
     host.style.left = `${left}px`
     host.style.top = `${top}px`
     if (root === null) root = createRoot(host)
+    const remote = sessionRemote()
+    if (remote === undefined) {
+      console.warn('[aurora-effort] ctx.remote.session is unavailable; Effort 面板需要的模型目录服务缺失')
+      return
+    }
     root.render(createElement(EffortPanel, {
       sessionId,
-      connection: ctx.get('connection') as ConnectionHandle,
+      remote,
+      selection: sessionSelection(sessionId),
       onClose: hidePanel,
     }))
   }
@@ -326,7 +403,7 @@ export function apply(ctx: ClientContext): void {
         console.log('[aurora-effort] intercept row:', JSON.stringify(text))
         event.preventDefault()
         event.stopPropagation()
-        const current = (ctx.get('sessions') as { list: { getSnapshot(): { current?: string } } }).list.getSnapshot().current
+        const current = mainViewSessionId(ctx.get('sessions'))
         console.log('[aurora-effort] session:', current)
         if (current !== undefined) showPanel(current, row)
         else console.warn('[aurora-effort] no session id')

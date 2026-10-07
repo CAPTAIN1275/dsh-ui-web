@@ -12,6 +12,22 @@ import { describe, expect, it, vi } from 'vitest'
 import { apply } from '../src/client/index.ts'
 import { BranchChip } from '../src/client/chips/BranchChip.tsx'
 
+// The SDK's ui-primitives bundle imports its markdown devDependencies
+// (micromark-*, katex, shiki) from lib/index.js, and those are devDependencies
+// of the published package, so they are absent for a consumer. This suite only
+// checks the registration identity, so the module is stubbed here; icon-name
+// drift stays covered by tsc against the real .d.ts.
+vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => {
+  const Icon = (): JSX.Element => <svg aria-hidden="true" />
+  return {
+    IconBranchOutlineRegular: Icon,
+    IconCheckOutlineMedium: Icon,
+    IconSearchOutlineRegular: Icon,
+    IconChevronDownOutlineMedium: Icon,
+    IconCloseOutlineRegular: Icon,
+  }
+})
+
 describe('client apply()', () => {
   it('registers the branch chip on the selector-context hole (session-maybe)', () => {
     const register = vi.fn(() => () => undefined)

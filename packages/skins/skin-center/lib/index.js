@@ -1,206 +1,8 @@
-import { Service } from "@deepseek-ai/cordis";
-import z from "schemastery";
+import z from "@deepseek-ai/schemastery";
 import { lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmdirSync, statSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
-//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-settings@0_02aaf429ec98c58247037e2222c17a8f/node_modules/@deepseek-ai/dsh-settings/lib/index.js
-/**
-* Structural secret redaction for settings values. `role('secret')` fields are
-* removed from a value before it crosses a wire boundary; a sidecar records
-* each schema-declared secret position and whether it currently holds a value,
-* so a configuration surface can render a write-only input without ever
-* receiving the secret itself.
-* @module @deepseek-ai/dsh-settings/redact
-*/
-/** Whether a value is a plain data object the walker may recurse into. */
-function isRecord(value) {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function walk(node, value, path, secrets) {
-	if (node === void 0) return value;
-	if (node.meta?.role === "secret") {
-		secrets.push({
-			path,
-			set: value !== void 0
-		});
-		return;
-	}
-	switch (node.type) {
-		case "object": {
-			const properties = node.dict ?? {};
-			const source = isRecord(value) ? value : void 0;
-			const rebuilt = {};
-			if (source !== void 0) for (const [key, entry] of Object.entries(source)) {
-				if (key in properties) continue;
-				rebuilt[key] = entry;
-			}
-			for (const [key, child] of Object.entries(properties)) {
-				const stripped = walk(child, source?.[key], [...path, key], secrets);
-				if (stripped !== void 0) rebuilt[key] = stripped;
-			}
-			return source === void 0 && Object.keys(rebuilt).length === 0 ? value : rebuilt;
-		}
-		case "dict": {
-			if (!isRecord(value)) return value;
-			const rebuilt = {};
-			for (const [key, entry] of Object.entries(value)) {
-				const stripped = walk(node.inner, entry, [...path, key], secrets);
-				if (stripped !== void 0) rebuilt[key] = stripped;
-			}
-			return rebuilt;
-		}
-		case "array":
-			if (!Array.isArray(value)) return value;
-			return value.map((entry, index) => walk(node.inner, entry, [...path, String(index)], secrets));
-		default: return value;
-	}
-}
-/**
-* Service Definition for the user-settings capability seam (`ctx.settings`). Providers store one raw document of
-* per-namespace sections; plugins register a namespace schema and read the
-* resolved value, which layers schema defaults, the registrant's composition
-* `base`, and the user document section, in that order.
-* @module @deepseek-ai/dsh-settings
-*/
-const NAMESPACE_PATTERN = /^[a-z][a-z0-9-]*$/;
-/**
-* Brand a raw string as a {@link SettingsNamespace}.
-* @param value - candidate namespace; lowercase kebab-case, as in plugin short names.
-* @returns the branded namespace.
-*/
-function settingsNamespace(value) {
-	if (!NAMESPACE_PATTERN.test(value)) throw new TypeError(`settings namespace "${value}" must match ${String(NAMESPACE_PATTERN)}`);
-	return value;
-}
-/**
-* Deep equality over JSON-compatible data (objects, arrays, primitives) — the
-* Service Definition's single change-detection predicate, exported so the invariant
-* companion checks exactly the implementation's relation.
-* @param a - one JSON-compatible value.
-* @param b - the other JSON-compatible value.
-* @returns whether the two values are structurally equal.
-*/
-function deepEqualJson(a, b) {
-	if (a === b) return true;
-	if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
-	if (Array.isArray(a) || Array.isArray(b)) {
-		if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
-		return a.every((entry, index) => deepEqualJson(entry, b[index]));
-	}
-	const left = a;
-	const right = b;
-	const keys = Object.keys(left);
-	if (keys.length !== Object.keys(right).length) return false;
-	return keys.every((key) => key in right && deepEqualJson(left[key], right[key]));
-}
-/** Whether a value is a plain data object (not an array, null, or class instance). */
-function isPlainObject(value) {
-	if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
-	const proto = Object.getPrototypeOf(value);
-	return proto === Object.prototype || proto === null;
-}
-/** Apply one path op to a detached section, returning the next section. */
-function applyPathOp(section, op) {
-	const [head, ...rest] = op.path;
-	if (head === void 0) {
-		if (op.op === "unset") return {};
-		if (!isPlainObject(op.value)) throw new TypeError("settings mutate: setting the section root requires a plain object");
-		return { ...op.value };
-	}
-	if (rest.length === 0) {
-		if (op.op === "set") return {
-			...section,
-			[head]: op.value
-		};
-		const { [head]: _removed, ...kept } = section;
-		return kept;
-	}
-	const child = section[head];
-	if (!isPlainObject(child)) {
-		if (op.op === "unset") return section;
-		return {
-			...section,
-			[head]: applyPathOp({}, {
-				...op,
-				path: rest
-			})
-		};
-	}
-	return {
-		...section,
-		[head]: applyPathOp(child, {
-			...op,
-			path: rest
-		})
-	};
-}
-/**
-* Layer `over` onto `under`: plain objects merge recursively, every other
-* value (arrays included) replaces the lower layer wholesale. `over` never
-* carries `undefined` entries — sections come from parsed documents and write
-* snapshots pass {@link cloneJsonShaped}, which strips them so a sparse patch
-* cannot erase lower keys.
-*/
-function mergeLayers(under, over) {
-	if (over === void 0) return under;
-	if (!isPlainObject(under) || !isPlainObject(over)) return over;
-	const merged = { ...under };
-	for (const [key, value] of Object.entries(over)) merged[key] = key in merged ? mergeLayers(merged[key], value) : value;
-	return merged;
-}
-/** Recursively freeze one resolved value so handed-out snapshots stay immutable. */
-function deepFreeze(value) {
-	if (typeof value !== "object" || value === null || Object.isFrozen(value)) return value;
-	for (const entry of Object.values(value)) deepFreeze(entry);
-	return Object.freeze(value);
-}
-Service.init;
-/**
-* Value mirror of the `FiberState` members {@link isUnloading} compares
-* against: a const enum has no runtime object to import, and the value is
-* needed at runtime (same rationale as the CLI boot driver's mirror).
-*/
-const FIBER_DISPOSED = 4;
-const FIBER_UNLOADING = 5;
-/** Whether the consumer's own fiber is tearing down (not just losing the settings service). */
-function isUnloading(ctx) {
-	const state = ctx.fiber.state;
-	return state === FIBER_UNLOADING || state === FIBER_DISPOSED;
-}
-/**
-* Install the canonical optional-settings consumer wiring: while a settings
-* service exists, register `ns` with the consumer's composition entry as the
-* `base` layer and point the source thunk at the resolved scope; when the
-* service goes away (disposal, provider reload), fall back to the entry so
-* the consumer keeps working exactly as composed. The registration rides the
-* scoped fiber, so no settings service ever mounted means none of this runs.
-* @param ctx - consumer plugin context owning the wiring.
-* @param ns - the consumer-owned settings namespace.
-* @param schema - schema resolving the namespace (typically the plugin Config).
-* @param entry - the consumer's composition entry config, used as `base`.
-* @param hooks - source sink and change notification.
-*/
-function installSettingsSection(ctx, ns, schema, entry, hooks) {
-	ctx.inject(["settings"], (sctx) => {
-		const scope = sctx.settings.register(ns, schema, {
-			base: entry,
-			...hooks.validate === void 0 ? {} : { validate: hooks.validate }
-		});
-		hooks.setSource(() => scope.get());
-		sctx.effect(() => () => {
-			if (isUnloading(ctx)) return;
-			hooks.setSource(() => entry);
-			hooks.onChange();
-		});
-		hooks.onChange();
-		scope.watch(() => {
-			if (isUnloading(ctx)) return;
-			hooks.onChange();
-		});
-	});
-}
-//#endregion
 //#region src/skin-switch.ts
 /**
 * In-process skin switching for the skin center —the official `dsh-skin use`
@@ -954,11 +756,11 @@ const inject = ["webServer"];
 /**
 * Settings namespace for the main-interface background scrim, owned by the
 * skin center. The browser half spells the same string so it can bind the
-* scope without depending on this Host package.
+* form without depending on this Host package.
 */
-const SKIN_BACKGROUND_NAMESPACE = settingsNamespace("skin-background");
-/** Runtime schema for SkinBackgroundConfig. */
-const SkinBackgroundConfigSchema = z.object({ backgroundOpacity: z.number().min(0).max(100).step(5).default(0) });
+const SKIN_BACKGROUND_NAMESPACE = "skin-background";
+/** Runtime schema for SkinBackgroundConfig. This schema IS the entry's settings page. */
+const SkinBackgroundConfigSchema = z.object({ backgroundOpacity: z.number().min(0).max(100).step(5).default(0).volatile() });
 /**
 * Register the skin-center API routes.
 *
@@ -968,10 +770,6 @@ const SkinBackgroundConfigSchema = z.object({ backgroundOpacity: z.number().min(
 * @param ctx - cordis context.
 */
 function apply(ctx) {
-	installSettingsSection(ctx, SKIN_BACKGROUND_NAMESPACE, SkinBackgroundConfigSchema, {}, {
-		setSource: () => {},
-		onChange: () => {}
-	});
 	const routes = makeSkinCenterRoutes();
 	try {
 		ctx.effect(() => {

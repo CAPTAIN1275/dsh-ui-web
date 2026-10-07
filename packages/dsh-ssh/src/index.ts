@@ -9,8 +9,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
-import z from 'schemastery'
+import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
@@ -25,14 +24,26 @@ export const name = 'ssh'
 /** Services required before the SSH surfaces can mount. */
 export const inject = ['webServer', 'tools', 'systemPrompt']
 
+declare module '@deepseek-ai/cordis' {
+  interface Events {
+    /**
+     * Volatile config values were committed into the running instance without a
+     * remount (cordis-plugin-loader); dispatched to the owning fiber only.
+     * @param paths - the changed config paths, as key arrays.
+     * @mode emit
+     */
+    'loader/volatile-update'(paths: readonly (readonly string[])[]): void
+  }
+}
+
 /**
  * Settings namespace of the SSH capability — the section the web settings
  * surface edits. Spelled here rather than imported: the browser half spells
  * the same value and must not depend on a Host package.
  */
-export const SSH_SETTINGS_NAMESPACE = settingsNamespace('dsh-ssh')
+export const SSH_SETTINGS_NAMESPACE = 'dsh-ssh'
 
-/** Plugin config, validated by the same-named schemastery schema. */
+/** Plugin config as a profile patch declares it, before schema resolution. */
 export interface Config {
   /**
    * When true (default), a system-prompt section announces the SSH plugin to
@@ -43,13 +54,45 @@ export interface Config {
   enabled?: boolean
 }
 
-export const Config: z<Config> = z.object({
-  announceToAgent: z.boolean().default(true),
-  enabled: z.boolean().default(true),
+/** The stable reference a `volatile()` config field resolves to; its owner updates it in place. */
+interface ConfigRef<T> {
+  /** @returns the field's current value. */
+  get(): T
+}
+
+/** One resolved config field: a live reference, or a plain value from a hand-built context. */
+type ConfigField<T> = ConfigRef<T> | T
+
+/** The config the Host hands to {@link apply} — the runtime face of {@link Config}. */
+export interface ResolvedConfig {
+  announceToAgent?: ConfigField<boolean>
+  enabled?: ConfigField<boolean>
+}
+
+/**
+ * Plugin config schema. Under the settings model this schema IS the entry's
+ * settings page: the Host derives one form per profile entry from it and
+ * serves it through the shared configuration forms. Every field is
+ * `volatile()`, which is what puts it on that page and what lets an edit reach
+ * a running instance without a remount.
+ */
+export const Config = z.object({
+  announceToAgent: z.boolean().default(true).volatile(),
+  enabled: z.boolean().default(true).volatile(),
 })
 
 /** Schema default, re-read for hand-built test contexts (the loader applies them normally). */
 const DEFAULT_ANNOUNCE = true
+
+/** Read one resolved config field, following the live reference the schema produces. */
+function readConfigField<T>(field: ConfigField<T> | undefined, fallback: T): T {
+  if (field === undefined) return fallback
+  if (typeof field === 'object' && field !== null && typeof (field as ConfigRef<T>).get === 'function') {
+    const value = (field as ConfigRef<T>).get()
+    return value === undefined ? fallback : value
+  }
+  return field as T
+}
 
 /** Order of the announcement section within the tool-guidance band. */
 const SECTION_ORDER = 150
@@ -62,15 +105,11 @@ export const SSH_GUIDANCE = '本机已安装 dsh-ssh 插件（DSH 远程 SSH 运
  * @param ctx - host plugin context carrying webServer/tools/systemPrompt.
  * @param config - resolved plugin config (schema defaults applied by the loader).
  */
-export function apply(ctx: Context, config?: Config): void {
-  // The live source the surfaces read: the settings section once the web
-  // settings surface is served, the composition entry otherwise.
-  let current: () => Config = () => config ?? {}
+export function apply(ctx: Context, config?: ResolvedConfig): void {
   const resolve = (): Config => {
-    const value = current()
     return {
-      announceToAgent: value.announceToAgent ?? DEFAULT_ANNOUNCE,
-      enabled: value.enabled ?? true,
+      announceToAgent: readConfigField(config?.announceToAgent, DEFAULT_ANNOUNCE),
+      enabled: readConfigField(config?.enabled, true),
     }
   }
 
@@ -96,7 +135,7 @@ export function apply(ctx: Context, config?: Config): void {
   // System-prompt announcement.
   let disposeSection: (() => void) | undefined
 
-  // Register (or drop) every surface to match the current source. Each group
+  // Register (or drop) every surface to match the resolved config. Each group
   // is kept under one disposer: re-registering first tears the old one down
   // so duplicate-name registrations never throw.
   const sync = (): void => {
@@ -141,15 +180,11 @@ export function apply(ctx: Context, config?: Config): void {
     )
   }
 
-  installSettingsSection(ctx, SSH_SETTINGS_NAMESPACE, Config, config ?? {}, {
-    setSource: (source) => {
-      current = source
-      sync()
-    },
-    onChange: sync,
-  })
+  // A settings edit is committed into this instance's config references and
+  // announced on the owning fiber (the entry is not remounted), so the
+  // surfaces are re-derived from the new values here.
+  ctx.on('loader/volatile-update', () => { sync() })
 
-  // Initial registration from the composition entry (covers deployments with
-  // no settings service, whose installSettingsSection never fires its hooks).
+  // Initial registration from the config the Host activated this row with.
   sync()
 }

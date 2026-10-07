@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { IconBranchOutline16, IconCheckOutline14, IconSearchOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconBranchOutlineRegular, IconCheckOutlineMedium, IconSearchOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { Translate } from '@deepseek-ai/dsh-client-ui-slots'
 import type { BranchesView, SwitchResult } from '../../core/types.ts'
 import type { GitGraphKey } from '../locales.ts'
@@ -75,7 +75,7 @@ export function BranchPopover({ view, onSwitch, onSwitched, onCreate, onGraph, o
       <Backdrop onClose={onClose} />
       <div className={css.popover} role="listbox" aria-label={t('branch.search')} data-gitgraph-popover>
         <div className={css.searchBox}>
-          <IconSearchOutline16 size={14} />
+          <IconSearchOutlineRegular size={14} />
           <input
             className={css.searchInput}
             value={query}
@@ -99,11 +99,11 @@ export function BranchPopover({ view, onSwitch, onSwitched, onCreate, onGraph, o
                 aria-selected={branch.current}
                 disabled={pending !== null}
               >
-                <IconBranchOutline16 size={14} />
+                <IconBranchOutlineRegular size={14} />
                 <span className={css.itemText}>
                   <span className={css.itemName} title={branch.name}>{branch.name}</span>
                 </span>
-                {branch.current && <IconCheckOutline14 className={css.check} size={14} />}
+                {branch.current && <IconCheckOutlineMedium className={css.check} size={14} />}
               </button>
             ))}
         </div>
@@ -111,11 +111,11 @@ export function BranchPopover({ view, onSwitch, onSwitched, onCreate, onGraph, o
         {error !== null && <div className={css.notice}>{error}</div>}
         <div className={css.footer}>
           <button type="button" className={css.footerItem} onClick={onCreate}>
-            <IconBranchOutline16 size={14} />
+            <IconBranchOutlineRegular size={14} />
             {t('branch.create')}
           </button>
           <button type="button" className={css.footerItem} onClick={onGraph}>
-            <IconBranchOutline16 size={14} />
+            <IconBranchOutlineRegular size={14} />
             {t('branch.graph')}
           </button>
         </div>

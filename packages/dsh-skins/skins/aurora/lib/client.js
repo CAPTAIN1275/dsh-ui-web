@@ -496,42 +496,47 @@ window.__ModuleLoader__.load({
 		*/
 		/** Panel width (must match the CSS `.panel` width). */
 		const PANEL_W = 280;
-		/** Load the per-session model directory once per panel open. */
-		function useDirectory(connection, sessionId) {
-			const [directory, setDirectory] = (0, react.useState)(null);
+		/** Load the Host model catalog once per panel open (0.2.0: Host-global, no sessionId). */
+		function useCatalog(remote) {
+			const [catalog, setCatalog] = (0, react.useState)(null);
 			(0, react.useEffect)(() => {
 				let alive = true;
-				setDirectory(null);
-				connection.api.sessions.models({ sessionId }).then((response) => {
-					const value = response.result.ok ? response.result.value : null;
-					console.log("[aurora-effort] models:", response.result.ok ? `ok groups=${value?.groups?.length} current=${JSON.stringify(value?.current)}` : `fail ${response.result.error?.code}: ${response.result.error?.message}`);
-					if (alive && response.result.ok) setDirectory(response.result.value);
+				setCatalog(null);
+				remote.modelCatalog().then((response) => {
+					console.log("[aurora-effort] modelCatalog:", response.ok ? `ok groups=${response.value.groups.length} default=${JSON.stringify(response.value.default)}` : `fail ${response.error.code}: ${response.error.message}`);
+					if (alive && response.ok) setCatalog(response.value);
 				}).catch((error) => {
-					console.warn("[aurora-effort] models threw:", error);
+					console.warn("[aurora-effort] modelCatalog threw:", error);
 				});
 				return () => {
 					alive = false;
 				};
-			}, [connection, sessionId]);
-			return directory;
+			}, [remote]);
+			return catalog;
+		}
+		/** 订阅该会话持久的模型选择（没有投影读取面时保持 undefined）。 */
+		function useSelection(source) {
+			const [selection, setSelection] = (0, react.useState)(() => source?.get());
+			(0, react.useEffect)(() => {
+				if (source === void 0) return;
+				setSelection(source.get());
+				return source.subscribe(() => setSelection(source.get()));
+			}, [source]);
+			return selection;
 		}
 		/**
 		* The floating effort card.
-		* @param props - session + wire face + close verb.
+		* @param props - session + Host Remote face + close verb.
 		*/
 		function EffortPanel(props) {
-			const { sessionId, connection, onClose } = props;
-			const directory = useDirectory(connection, sessionId);
+			const { sessionId, remote, selection: selectionSource, onClose } = props;
+			const catalog = useCatalog(remote);
+			const projected = useSelection(selectionSource);
 			const [dragging, setDragging] = (0, react.useState)(false);
 			const [rawValue, setRawValue] = (0, react.useState)(0);
-			const disabled = directory === null;
-			const rawCurrent = directory?.current ?? null;
-			const fallback = directory !== null && directory.groups.length > 0 && directory.groups[0].models.length > 0 ? {
-				provider: directory.groups[0].id,
-				model: directory.groups[0].models[0].id
-			} : null;
-			const current = rawCurrent ?? fallback;
-			const model = (current === null ? void 0 : directory?.groups.find((entry) => entry.id === current.provider))?.models.find((entry) => entry.id === current?.model);
+			const disabled = catalog === null;
+			const current = projected ?? catalog?.default ?? null;
+			const model = (current === null ? void 0 : catalog?.groups.find((entry) => entry.id === current.provider))?.models.find((entry) => entry.id === current?.model);
 			const efforts = model?.reasoning?.efforts ?? [];
 			const usable = !disabled && current !== null && efforts.length >= 2;
 			const currentEffortId = current?.reasoningEffort ?? model?.reasoning?.defaultEffort;
@@ -541,7 +546,7 @@ window.__ModuleLoader__.load({
 			(0, react.useEffect)(() => {
 				setRawValue(initialRaw);
 				setDragging(false);
-			}, [directory]);
+			}, [current]);
 			const displayIndex = usable ? Math.round(rawValue / step100) : 0;
 			const level = efforts[displayIndex];
 			const slider100 = usable ? rawValue : 0;
@@ -565,7 +570,7 @@ window.__ModuleLoader__.load({
 				const idx = Math.round(v / step100);
 				const effort = efforts[idx];
 				if (effort === void 0) return;
-				connection.api.sessions.selectModel({
+				remote.selectModel({
 					sessionId,
 					provider: current.provider,
 					model: current.model,
@@ -934,11 +939,16 @@ window.__ModuleLoader__.load({
 		};
 		//#endregion
 		//#region src/client/index.ts
-		/** 需要的客户端服务：connection/sessions（aurora 背景与 Effort）、theme（aqua 层）。 */
+		/**
+		* 需要的客户端服务：connection/sessions（aurora 背景与 Effort）、theme（aqua 层）、
+		* remote + remote.session（Effort 的模型目录与选择 RPC，官方生成的远程面）。
+		*/
 		const inject = [
 			"connection",
 			"sessions",
-			"theme"
+			"theme",
+			"remote",
+			"remote.session"
 		];
 		/** 配置变更事件（皮肤中心卡片写入后派发，本半区监听重绘）。 */
 		const AURORA_EVENT = "dshc-aurora-config";
@@ -968,6 +978,18 @@ window.__ModuleLoader__.load({
 		}
 		/** 解析一个模块类名（css-modules 记录按字面量名索引）。 */
 		const cls = (name) => aurora_module_css_default[name] ?? "";
+		/**
+		* 主视图当前会话。0.2.0 删掉了 `SessionListState.current`：视图选择属于工作区 UI，
+		* 以目录行的 `retainedBy.mainView` 标记发布（官方 `dsh-client-ui-settings-general`
+		* 同样按该标记找主会话）。找不到时返回 undefined。
+		* @param sessions - `ctx.sessions` 服务（仅读取目录行）。
+		* @returns 主视图会话 id，或 undefined。
+		*/
+		function mainViewSessionId(sessions) {
+			const rows = sessions?.list?.getSnapshot?.()?.byId;
+			if (rows === void 0) return void 0;
+			for (const row of Object.values(rows)) if (row?.id !== void 0 && (row.retainedBy?.mainView ?? 0) > 0) return row.id;
+		}
 		function cssEscape(url) {
 			return url.replace(/["\\]/g, "\\$&");
 		}
@@ -1151,6 +1173,28 @@ window.__ModuleLoader__.load({
 			host.style.cssText = "position: fixed; z-index: 10000; top: 0; left: 0; width: 0; height: 0; pointer-events: none;";
 			body.appendChild(host);
 			let root = null;
+			let remoteFace = null;
+			const sessionRemote = () => {
+				if (remoteFace !== null) return remoteFace;
+				const session = ctx.get("remote")?.session;
+				if (session === void 0) return void 0;
+				remoteFace = session;
+				return remoteFace;
+			};
+			/**
+			* 该会话持久的模型选择投影（投影键 `modelSelection`，取 `next`）。
+			* 0.2.0 的目录里没有 per-session `current`，官方选择器同样以投影为准。
+			*/
+			const sessionSelection = (sessionId) => {
+				const face = ctx.get("sessions")?.binding?.(sessionId)?.session?.projections?.faceOf?.("modelSelection");
+				if (face === void 0) return void 0;
+				return {
+					get: () => {
+						return face.getSnapshot()?.next ?? void 0;
+					},
+					subscribe: (listener) => face.subscribe(listener)
+				};
+			};
 			const hidePanel = () => {
 				root?.unmount();
 				root = null;
@@ -1164,9 +1208,15 @@ window.__ModuleLoader__.load({
 				host.style.left = `${left}px`;
 				host.style.top = `${top}px`;
 				if (root === null) root = (0, react_dom_client.createRoot)(host);
+				const remote = sessionRemote();
+				if (remote === void 0) {
+					console.warn("[aurora-effort] ctx.remote.session is unavailable; Effort 面板需要的模型目录服务缺失");
+					return;
+				}
 				root.render((0, react.createElement)(EffortPanel, {
 					sessionId,
-					connection: ctx.get("connection"),
+					remote,
+					selection: sessionSelection(sessionId),
 					onClose: hidePanel
 				}));
 			};
@@ -1180,7 +1230,7 @@ window.__ModuleLoader__.load({
 						console.log("[aurora-effort] intercept row:", JSON.stringify(text));
 						event.preventDefault();
 						event.stopPropagation();
-						const current = ctx.get("sessions").list.getSnapshot().current;
+						const current = mainViewSessionId(ctx.get("sessions"));
 						console.log("[aurora-effort] session:", current);
 						if (current !== void 0) showPanel(current, row);
 						else console.warn("[aurora-effort] no session id");

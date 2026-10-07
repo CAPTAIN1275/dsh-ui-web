@@ -10,12 +10,27 @@
  */
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 import type { BranchesView, GraphView, RepoStatus, SwitchResult } from '../src/core/types.ts'
-import type { GitGraphInjected } from '../src/client/index.ts'
+import type { GitGraphInjected, SessionId } from '../src/client/index.ts'
 import type { BranchChipProps } from '../src/client/chips/BranchChip.tsx'
 import { BranchChip } from '../src/client/chips/BranchChip.tsx'
 import { zh, type GitGraphKey } from '../src/client/locales.ts'
+
+// The SDK's ui-primitives bundle imports its markdown devDependencies
+// (micromark-*, katex, shiki) from lib/index.js, and those are devDependencies
+// of the published package, so they are absent for a consumer. The chip only
+// borrows its presentational icon atoms, so the module is stubbed here;
+// icon-name drift stays covered by tsc against the real .d.ts.
+vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => {
+  const Icon = (): JSX.Element => <svg aria-hidden="true" />
+  return {
+    IconBranchOutlineRegular: Icon,
+    IconCheckOutlineMedium: Icon,
+    IconSearchOutlineRegular: Icon,
+    IconChevronDownOutlineMedium: Icon,
+    IconCloseOutlineRegular: Icon,
+  }
+})
 
 afterEach(cleanup)
 
@@ -79,11 +94,11 @@ function bench(options: BenchOptions = {}) {
     branches: vi.fn(async (sessionId: SessionId | undefined) => { record('branches', sessionId); return cwd === undefined ? null : branchesView }),
     switchBranch: vi.fn(async (sessionId: SessionId | undefined, branch: string) => {
       record('switchBranch', sessionId, branch)
-      return options.switchResult ?? { ok: true, branch }
+      return options.switchResult ?? { ok: true as const, branch }
     }),
     createBranch: vi.fn(async (sessionId: SessionId | undefined, name: string) => {
       record('createBranch', sessionId, name)
-      return options.createResult ?? { ok: true, branch: name }
+      return options.createResult ?? { ok: true as const, branch: name }
     }),
     graph: vi.fn(async (sessionId: SessionId | undefined, limit?: number) => {
       record('graph', sessionId, limit)
@@ -93,15 +108,14 @@ function bench(options: BenchOptions = {}) {
   }
 
   const props: BranchChipProps = {
+    // The selector-context hole has an empty owner share: the chip derives its
+    // state from the session-id standard seat + the inject face, never from the
+    // conversation snapshot or the live input state.
     sessionId,
-    // The selector-context hole has an empty owner share: the chip derives
-    // its state from the standard session-maybe kit + the inject face, never
-    // from the conversation snapshot or live input state.
-    useSession: (() => undefined) as never,
-    useSessions: ((selector: (state: { byId: Record<string, { cwd?: string; blank?: boolean }> }) => unknown) =>
-      selector({ byId: { [sessionId]: { cwd, blank: options.blank === true } } })) as never,
+    useConversation: (() => undefined) as never,
+    useInput: (() => undefined) as never,
+    inputActions: undefined as never,
     useWorkspaces: (() => undefined) as never,
-    useProjection: (() => undefined) as never,
     t: makeTranslate(),
     ...injected,
   }

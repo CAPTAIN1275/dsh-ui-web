@@ -6,10 +6,10 @@
  * jump-back), so the board and the live conversation stay visibly linked.
  */
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import type { SessionId, SessionListState, SessionSummary } from '@deepseek-ai/dsh-client-runtime/client'
 import { selectedTaskOf, type BoardController } from '../../core/controller.ts'
 import { COLUMNS, type TaskRecord, type TaskStatus } from '../../core/tasks.ts'
 import { t, type TaskBoardKey } from '../locales.ts'
+import type { CurrentSessionListFace, SessionId, SessionSummary } from '../session-driver.ts'
 import css from '../board.module.css'
 import { NewTaskModal } from './NewTaskModal.tsx'
 import { TaskCard } from './TaskCard.tsx'
@@ -17,10 +17,7 @@ import { TaskDetail } from './TaskDetail.tsx'
 
 /** 当前会话句柄：只读会话列表快照 + 跳转。 */
 export interface CurrentSessionHandle {
-  list: {
-    getSnapshot(): SessionListState
-    subscribe(listener: () => void): () => void
-  }
+  list: CurrentSessionListFace
   open(sessionId: SessionId): void
 }
 

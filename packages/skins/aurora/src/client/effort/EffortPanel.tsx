@@ -6,85 +6,117 @@
  * dragging and snaps to the nearest effort level on release.
  */
 import { useEffect, useRef, useState, type ReactElement } from 'react'
-import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
+import type { ModelCatalog, ModelSelection } from '@deepseek-ai/dsh-api-session-controller/types'
 import { useWebglFire } from './useWebglFire.ts'
 import css from './effort.module.css'
 
-/** Panel props: owning session, wire face, close verb. */
+/** One Remote outcome: success carries the value, failure the Host code/message. */
+type RemoteOutcome<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly error: { readonly code: string; readonly message: string } }
+
+/**
+ * 0.2.0 的 `ctx.remote.session` 面（官方生成的 typert 远程命名空间，声明见
+ * `@deepseek-ai/dsh-api-session-controller/remote` 的 `TypertRemoteNamespace$73657373696f6e`）。
+ * 本面板只用到这两个方法；`ConnectionHandle` 在 0.2.0 里已没有 `api` 半边。
+ */
+export interface SessionRemoteFace {
+  /**
+   * Host 全局模型目录（0.2.0 取代了按会话的 `connection.api.sessions.models`）：
+   * provider 分组 + 部署默认 + 隔离的 provider 失败。
+   */
+  modelCatalog(): Promise<RemoteOutcome<ModelCatalog>>
+  /** 写入一次完整模型选择（本面板只改 reasoningEffort，provider/model 原样回写）。 */
+  selectModel(request: ModelSelectionRequest): Promise<RemoteOutcome<unknown>>
+}
+
+/** `session/selectModel` 的请求体（官方 `SessionSelectModelRequest`）。 */
+interface ModelSelectionRequest {
+  /** 会话身份；品牌类型 `SessionId` 在运行期就是字符串。 */
+  readonly sessionId: string
+  readonly provider: string
+  readonly model: string
+  readonly reasoningEffort?: string
+}
+
+/**
+ * 会话持久的模型选择读取面。0.2.0 的目录里不再有 per-session `current`：
+ * 官方选择器按 `投影 modelSelection.next ?? 目录 default` 取当前选择，本面板同序。
+ */
+export interface SessionSelectionSource {
+  /** 当前选择（投影的 `next`），无投影时为 undefined。 */
+  get(): ModelSelection | undefined
+  /** 订阅投影变化；返回退订函数。 */
+  subscribe(listener: () => void): () => void
+}
+
+/** Panel props: owning session, Host Remote face, close verb. */
 export interface EffortPanelProps {
   sessionId: string
-  connection: ConnectionHandle
+  /** Host 远程面（`ctx.remote.session`）。 */
+  remote: SessionRemoteFace
+  /** 该会话的持久模型选择投影；缺失时回退到目录的部署默认。 */
+  selection?: SessionSelectionSource
   onClose: () => void
-}
-
-/** One reasoning level as returned by the directory API. */
-interface EffortLevel {
-  id: string
-  name: string
-  description?: string
-}
-
-/** The advisory directory value (`sessions.models` response). */
-interface DirectoryValue {
-  current: { provider: string; model: string; reasoningEffort?: string } | null
-  groups: Array<{
-    id: string
-    models: Array<{
-      id: string
-      reasoning?: { efforts?: EffortLevel[]; defaultEffort?: string }
-    }>
-  }>
 }
 
 /** Panel width (must match the CSS `.panel` width). */
 const PANEL_W = 280
 
-/** Load the per-session model directory once per panel open. */
-function useDirectory(connection: ConnectionHandle, sessionId: string): DirectoryValue | null {
-  const [directory, setDirectory] = useState<DirectoryValue | null>(null)
+/** Load the Host model catalog once per panel open (0.2.0: Host-global, no sessionId). */
+function useCatalog(remote: SessionRemoteFace): ModelCatalog | null {
+  const [catalog, setCatalog] = useState<ModelCatalog | null>(null)
 
   useEffect(() => {
     let alive = true
-    setDirectory(null)
-    void connection.api.sessions
-      .models({ sessionId })
+    setCatalog(null)
+    void remote.modelCatalog()
       .then((response) => {
-        const value = response.result.ok ? response.result.value : null
-        console.log('[aurora-effort] models:', response.result.ok
-          ? `ok groups=${value?.groups?.length} current=${JSON.stringify(value?.current)}`
-          : `fail ${response.result.error?.code}: ${response.result.error?.message}`)
-        if (alive && response.result.ok) setDirectory(response.result.value)
+        console.log('[aurora-effort] modelCatalog:', response.ok
+          ? `ok groups=${response.value.groups.length} default=${JSON.stringify(response.value.default)}`
+          : `fail ${response.error.code}: ${response.error.message}`)
+        if (alive && response.ok) setCatalog(response.value)
       })
-      .catch((error) => {
-        console.warn('[aurora-effort] models threw:', error)
+      .catch((error: unknown) => {
+        console.warn('[aurora-effort] modelCatalog threw:', error)
       })
     return () => {
       alive = false
     }
-  }, [connection, sessionId])
+  }, [remote])
 
-  return directory
+  return catalog
+}
+
+/** 订阅该会话持久的模型选择（没有投影读取面时保持 undefined）。 */
+function useSelection(source: SessionSelectionSource | undefined): ModelSelection | undefined {
+  const [selection, setSelection] = useState<ModelSelection | undefined>(() => source?.get())
+
+  useEffect(() => {
+    if (source === undefined) return
+    setSelection(source.get())
+    return source.subscribe(() => setSelection(source.get()))
+  }, [source])
+
+  return selection
 }
 
 /**
  * The floating effort card.
- * @param props - session + wire face + close verb.
+ * @param props - session + Host Remote face + close verb.
  */
 export function EffortPanel(props: EffortPanelProps): ReactElement {
-  const { sessionId, connection, onClose } = props
-  const directory = useDirectory(connection, sessionId)
+  const { sessionId, remote, selection: selectionSource, onClose } = props
+  const catalog = useCatalog(remote)
+  const projected = useSelection(selectionSource)
   const [dragging, setDragging] = useState(false)
   // Continuous 0..100 slider position; snaps to an effort level on release.
   const [rawValue, setRawValue] = useState(0)
 
-  const disabled = directory === null
-  const rawCurrent = directory?.current ?? null
-  // 无 current 时回退到第一个分组的第一模型（目录数据总是可用的）。
-  const fallback = directory !== null && directory.groups.length > 0 && directory.groups[0].models.length > 0
-    ? { provider: directory.groups[0].id, model: directory.groups[0].models[0].id }
-    : null
-  const current = rawCurrent ?? fallback
-  const group = current === null ? undefined : directory?.groups.find((entry) => entry.id === current.provider)
+  const disabled = catalog === null
+  // 会话投影优先，无投影时用目录的部署默认（目录数据总是可用的）。
+  const current = projected ?? catalog?.default ?? null
+  const group = current === null ? undefined : catalog?.groups.find((entry) => entry.id === current.provider)
   const model = group?.models.find((entry) => entry.id === current?.model)
   const efforts = model?.reasoning?.efforts ?? []
   const usable = !disabled && current !== null && efforts.length >= 2
@@ -98,7 +130,7 @@ export function EffortPanel(props: EffortPanelProps): ReactElement {
     setRawValue(initialRaw)
     setDragging(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [directory])
+  }, [current])
 
   const displayIndex = usable ? Math.round(rawValue / step100) : 0
   const level = efforts[displayIndex]
@@ -131,13 +163,12 @@ export function EffortPanel(props: EffortPanelProps): ReactElement {
     const idx = Math.round(v / step100)
     const effort = efforts[idx]
     if (effort === undefined) return
-    void connection.api.sessions
-      .selectModel({
-        sessionId,
-        provider: current.provider,
-        model: current.model,
-        reasoningEffort: effort.id,
-      })
+    void remote.selectModel({
+      sessionId,
+      provider: current.provider,
+      model: current.model,
+      reasoningEffort: effort.id,
+    })
       .catch(() => {
         /* the official picker keeps its own error surface */
       })

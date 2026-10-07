@@ -13,8 +13,11 @@
  * @module dsh-aionui-panel/client
  */
 
-import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
-import type {} from '@deepseek-ai/dsh-client-ui-slots'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { SessionSummary } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { SessionIdOf } from '@deepseek-ai/dsh-client-ui-slots'
+// Type-only: pulls the ctx.slots merge (the renderer owns the slot registry).
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: pulls the ui-conversation SlotMap merge (the input dock entry).
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
@@ -31,6 +34,34 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     /** Panel surface copy. */
     'aionui-panel': AionUiPanelKey
   }
+}
+
+/** Session identity, as the session catalog exposes it. */
+type SessionId = SessionSummary['id']
+
+/** The catalog row subset {@link mainViewSessionId} reads. */
+interface MainViewOwnedRow {
+  /** Catalog row identity. */
+  readonly id: SessionId
+  /** Per-source local ownership counts; absent rows are never owned. */
+  readonly retainedBy?: Readonly<Partial<Record<string, number>>> | undefined
+}
+
+/**
+ * Resolve the Session the main view currently shows.
+ *
+ * The Client Session Controller carries no global "current" selection: view
+ * selection belongs to the workspace UI, which publishes it through the
+ * catalog's per-source ownership counts (`SessionSummary.retainedBy.mainView`).
+ * That marker replaces the removed `SessionListState.current` field.
+ * @param byId - the session catalog's rows.
+ * @returns the main-view session id, or undefined when the main view shows none.
+ */
+function mainViewSessionId(byId: Readonly<Record<SessionId, MainViewOwnedRow>>): SessionId | undefined {
+  for (const row of Object.values(byId)) {
+    if ((row.retainedBy?.mainView ?? 0) > 0) return row.id
+  }
+  return undefined
 }
 
 /** Required services: sessions for the project root, locale for the copy. */
@@ -54,10 +85,13 @@ export function apply(ctx: ClientContext): void {
         id: 'aionui-drag-file',
         order: 90,
         locale: NS,
-        inject: (sessionId: SessionId | undefined): DragFileInjected => ({
+        inject: (sessionId: SessionIdOf | undefined): DragFileInjected => ({
           insertPath: (path: string): boolean => {
             if (sessionId === undefined) return false
-            const actx = sessions.scope(sessionId)
+            // The framework delivers the catalog's real (branded) identity;
+            // `SessionIdOf` degrades to `string` in a program without the
+            // ui-session standard-props merge.
+            const actx = sessions.scope(sessionId as unknown as SessionId)
             if (actx === undefined) return false
             const input = conversation.input
             if (input === undefined) return false
@@ -83,7 +117,7 @@ export function apply(ctx: ClientContext): void {
     // re-binds every store (widths, collapse, tree, tabs persist per root).
     const bindRoot = (): void => {
       const snapshot = ctx.sessions.list.getSnapshot()
-      const sessionId = snapshot.current as SessionId | undefined
+      const sessionId = mainViewSessionId(snapshot.byId)
       const cwd = sessionId === undefined ? undefined : snapshot.byId[sessionId]?.cwd
       const root = typeof cwd === 'string' && cwd !== '' ? cwd : ''
       if (root === currentRoot) return

@@ -7,8 +7,9 @@
  * package must not depend on a sibling UI package.
  */
 
-import type { SettingsScope, SettingsScopeSnapshot, SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ConfigForm, ConfigFormSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 
 /** The write one field's staged text performs when the card is saved. */
 export type FieldWrite =
@@ -40,14 +41,14 @@ export interface FieldState {
 
 /** Form state every plugin settings card shares. */
 export interface CardShell {
-  /** False while the namespace is still loading; the card renders nothing. */
+  /** False while the entry is still loading; the card renders nothing. */
   available: boolean
   /**
-   * Whether the namespace is actually served to this client. False when the
-   * Host deployment does not expose it (e.g. the official apiproxy settings
-   * allowlist omits third-party namespaces): the card renders an explanation
-   * instead of its form, so a missing namespace never looks like a missing
-   * plugin.
+   * Whether the entry is actually served to this client. False when the
+   * deployment does not expose it to the settings surface (memory-mode
+   * connections, or a page the Host keeps local): the card renders an
+   * explanation instead of its form, so a missing entry never looks like a
+   * missing plugin.
    */
   exposed: boolean
   /** Whether the Host document accepts writes. */
@@ -143,12 +144,22 @@ export function booleanField(field: string): FieldSpec {
   }
 }
 
+/** One field of the raw user layer, as the Host stores it. */
+function layerValue(layer: unknown, field: string): unknown {
+  return (layer as Record<string, unknown> | null | undefined)?.[field]
+}
+
+/** Whether the raw user layer carries an explicit entry for one field. */
+function layerHas(layer: unknown, field: string): boolean {
+  return typeof layer === 'object' && layer !== null && Object.hasOwn(layer, field)
+}
+
 /**
- * Stages one card's edits over one settings namespace and writes them on save.
+ * Stages one card's edits over one settings entry and writes them on save.
  *
  * The Host is the only authority on whether a value was accepted — its
  * validators own the constraints no schema can express — so the outcome is
- * read back from the section rather than predicted here. A save that did not
+ * read back from the entry rather than predicted here. A save that did not
  * land keeps its drafts, so the user can correct them instead of retyping.
  */
 export class CardForm<T> {
@@ -158,16 +169,16 @@ export class CardForm<T> {
   private saving = false
   private failed = false
 
-  /** @param scope - the bound settings scope for this card's namespace. */
+  /** @param scope - the bound configuration form for this card's entry. */
   constructor(
-    private readonly scope: SettingsScope<T>,
+    private readonly scope: ConfigForm<T>,
     specs: FieldSpec[],
   ) {
     this.specs = new Map(specs.map(spec => [spec.field, spec]))
     scope.subscribe(() => { this.publish() })
   }
 
-  /** Publish a projection of this form, rebuilt whenever the scope or a draft changes. */
+  /** Publish a projection of this form, rebuilt whenever the entry or a draft changes. */
   bind<S>(project: () => S): SnapshotStore<S> {
     const store = createSnapshotStore(project())
     this.listeners.add(() => { store.set(project()) })
@@ -176,7 +187,7 @@ export class CardForm<T> {
 
   /** Read the card-level state: what the Host serves, and what a save would do. */
   shell(): CardShell {
-    const snapshot = this.scope.getSnapshot()
+    const snapshot = this.snapshotOf()
     const plan = this.plan()
     return {
       available: snapshot.status !== 'loading',
@@ -199,7 +210,7 @@ export class CardForm<T> {
     const write = staged.clear ? { kind: 'clear' as const } : spec.parse(staged.text)
     return {
       text: staged.text,
-      overridden: write?.kind === 'set',
+      overridden: write?.kind === 'set' && !this.stored(field),
       invalid: write === undefined,
     }
   }
@@ -271,14 +282,20 @@ export class CardForm<T> {
     return plan
   }
 
+  /** Clear one field and report whether the user layer dropped it. */
   private async clear(field: string): Promise<boolean> {
     await this.scope.unset(field)
     return !this.stored(field)
   }
 
+  /**
+   * Write one field and report whether the user layer now carries the staged
+   * value. The Host answers acceptance, but it may normalize what it stored, so
+   * the raw user layer — not the answer — is what the card believes.
+   */
   private async store(field: string, value: unknown): Promise<boolean> {
     await this.scope.set(field, value)
-    return this.userLayer()?.[field] === value
+    return layerHas(this.snapshotOf().user, field)
   }
 
   private stage(field: string, edit: StagedEdit): void {
@@ -295,25 +312,20 @@ export class CardForm<T> {
     return spec
   }
 
-  private snapshotOf(): SettingsScopeSnapshot<T> {
+  private snapshotOf(): ConfigFormSnapshot<T> {
     return this.scope.getSnapshot()
   }
 
   private sectionValue(field: string): unknown {
-    return (this.snapshotOf().value as Record<string, unknown> | undefined)?.[field]
+    return layerValue(this.snapshotOf().value, field)
   }
 
   private baseValue(field: string): unknown {
-    return (this.snapshotOf().base as Record<string, unknown> | undefined)?.[field]
-  }
-
-  private userLayer(): Record<string, unknown> | undefined {
-    return this.snapshotOf().user as Record<string, unknown> | undefined
+    return layerValue(this.snapshotOf().base, field)
   }
 
   private stored(field: string): boolean {
-    const user = this.userLayer()
-    return user !== undefined && Object.hasOwn(user, field)
+    return layerHas(this.snapshotOf().user, field)
   }
 
   private publish(): void {

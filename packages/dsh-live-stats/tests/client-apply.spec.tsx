@@ -1,13 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
-// The npm SDK's client half is a closure-factory bundle for the GUI's
-// __ModuleLoader__ (not importable under vitest); provide the one value
-// member the apply chain needs.
-vi.mock('@deepseek-ai/dsh-client-runtime/client', () => ({
+// The npm SDK's store package reaches zustand/immer value imports that the
+// vitest resolver cannot follow from this package; provide the two members the
+// client apply chain needs. The settings surface is stubbed for the same
+// reason: only its describe mirror is consulted at activation.
+vi.mock('@deepseek-ai/dsh-client-store', () => ({
   createSnapshotStore: (init: unknown) => ({
     get: () => init,
     set: () => {},
     subscribe: () => () => {},
   }),
+}))
+vi.mock('@deepseek-ai/dsh-client-ui-settings/client', () => ({
+  ConfigForms: class {},
 }))
 import { apply } from '../src/client/index.ts'
 
@@ -22,12 +26,17 @@ describe('live-stats client apply', () => {
         inject: (key: string) => { injected.push(key); return () => {} },
         register: () => () => {},
       },
-      settingsScope: {
-        bind: () => ({
+      configForms: {
+        describe: () => ({
+          getSnapshot: () => ({ view: { namespaces: [] } }),
+          subscribe: () => () => {},
+        }),
+        get: () => ({
           getSnapshot: () => ({ status: 'unavailable' as const, writable: false }),
           subscribe: () => () => {},
-          set: async () => {},
-          unset: async () => {},
+          set: async () => false,
+          unset: async () => false,
+          mutate: async () => false,
         }),
       },
     }

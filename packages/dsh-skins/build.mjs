@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /**
  * Bundle every skin INTO the dsh-skins aggregate package so npm installs
  * need no per-skin packages (npm charges per new package name - the family
@@ -34,6 +34,14 @@ const ROOT = path.resolve(__dirname, '..', '..')
 const SOURCE_DIR = path.join(ROOT, 'packages', 'skins')
 const OUT_DIR = path.join(__dirname, 'skins')
 
+/**
+ * The DSH runtime floor every bundled skin declares. Carriers ship as profile
+ * bundles, so they carry the same `dsh.engines.dsh` floor and host peer the
+ * source skins do; the dsh-app-boot compatibility gate reads the peer range,
+ * and a ">=" floor accepts every later runtime.
+ */
+const DSH_FLOOR = '>=0.2.0-rc.2'
+
 /** Read and parse a JSON file, returning null when missing/unreadable. */
 function readJson(filePath) {
   try {
@@ -65,9 +73,11 @@ function renderCarrierPackageJson(sourcePkg) {
       './package.json': './package.json',
     },
     dsh: {
+      engines: { dsh: DSH_FLOOR },
       bundle: { patch: './cordis.patch.yml' },
       client: { inject: [], platform: 'web' },
     },
+    peerDependencies: { '@deepseek-ai/dsh': DSH_FLOOR },
     license: 'BSD-3-Clause',
     files: ['lib', 'skin.json', 'cordis.patch.yml'],
     repository: { type: 'git', url: 'https://github.com/CAPTAIN1275/dsh-ui-web.git' },

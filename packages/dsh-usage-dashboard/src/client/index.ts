@@ -7,7 +7,7 @@
  *  3. an informational settings card in the Web UI plugin group.
  * @module @captain1275/dsh-usage-dashboard/client
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: pulls the settings-surface SlotMap merge.
@@ -15,6 +15,8 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 // Type-only: pulls the conversation dock SlotMap merge.
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
+// Type-only: pulls the ctx.slots merge (the renderer owns the slot registry).
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { mountUsageEntry } from './UsageEntry.tsx'
 import { UsageRecorder, setCurrentModel, setCurrentTitle } from './UsageRecorder.tsx'
 import { UsageSettingsCard, type UsageSettingsCardProps } from './UsageSettingsCard.tsx'
@@ -47,7 +49,7 @@ export interface SettingsPluginItemOwnerProps {
 }
 
 /** Services required. */
-export const inject = ['slots', 'locale', 'connection', 'settingsScope']
+export const inject = ['slots', 'locale', 'connection']
 
 /**
  * Register the usage dashboard surface.

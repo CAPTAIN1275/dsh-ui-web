@@ -9,8 +9,7 @@
  */
 
 import { Context } from '@deepseek-ai/cordis'
-import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
-import z from 'schemastery'
+import z from '@deepseek-ai/schemastery'
 // Type-only: pulls the dsh-host-webserver service seat (ctx.webServer).
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import { makeSkinCenterRoutes, SKIN_CENTER_API_PREFIX } from './routes.ts'
@@ -26,9 +25,9 @@ export const inject = ['webServer']
 /**
  * Settings namespace for the main-interface background scrim, owned by the
  * skin center. The browser half spells the same string so it can bind the
- * scope without depending on this Host package.
+ * form without depending on this Host package.
  */
-export const SKIN_BACKGROUND_NAMESPACE = settingsNamespace('skin-background')
+export const SKIN_BACKGROUND_NAMESPACE = 'skin-background'
 
 /** Plugin-configuration fields for the main-interface background. */
 export interface SkinBackgroundConfig {
@@ -41,9 +40,9 @@ export interface SkinBackgroundConfig {
   backgroundOpacity?: number
 }
 
-/** Runtime schema for SkinBackgroundConfig. */
-export const SkinBackgroundConfigSchema: z<SkinBackgroundConfig> = z.object({
-  backgroundOpacity: z.number().min(0).max(100).step(5).default(0),
+/** Runtime schema for SkinBackgroundConfig. This schema IS the entry's settings page. */
+export const SkinBackgroundConfigSchema = z.object({
+  backgroundOpacity: z.number().min(0).max(100).step(5).default(0).volatile(),
 })
 
 /**
@@ -55,16 +54,9 @@ export const SkinBackgroundConfigSchema: z<SkinBackgroundConfig> = z.object({
  * @param ctx - cordis context.
  */
 export function apply(ctx: Context): void {
-  // Optional-settings wiring for the background scrim namespace. The browser
-  // half binds the scope and applies the value to the body CSS variable;
-  // this side just declares the namespace + schema so the value persists and
-  // re-resolves across reloads. installSettingsSection is a no-op when no
-  // settings service is mounted (pure skin-center installs skip it).
-  installSettingsSection(ctx, SKIN_BACKGROUND_NAMESPACE, SkinBackgroundConfigSchema, {}, {
-    setSource: () => { /* application is browser-side; value is read from the scope */ },
-    onChange: () => { /* browser half re-applies on scope publish */ },
-  })
-
+  // The background scrim needs no Host wiring: under the 0.1.7 settings model
+  // the schema above IS this entry's settings page, and the browser half binds
+  // the form for it and applies the value to the body CSS variable.
   const routes = makeSkinCenterRoutes()
   try {
     ctx.effect(() => {

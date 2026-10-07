@@ -11,8 +11,30 @@
  *    投影（缓存命中/输入输出 token）。
  */
 import { createElement, memo } from 'react'
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+// Type-only: pulls the renderer-owned ctx.slots Context merge.
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+// Type-only: pulls the conversation slot declarations (conversation.composer.dock).
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { FullStatsSettingsCard, FULL_STATS_EVENT, type FullStatsConfig } from './FullStatsSettingsCard.tsx'
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface SlotMap {
+    /**
+     * The child slot the Web UI plugin group section declares; this card
+     * registers into the group rather than a top-level settings page. Spelled
+     * here with the same shape so this package registers without depending on
+     * the sibling UI package.
+     */
+    'web-ui.plugin.item': { kind: 'list'; scope: 'root'; owner: SettingsPluginItemOwnerProps }
+  }
+}
+
+/** Owner share of a plugin card (the group section supplies nothing). */
+export interface SettingsPluginItemOwnerProps {
+  /** Marker field: card owner props are intentionally empty. */
+  children?: never
+}
 
 /** 需要的客户端服务：插槽（覆盖注册 + 配置卡片）。 */
 export const inject = ['slots']

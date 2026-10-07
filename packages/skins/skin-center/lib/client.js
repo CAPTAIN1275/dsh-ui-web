@@ -647,9 +647,9 @@ window.__ModuleLoader__.load({
 				document.head.append(el);
 			});
 		}
-		/** Read the page's composed boot-graph entry ids (only enabled plugins appear). */
+		/** Read the page's composed boot-graph entry identities (only enabled plugins appear). */
 		function bootEntryIds() {
-			return window.__DSH_BOOT__?.entries?.map((entry) => entry.id) ?? [];
+			return (window.__DSH_BOOT__?.entries ?? []).flatMap((entry) => [entry.id, entry.name].filter((v) => typeof v === "string"));
 		}
 		/** The skin package currently ACTIVE in the boot graph, if it is one of ours. */
 		function activeSkinEntry() {
@@ -1202,7 +1202,7 @@ window.__ModuleLoader__.load({
 			listeners = /* @__PURE__ */ new Set();
 			scope;
 			/**
-			* @param scope - the bound skin-background settings scope.
+			* @param scope - the bound skin-background settings form.
 			*/
 			constructor(scope) {
 				this.scope = scope;
@@ -1297,15 +1297,105 @@ window.__ModuleLoader__.load({
 			backgroundHintInert: "仅对带背景图插画的皮肤（蓝色幻想 / 鲸吟）生效；官方默认无背景图，该滑块对这些皮肤自动生效。"
 		};
 		//#endregion
+		//#region src/client/settings-entry-form.ts
+		/** The snapshot a form reports before the Host has answered with this entry. */
+		function pendingSnapshot() {
+			return {
+				status: "loading",
+				value: void 0,
+				base: void 0,
+				user: void 0,
+				revision: void 0,
+				writable: false,
+				mode: "host"
+			};
+		}
+		/**
+		* Create a settings form bound to the profile entry id this Host serves, and
+		* rebound whenever the shared describe mirror names a different one of this
+		* package's rows.
+		* @param options - the shared forms service and this package's candidate row ids.
+		* @returns a form delegating to the currently resolved entry's own form.
+		*/
+		function createServedEntryForm(options) {
+			const { forms, entryIds } = options;
+			const fallbackId = entryIds[0];
+			const namespaceId = entryIds[entryIds.length - 1];
+			const listeners = /* @__PURE__ */ new Set();
+			let boundId;
+			let bound;
+			let offBound;
+			let snapshot = pendingSnapshot();
+			/** Republish: the delegated snapshot when one is bound, the pending one otherwise. */
+			const publish = () => {
+				if (bound !== void 0) snapshot = bound.getSnapshot();
+				for (const listener of [...listeners]) listener();
+			};
+			/**
+			* The entry id the mirror currently justifies. An unanswered or empty mirror
+			* is not evidence of absence, so it keeps the first candidate; a mirror that
+			* answers without any of this package's rows leaves the namespace itself.
+			* @returns the entry id to bind.
+			*/
+			const resolve = () => {
+				let served;
+				try {
+					served = forms.describe().getSnapshot().view?.namespaces.map((row) => row.ns);
+				} catch {
+					served = void 0;
+				}
+				if (served === void 0 || served.length === 0) return fallbackId;
+				return entryIds.find((id) => served.includes(id)) ?? namespaceId;
+			};
+			/** Bind (or rebind) the resolved entry's form; a no-op while it is unchanged. */
+			const bind = () => {
+				const target = resolve();
+				if (target === boundId) return;
+				offBound?.();
+				offBound = void 0;
+				let form;
+				try {
+					form = forms.get(target);
+				} catch {
+					boundId = void 0;
+					return;
+				}
+				boundId = target;
+				bound = form;
+				offBound = form.subscribe(() => {
+					publish();
+				});
+				publish();
+			};
+			try {
+				forms.describe().subscribe(() => {
+					bind();
+				});
+			} catch {}
+			bind();
+			return {
+				getSnapshot: () => snapshot,
+				subscribe: (listener) => {
+					listeners.add(listener);
+					return () => {
+						listeners.delete(listener);
+					};
+				},
+				set: (field, value) => bound?.set(field, value) ?? Promise.resolve(false),
+				unset: (field) => bound?.unset(field) ?? Promise.resolve(false),
+				mutate: (ops, expectedRevision) => bound?.mutate(ops, expectedRevision) ?? Promise.resolve(false)
+			};
+		}
+		//#endregion
 		//#region src/client/index.ts
 		/** Locale namespace owned by this plugin. */
 		const NS = "skinCenter";
-		/** Required services: slots + locale (plugin card), theme (preview toggle), and settingsScope + its transport (background scrim). */
+		/** Required services: slots + locale (plugin card), theme (preview toggle), and configForms + its transport (background scrim). */
 		const inject = [
 			"slots",
 			"locale",
 			"theme",
-			"settingsScope",
+			"configForms",
 			"connection",
 			"remote"
 		];
@@ -1327,7 +1417,10 @@ window.__ModuleLoader__.load({
 			}, "ui-skin-center: body scope");
 			const theme = ctx.get("theme");
 			const controller = new TryOnController();
-			const background = new BackgroundController(ctx.settingsScope.bind({ namespace: SKIN_BACKGROUND_NS }));
+			const background = new BackgroundController(createServedEntryForm({
+				forms: ctx.configForms,
+				entryIds: ["ui-skin-center", SKIN_BACKGROUND_NS]
+			}));
 			const injected = () => ({
 				controller,
 				theme: {

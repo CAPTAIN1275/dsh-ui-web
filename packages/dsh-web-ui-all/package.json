@@ -10,6 +10,9 @@
     "./package.json": "./package.json"
   },
   "dsh": {
+    "engines": {
+      "dsh": ">=0.2.0-rc.2"
+    },
     "bundle": {
       "patch": "./cordis.patch.yml"
     },
@@ -43,5 +46,11 @@
   "scripts": {
     "build": "tsdown",
     "watch": "tsdown --watch"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh": ">=0.2.0-rc.2"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4"
   }
 }

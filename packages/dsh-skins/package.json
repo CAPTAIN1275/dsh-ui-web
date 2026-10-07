@@ -4,6 +4,9 @@
   "version": "0.3.1",
   "type": "module",
   "dsh": {
+    "engines": {
+      "dsh": ">=0.2.0-rc.2"
+    },
     "bundle": {
       "patch": "./cordis.patch.yml"
     }
@@ -24,5 +27,9 @@
   },
   "scripts": {
     "build": "node build.mjs"
-  }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh": ">=0.2.0-rc.2"
+  },
+  "devDependencies": {}
 }

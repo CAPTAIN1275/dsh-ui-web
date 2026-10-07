@@ -10,10 +10,13 @@
  * @module @captain1275/dsh-pet/client
  */
 
-import type { ClientContext, SettingsScope, SettingsScopeSpec } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
+// Type-only: pulls the renderer-owned ctx.slots Context merge.
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@deepseek-ai/dsh-client-locale/client'
-// Type-only: pulls the settings-surface Context merge (ctx.settingsScope).
+// Type-only: pulls the shared-forms Context merge (ctx.configForms).
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
@@ -26,6 +29,7 @@ import { createRoot } from 'react-dom/client'
 import { createPetStore, type PetStoreInstance } from './pet-store.ts'
 import { PetDockEntry, type PetInjected } from './PetDockEntry.tsx'
 import { PetSettingsCard, PetSettingsCardController, type PetSettings } from './PetSettingsCard.tsx'
+import { createServedEntryForm } from './settings-entry-form.ts'
 import { NS, en, zh, t } from './locales.ts'
 
 /** The host pet API as the browser sees it (same-origin JSON endpoints). */
@@ -67,8 +71,16 @@ const POLL_MS = 800
 /** Settings namespace the pet settings card edits (the Host plugin registers it). */
 const PET_SETTINGS_NS = 'pet'
 
+/**
+ * Profile entry id this package's patch row carries, for a page that serves no
+ * family binder. Both the standalone bundle patch and the family aggregate
+ * insert the row as `pet`, which is also the namespace the row's Config schema
+ * owns.
+ */
+const PET_ENTRY_IDS: readonly string[] = ['pet']
+
 /** Required services. */
-export const inject = ['slots', 'locale', 'connection', 'settingsScope', 'remote']
+export const inject = ['slots', 'locale', 'connection', 'configForms', 'remote']
 
 /** Re-exported for consumers that type against the injected face. */
 export type { PetInjected, PetDockEntryProps } from './PetDockEntry.tsx'
@@ -93,14 +105,37 @@ export interface SettingsPluginItemOwnerProps {
   children?: never
 }
 
+/** Domain-owned description of one settings namespace a family card binds. */
+export interface SettingsFormSpec<T> {
+  /** Settings namespace the card edits. */
+  namespace: string
+  /**
+   * Narrow one wire section; undefined keeps the last accepted value. The
+   * shared form already resolves the namespace's own serialized wire schema,
+   * so a decoder exists only to narrow beyond that schema.
+   */
+  decode?: (section: unknown) => T | undefined
+}
+
+/**
+ * The family settings binder published by the Web UI plugin group. Its `bind`
+ * resolves a family namespace to the profile entry id that owns it and hands
+ * back the shared configuration form, so it is the only seat that can reach
+ * this card's form on a Host whose row id is not the namespace.
+ */
+export interface SettingsFormBinder {
+  /** Bind one family settings namespace. */
+  bind<T>(spec: SettingsFormSpec<T>): ConfigForm<T>
+}
+
 declare module '@deepseek-ai/cordis' {
   interface Context {
     /**
-     * Optional rc.6 compatibility binder provided by dsh-web-ui-settings;
+     * Optional family settings binder provided by the Web UI plugin group;
      * absent when that group plugin is not installed, so callers fall back to
-     * the official settings scope.
+     * the shared configuration forms service.
      */
-    webUiSettings?: { bind<S>(spec: SettingsScopeSpec<S>): SettingsScope<S> }
+    webUiSettings?: SettingsFormBinder
   }
 }
 
@@ -115,10 +150,9 @@ export function apply(ctx: ClientContext): void {
   console.log('[pet] apply invoked')
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'pet: dictionaries')
 
-  const binder = ctx.get('webUiSettings') ?? ctx.settingsScope
-  const settingsScope = binder.bind<PetSettings>({ namespace: PET_SETTINGS_NS })
+  const settingsForm = bindSettingsForm(ctx)
   const enabled = (): boolean => {
-    const snapshot = settingsScope.getSnapshot()
+    const snapshot = settingsForm.getSnapshot()
     return snapshot.status === 'ready'
       ? snapshot.value?.enabled ?? true
       : snapshot.status === 'unavailable'
@@ -126,7 +160,7 @@ export function apply(ctx: ClientContext): void {
 
   // Plugin configuration card: one staged form over the `pet` settings
   // namespace, contributed to the Web UI plugin group.
-  const petSettings = new PetSettingsCardController(settingsScope)
+  const petSettings = new PetSettingsCardController(settingsForm)
   ctx.slots.inject('web-ui.plugin.item', () => ctx.slots.register({
     name: 'web-ui.plugin.item',
     id: 'pet-settings',
@@ -134,6 +168,7 @@ export function apply(ctx: ClientContext): void {
     locale: NS,
     inject: () => petSettings.inject(),
   }, PetSettingsCard))
+  ctx.effect(() => () => { petSettings.dispose() }, 'pet: settings card')
 
   // The global pet entry, its store, and the poll loop live while the plugin
   // is enabled; toggling the setting off hides the pet and stops polling.
@@ -305,15 +340,41 @@ export function apply(ctx: ClientContext): void {
       disposeUi = undefined
     }
   }
-  settingsScope.subscribe(syncUi)
+  const unsubscribeSettings = settingsForm.subscribe(syncUi)
   syncUi()
 
   // Host reload teardown: when the host re-runs plugin apply (session switches
   // / hot reloads) it disposes every ctx.effect, but NOT the body mount owned
   // by `syncUi` above — without this, the old WhalePet React root stays alive
-  // and its portal keeps rendering alongside the fresh mount (two pets).
+  // and its portal keeps rendering alongside the fresh mount (two pets). The
+  // settings subscription belongs to this fiber too: leaving it behind would
+  // let a dead instance remount the UI.
   ctx.effect(() => () => {
+    unsubscribeSettings()
     disposeUi?.()
     disposeUi = undefined
   }, 'pet: ui teardown')
+}
+
+/**
+ * Bind the settings form this card stages over.
+ *
+ * The family binder (`ctx.get('webUiSettings')`, published by the Web UI
+ * plugin group) comes first: it is what traces this package's family namespace
+ * onto the profile entry id the Host serves the form under, and it keeps its
+ * own bridge fallback. A page without that group falls back to the shared
+ * configuration forms service bound directly at this package's own profile
+ * entry id.
+ * @param ctx - client root context.
+ * @returns the form the settings card reads and writes.
+ */
+export function bindSettingsForm(ctx: ClientContext): ConfigForm<PetSettings> {
+  const binder = ctx.get('webUiSettings')
+  if (binder !== undefined && typeof binder.bind === 'function') {
+    return binder.bind<PetSettings>({ namespace: PET_SETTINGS_NS })
+  }
+  return createServedEntryForm<PetSettings>({
+    forms: ctx.configForms,
+    entryIds: PET_ENTRY_IDS,
+  })
 }

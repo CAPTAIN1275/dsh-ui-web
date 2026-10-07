@@ -11,9 +11,9 @@
  *
  * Values are 0-100 (0 = no extra veil, 100 = fully obscured); they are written
  * through as a 0..1 alpha for the CSS variable. Dragging the control applies
- * instantly (live) and persists through the settings scope.
+ * instantly (live) and persists through the settings form.
  */
-import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ConfigForm, ConfigFormSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 
 /** The namespace string the Host registers (mirrors src/index.ts). */
 export const SKIN_BACKGROUND_NS = 'skin-background'
@@ -44,12 +44,12 @@ export interface SkinBackgroundHandle {
 export class BackgroundController implements SkinBackgroundHandle {
   private value = DEFAULT_OPACITY
   private readonly listeners = new Set<() => void>()
-  private readonly scope: SettingsScope<{ backgroundOpacity?: number }>
+  private readonly scope: ConfigForm<{ backgroundOpacity?: number }>
 
   /**
-   * @param scope - the bound skin-background settings scope.
+   * @param scope - the bound skin-background settings form.
    */
-  constructor(scope: SettingsScope<{ backgroundOpacity?: number }>) {
+  constructor(scope: ConfigForm<{ backgroundOpacity?: number }>) {
     this.scope = scope
     this.value = this.read()
     this.apply()
@@ -79,7 +79,7 @@ export class BackgroundController implements SkinBackgroundHandle {
 
   /** The effective section value, clamped 0-100, defaulting to 0. */
   private read(): number {
-    const snapshot: SettingsScopeSnapshot<{ backgroundOpacity?: number }> = this.scope.getSnapshot()
+    const snapshot: ConfigFormSnapshot<{ backgroundOpacity?: number }> = this.scope.getSnapshot()
     const raw = snapshot.value?.backgroundOpacity
     if (typeof raw !== 'number' || !Number.isFinite(raw)) return DEFAULT_OPACITY
     return Math.max(0, Math.min(100, raw))

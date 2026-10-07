@@ -7,6 +7,8 @@
  * /api 设置桥的命名空间白名单限制，移动端远程同样可用。
  */
 import type { Context } from '@deepseek-ai/cordis'
+// Type-only: pulls the dsh-host-webserver service seat (ctx.webServer).
+import type {} from '@deepseek-ai/dsh-host-webserver'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'

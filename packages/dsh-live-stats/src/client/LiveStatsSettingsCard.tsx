@@ -1,11 +1,12 @@
 /**
  * The live-stats settings card: the token-estimation density parameters.
- * Registers into the `settings.plugin.item` slot the plugin-configuration
- * section renders, bound to the `live-stats` settings namespace.
+ * Registers into the `web-ui.plugin.item` child slot the Web UI plugin group
+ * renders, bound to the `live-stats` entry the Host serves.
  */
 
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type { SettingsScope, SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import { PluginSettingsCard, ValueField, BooleanField } from './PluginSettingsCard.tsx'
 import { CardForm, booleanField, numberField, type CardActions, type CardShell, type FieldState as CardFieldState } from './settings-form.ts'
 
@@ -41,13 +42,13 @@ export interface LiveStatsSettingsCardFace extends CardActions {
   }
 }
 
-/** Bridges the `live-stats` scope onto the card's staged form. */
+/** Bridges the `live-stats` entry form onto the card's staged form. */
 export class LiveStatsSettingsCardController {
   private readonly form: CardForm<LiveStatsSettings>
   private readonly store: SnapshotStore<LiveStatsSettingsCardState>
 
-  /** @param scope - the bound settings scope for the `live-stats` namespace. */
-  constructor(scope: SettingsScope<LiveStatsSettings>) {
+  /** @param scope - the bound configuration form for the `live-stats` entry. */
+  constructor(scope: ConfigForm<LiveStatsSettings>) {
     this.form = new CardForm(scope, [
       booleanField('enabled'),
       numberField('charsPerToken', { min: 0.01 }),

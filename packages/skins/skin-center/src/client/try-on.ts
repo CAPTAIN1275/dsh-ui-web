@@ -99,10 +99,17 @@ function loadBundleScript(url: string): Promise<void> {
   })
 }
 
-/** Read the page's composed boot-graph entry ids (only enabled plugins appear). */
+/** Read the page's composed boot-graph entry identities (only enabled plugins appear). */
 function bootEntryIds(): string[] {
   const boot = (window as SkinCenterWindow).__DSH_BOOT__
-  return boot?.entries?.map(entry => entry.id) ?? []
+  const entries = (boot?.entries ?? []) as unknown as Array<{ id?: string; name?: string }>
+  // A skin installed as a PROFILE BUNDLE contributes its cordis row id (the
+  // patch's `id: ui-skin-aurora`) and its package name (`name`); a standalone
+  // install can contribute the package name as the id instead. The registry
+  // keys skins by package name, so accept either field rather than assuming
+  // one of them -- assuming `id` alone marked the official default active even
+  // while a bundled skin was loaded.
+  return entries.flatMap(entry => [entry.id, entry.name].filter((v): v is string => typeof v === 'string'))
 }
 
 /** The skin package currently ACTIVE in the boot graph, if it is one of ours. */

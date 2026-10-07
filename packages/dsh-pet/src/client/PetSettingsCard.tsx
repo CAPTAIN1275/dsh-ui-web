@@ -5,7 +5,8 @@
  */
 
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type { SettingsScope, SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import { PluginSettingsCard, ValueField, BooleanField } from './PluginSettingsCard.tsx'
 import { CardForm, booleanField, numberField, textField, type CardActions, type CardShell, type FieldState as CardFieldState } from './settings-form.ts'
 
@@ -49,13 +50,13 @@ export interface PetSettingsCardFace extends CardActions {
   }
 }
 
-/** Bridges the `pet` scope onto the card's staged form. */
+/** Bridges the `pet` configuration form onto the card's staged form. */
 export class PetSettingsCardController {
   private readonly form: CardForm<PetSettings>
   private readonly store: SnapshotStore<PetSettingsCardState>
 
-  /** @param scope - the bound settings scope for the `pet` namespace. */
-  constructor(scope: SettingsScope<PetSettings>) {
+  /** @param scope - the bound configuration form for the `pet` namespace. */
+  constructor(scope: ConfigForm<PetSettings>) {
     this.form = new CardForm(scope, [
       booleanField('enabled'),
       booleanField('visible'),
@@ -85,6 +86,14 @@ export class PetSettingsCardController {
    */
   inject(): PetSettingsCardFace {
     return { hooks: { petSettingsCard: this.store }, ...this.form.actions() }
+  }
+
+  /**
+   * Release the card's form subscription and bound stores; the slot
+   * disposer calls this on teardown.
+   */
+  dispose(): void {
+    this.form.dispose()
   }
 }
 

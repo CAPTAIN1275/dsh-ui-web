@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import type { UseProjection } from '@deepseek-ai/dsh-client-runtime/client'
+import type { UseProjection } from '@deepseek-ai/dsh-api-session-controller/client'
 import type {} from '@deepseek-ai/dsh-token-meter/client'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 // Type-only: pulls the ui-conversation SlotMap merge (conversation.composer.dock).
@@ -41,11 +41,19 @@ export const TpsLine = memo(function TpsLine({ useProjection }: TpsLineProps) {
 /**
  * Composer-dock entry: adapts the session-scoped `conversation.composer.dock`
  * runtime share to the TPS line. The dock is the shipped stats-line seat, and
- * its standard kit supplies `useProjection` (the fifth framework hook seat),
- * which reads the host's `liveTokenUsage` projection. Registering here makes
- * the live TPS row actually mount — previously the TpsLine was only exported
- * and never mounted on rc.6 (issue #56).
+ * its session standard kit supplies `useProjection` (the framework
+ * projection-reader hook), which reads the host's `liveTokenUsage` projection.
+ * Registering here makes the live TPS row actually mount — previously the
+ * TpsLine was only exported and never mounted on rc.6 (issue #56).
+ *
+ * `PropsRuntime` does not carry the standard kit's projection reader under
+ * rc.2 (the slot contract declares only `useConversation`/`useInput`/
+ * `inputActions`), so the seat's own contract is stated here and the component
+ * is registered across that type gap with a single cast at the registration
+ * site.
  */
-export const TpsLineDockEntry = memo(function TpsLineDockEntry(props: PropsRuntime<'conversation.composer.dock'>) {
+export const TpsLineDockEntry = memo(function TpsLineDockEntry(
+  props: PropsRuntime<'conversation.composer.dock'> & { useProjection: UseProjection },
+) {
   return <TpsLine useProjection={props.useProjection} />
 })

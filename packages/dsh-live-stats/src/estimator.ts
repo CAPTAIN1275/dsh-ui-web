@@ -79,24 +79,12 @@ export function estimateAssistantBlockTokens(blockTokens: readonly number[], spe
     : blockTokens.reduce((sum, tokens) => sum + tokens, 0) + spec.roleOverhead
 }
 
-/** How deeply tool-result content may nest before deep pricing stops. */
-const MAX_CONTENT_DEPTH = 128
-
 /** Estimate model content with the configured provider-independent density.
  * @param blocks - the content blocks to price.
  * @param spec - resolved estimator settings.
  * @returns the estimated token count.
  */
 export function estimateContentTokens(blocks: readonly ContentBlock[], spec: EstimatorSpec): number {
-  return estimateContentBlocks(blocks, spec, 0)
-}
-
-/**
- * Price content blocks, recursing into tool-result content up to a depth cap.
- * The cap turns a pathological (or cyclic) content graph into bounded framing
- * charges instead of a stack overflow.
- */
-function estimateContentBlocks(blocks: readonly ContentBlock[], spec: EstimatorSpec, depth: number): number {
   let tokens = 0
   for (const block of blocks) {
     switch (block.type) {
@@ -107,13 +95,13 @@ function estimateContentBlocks(blocks: readonly ContentBlock[], spec: EstimatorS
       case 'tool-call':
         tokens += estimateToolCallBlockTokens(block.name.length, block.arguments.length, spec)
         break
-      case 'tool-result':
-        // Frame the block even when its nested content is too deep to price.
-        tokens += depth >= MAX_CONTENT_DEPTH
-          ? spec.blockOverhead
-          : estimateContentBlocks(block.content, spec, depth + 1) + spec.blockOverhead
-        break
       default:
+        // Every other block kind (image and file references, tool
+        // additions/removals, merge-extended kinds) has no character-counted
+        // text arm of its own, so it prices structurally at JSON size plus
+        // block framing. rc.2 made content flat: a tool result is a message
+        // whose blocks are ordinary content blocks, so there is no nested
+        // content graph left to bound here.
         tokens += spec.blockOverhead + Math.ceil(JSON.stringify(block).length / spec.charsPerToken)
     }
   }
@@ -137,8 +125,13 @@ export function estimateMessageTokens(message: Message, spec: EstimatorSpec): nu
 export function estimateHeaderTokens(header: EpochHeader | undefined, spec: EstimatorSpec): number {
   if (header === undefined) return 0
   let tokens = 0
-  if (header.system !== undefined) {
-    tokens += Math.ceil(header.system.length / spec.charsPerToken) + spec.roleOverhead
+  // rc.2 moved the system prompt onto the surface (a `system/message` node) and
+  // typed the retired header field `system?: never`. The read is kept, behind a
+  // narrow structural view, because a log written by an older format may still
+  // carry the retired field and such a header should be priced, not ignored.
+  const legacySystem = (header as { system?: unknown }).system
+  if (typeof legacySystem === 'string' && legacySystem !== '') {
+    tokens += Math.ceil(legacySystem.length / spec.charsPerToken) + spec.roleOverhead
   }
   if (header.tools !== undefined && header.tools.length > 0) {
     tokens += Math.ceil(JSON.stringify(header.tools).length / spec.charsPerToken) + spec.blockOverhead

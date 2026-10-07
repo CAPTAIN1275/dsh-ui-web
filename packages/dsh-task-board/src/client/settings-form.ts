@@ -7,8 +7,9 @@
  * package must not depend on a sibling UI package.
  */
 
-import type { SettingsScope, SettingsScopeSnapshot, SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ConfigForm, ConfigFormSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 
 /** The write one field's staged text performs when the card is saved. */
 export type FieldWrite =
@@ -19,6 +20,16 @@ export type FieldWrite =
 export interface FieldSpec {
   /** Field name inside the namespace section. */
   field: string
+  /**
+   * Whether the Host treats this field as a secret and redacts its value from
+   * the read-back (role('secret') in the section schema). Redacted secrets are
+   * never compared against the draft on save: the Host strips them from every
+   * wire view layer, so the settled snapshot carries nothing to read back. A
+   * staged secret set is judged by the mutation settling; the rest of its
+   * batch, when one exists, is still judged by read-back, and the atomic
+   * mutation lands every write or none.
+   */
+  secret?: boolean
   /** Render a stored value as draft text; the empty string when the section carries none. */
   format: (value: unknown) => string
   /**
@@ -44,8 +55,8 @@ export interface CardShell {
   available: boolean
   /**
    * Whether the namespace is actually served to this client. False when the
-   * Host deployment does not expose it (e.g. the official apiproxy settings
-   * allowlist omits third-party namespaces): the card renders an explanation
+   * Host deployment does not expose it (e.g. the owning plugin's settings
+   * domain is not mounted): the card renders an explanation
    * instead of its form, so a missing namespace never looks like a missing
    * plugin.
    */
@@ -60,6 +71,12 @@ export interface CardShell {
   saving: boolean
   /** Whether the last save did not land as staged; cleared by the next edit or save. */
   failed: boolean
+  /**
+   * The rejection code/message the Host returned for the last failed save,
+   * surfaced next to the generic failure text. Undefined while no save has
+   * failed (or the failure carried no server reason).
+   */
+  failedReason?: string
 }
 
 /** The write actions the card's slot entry injects. */
@@ -86,12 +103,37 @@ interface StagedEdit {
 interface PlannedWrite {
   /** Field this entry writes. */
   field: string
-  /** Perform the write and report whether the Host holds the staged value afterwards. */
-  run: (() => Promise<boolean>) | undefined
+  /** The durable write this entry performs, inside the save's one atomic mutation. */
+  op: BatchedWrite
+  /**
+   * Read the settled snapshot back and report whether the Host holds this
+   * write's effect. Undefined when the draft is not a value the field
+   * accepts: there is nothing to write, and the entry blocks the save.
+   */
+  judge: (() => boolean) | undefined
 }
 
-/** A whole-number field. An empty draft clears the field; any other draft that is not a finite number blocks the save. */
-export function numberField(field: string): FieldSpec {
+/** One durable write inside the save's atomic form mutation. */
+export interface BatchedWrite {
+  /** Field this entry writes. */
+  field: string
+  /** set stores a value; unset drops the leaf. */
+  op: 'set' | 'unset'
+  /** Value for op set (absent for unset). */
+  value?: unknown
+}
+
+/** Constraints a numeric field's accepted drafts must satisfy, mirroring the host schema. */
+export interface NumberConstraints {
+  /** The accepted value must be a whole number. */
+  integer?: boolean
+  /** The accepted value must be at least this. */
+  min?: number
+}
+
+/** A whole- or decimal-number field. An empty draft clears the field; any other draft that is not a finite number within the constraints blocks the save. */
+export function numberField(field: string, constraints: NumberConstraints = {}): FieldSpec {
+  const { integer = false, min } = constraints
   return {
     field,
     format: value => typeof value === 'number' ? String(value) : '',
@@ -99,7 +141,10 @@ export function numberField(field: string): FieldSpec {
       const trimmed = text.trim()
       if (trimmed === '') return { kind: 'clear' }
       const parsed = Number(trimmed)
-      return Number.isFinite(parsed) ? { kind: 'set', value: parsed } : undefined
+      if (!Number.isFinite(parsed)) return undefined
+      if (integer && !Number.isInteger(parsed)) return undefined
+      if (min !== undefined && parsed < min) return undefined
+      return { kind: 'set', value: parsed }
     },
   }
 }
@@ -116,15 +161,39 @@ export function textField(field: string): FieldSpec {
   }
 }
 
+/**
+ * A free-text field the Host treats as a secret and redacts from the read-back
+ * (role('secret') in the section schema). The card still edits it like text,
+ * but a save never compares the redacted value back: the staged set is judged
+ * by the mutation settling (see {@link FieldSpec.secret}).
+ */
+export function secretField(field: string): FieldSpec {
+  return { ...textField(field), secret: true }
+}
+
 /** A boolean field, edited through true/false draft text. */
 export function booleanField(field: string): FieldSpec {
   return {
     field,
     format: value => typeof value === 'boolean' ? String(value) : '',
     parse: (text) => {
-      if (text === 'true') return { kind: 'set', value: true }
-      if (text === 'false') return { kind: 'set', value: false }
+      const trimmed = text.trim()
+      if (trimmed === '') return { kind: 'clear' }
+      if (trimmed === 'true') return { kind: 'set', value: true }
+      if (trimmed === 'false') return { kind: 'set', value: false }
       return undefined
+    },
+  }
+}
+
+/** An enumerated string field; only the listed choices are accepted. An empty draft clears the field. */
+export function choiceField(field: string, choices: readonly string[]): FieldSpec {
+  return {
+    field,
+    format: value => typeof value === 'string' && choices.includes(value) ? value : '',
+    parse: (text) => {
+      if (text === '') return { kind: 'clear' }
+      return choices.includes(text) ? { kind: 'set', value: text } : undefined
     },
   }
 }
@@ -141,19 +210,36 @@ export class CardForm<T> {
   private readonly specs: Map<string, FieldSpec>
   private readonly staged = new Map<string, StagedEdit>()
   private readonly listeners = new Set<() => void>()
+  /** The form subscription installed in the constructor; released by dispose(). */
+  private readonly disposeForm: () => void
+  private disposed = false
   private saving = false
+  /** A save asked for while one was in flight; it runs once the first settles (#1754). */
+  private saveQueued = false
   private failed = false
+  private failedReason: string | undefined
 
-  /** @param scope - the bound settings scope for this card's namespace. */
+  /** @param scope - the bound configuration form for this card's namespace. */
   constructor(
-    private readonly scope: SettingsScope<T>,
+    private readonly scope: ConfigForm<T>,
     specs: FieldSpec[],
   ) {
     this.specs = new Map(specs.map(spec => [spec.field, spec]))
-    scope.subscribe(() => { this.publish() })
+    this.disposeForm = scope.subscribe(() => { this.publish() })
   }
 
-  /** Publish a projection of this form, rebuilt whenever the scope or a draft changes. */
+  /**
+   * Release the form subscription and every bound store listener. The card
+   * must call this on teardown; later calls are no-ops.
+   */
+  dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.disposeForm()
+    this.listeners.clear()
+  }
+
+  /** Publish a projection of this form, rebuilt whenever the form or a draft changes. */
   bind<S>(project: () => S): SnapshotStore<S> {
     const store = createSnapshotStore(project())
     this.listeners.add(() => { store.set(project()) })
@@ -169,9 +255,10 @@ export class CardForm<T> {
       exposed: snapshot.status === 'ready',
       writable: snapshot.writable,
       dirty: plan.length > 0,
-      invalid: plan.some(item => item.run === undefined),
+      invalid: plan.some(item => item.judge === undefined),
       saving: this.saving,
       failed: this.failed,
+      ...this.failedReason === undefined ? {} : { failedReason: this.failedReason },
     }
   }
 
@@ -197,34 +284,98 @@ export class CardForm<T> {
       resetField: (field) => {
         this.stage(field, { text: this.specOf(field).format(this.baseValue(field)), clear: true })
       },
-      save: () => { void this.save() },
+      save: () => { void this.requestSave() },
       discard: () => {
         if (this.staged.size === 0 && !this.failed) return
         this.staged.clear()
         this.failed = false
+        this.failedReason = undefined
         this.publish()
       },
     }
   }
 
   /**
-   * Write every staged edit, then re-seed from what the Host accepted.
-   * @returns settlement after every write and the read-back.
+   * Write every staged edit in one atomic form mutation, then re-seed from
+   * what the Host accepted.
+   *
+   * The whole batch rides one mutate, so cross-field validate hooks
+   * (baseURL+model) judge it as a unit: the Host either applies every write
+   * or refuses the batch. The form contract answers a refusal or a skipped
+   * write with `false` (it recovers with a fresh Host view instead of
+   * throwing), so the outcome is judged twice: the answer itself, and then the
+   * settled snapshot read back one planned write at a time. One missed write
+   * fails the whole save. A transport that rejects instead (the dsh-web bridge
+   * controller on a dead connection) reports through the same failure path
+   * with its rejection message. A save that did not land keeps its drafts, so
+   * the user can correct them instead of retyping.
+   * @returns settlement after the mutation and the read-back.
    */
+  /**
+   * Run one save, and re-run it once if another was asked for while this one
+   * was still in flight.
+   *
+   * A save is a Host round trip that also drives the profile reconcile, and
+   * the Host runs that write inside one exclusive transaction. Answering a
+   * press that arrives mid-flight by returning immediately dropped the edit
+   * with no explanation, which is the "the save button stops working after a
+   * few rounds" report (#1754). Serializing instead means a save pressed while
+   * another is still settling runs against the settled state - which is what
+   * the operator meant by pressing it again.
+   * @returns settlement after the mutation and the read-back.
+   */
+  async requestSave(): Promise<void> {
+    if (this.saving) {
+      this.saveQueued = true
+      return
+    }
+    await this.save()
+    if (!this.saveQueued) return
+    this.saveQueued = false
+    await this.requestSave()
+  }
+
   async save(): Promise<void> {
     const plan = this.plan()
-    const writes = plan.flatMap(item => item.run === undefined ? [] : [item.run])
-    if (plan.length === 0 || this.saving || writes.length !== plan.length) return
+    const valid = plan.filter((item): item is PlannedWrite & { judge: () => boolean } => item.judge !== undefined)
+    if (plan.length === 0 || this.saving || valid.length !== plan.length) return
+    // Snapshot the staged entries this save writes, so an edit staged while it
+    // is in flight (which replaces the same key) survives: only delete the key
+    // when the entry is still the one this save started from.
+    const pending = new Map<string, StagedEdit | undefined>()
+    for (const item of plan) pending.set(item.field, this.staged.get(item.field))
     this.saving = true
     this.failed = false
+    this.failedReason = undefined
     this.publish()
-    let landed = true
-    for (const write of writes) {
-      landed = await write() && landed
+    // One atomic namespace mutation: the form contract takes ordered path
+    // operations, so the whole staged batch is validated, persisted, and
+    // recovered together — either every write lands or none does.
+    const ops: Array<{ op: 'set'; path: string[]; value: string | number | boolean } | { op: 'unset'; path: string[] }> = valid.map(item => item.op.op === 'set'
+      ? { op: 'set', path: [item.field], value: (item.op as { value: string | number | boolean }).value }
+      : { op: 'unset', path: [item.field] })
+    let failedReason: string | undefined
+    let accepted = false
+    try {
+      accepted = await this.scope.mutate(ops)
+    } catch (error) {
+      failedReason = error instanceof Error ? error.message : String(error)
     }
-    if (landed) this.staged.clear()
+    // `false` is the contract's refusal/skip answer, and the form still
+    // resolves after a refusal (it recovers with a fresh view), so the answer
+    // alone is not enough: judge every planned write against the settled
+    // snapshot as well. The mutation is atomic, so one missed write fails the
+    // whole save and keeps the drafts.
+    const landed = accepted && failedReason === undefined && valid.every(item => item.judge())
+    for (const [field, before] of pending) {
+      if (landed && this.staged.get(field) === before) this.staged.delete(field)
+    }
     this.saving = false
     this.failed = !landed
+    // A refused or unlanded batch carries no server reason: the card surfaces
+    // its generic failure copy; a rejecting transport (the bridge) adds its
+    // message.
+    this.failedReason = failedReason
     this.publish()
   }
 
@@ -240,31 +391,44 @@ export class CardForm<T> {
     for (const [field, staged] of this.staged) {
       const spec = this.specOf(field)
       if (staged.clear) {
-        if (this.stored(field)) plan.push({ field, run: () => this.clear(field) })
+        if (this.stored(field)) plan.push({ field, op: { field, op: 'unset' }, judge: () => this.landedUnset(field) })
         continue
       }
       if (staged.text === spec.format(this.sectionValue(field))) continue
       const write = spec.parse(staged.text)
-      if (write === undefined) plan.push({ field, run: undefined })
-      else if (write.kind === 'clear') plan.push({ field, run: () => this.clear(field) })
-      else plan.push({ field, run: () => this.store(field, write.value) })
+      if (write === undefined) plan.push({ field, op: { field, op: 'unset' }, judge: undefined })
+      else if (write.kind === 'clear') plan.push({ field, op: { field, op: 'unset' }, judge: () => this.landedUnset(field) })
+      else plan.push({ field, op: { field, op: 'set', value: write.value }, judge: () => this.landedSet(field, write.value) })
     }
     return plan
   }
 
-  private async clear(field: string): Promise<boolean> {
-    await this.scope.unset(field)
-    return !this.stored(field)
+  /**
+   * Read-back judgment for a planned set: the user layer must hold the
+   * intended value once the mutation has settled.
+   */
+  private landedSet(field: string, value: unknown): boolean {
+    // A redacted secret never appears in any wire view layer: the Host strips
+    // role('secret') fields and reports them through a sidecar the form
+    // snapshot does not expose, so there is nothing to compare the draft
+    // against. Settling is the only signal the form has; the rest of the
+    // batch, when one exists, still carries the atomic verdict by read-back.
+    if (this.specOf(field).secret) return true
+    return this.userLayer()?.[field] === value
   }
 
-  private async store(field: string, value: unknown): Promise<boolean> {
-    await this.scope.set(field, value)
-    return this.userLayer()?.[field] === value
+  /**
+   * Read-back judgment for a planned unset: the field must be gone from the
+   * user layer once the mutation has settled.
+   */
+  private landedUnset(field: string): boolean {
+    return !this.stored(field)
   }
 
   private stage(field: string, edit: StagedEdit): void {
     this.staged.set(field, edit)
     this.failed = false
+    this.failedReason = undefined
     this.publish()
   }
 
@@ -276,7 +440,7 @@ export class CardForm<T> {
     return spec
   }
 
-  private snapshotOf(): SettingsScopeSnapshot<T> {
+  private snapshotOf(): ConfigFormSnapshot<T> {
     return this.scope.getSnapshot()
   }
 

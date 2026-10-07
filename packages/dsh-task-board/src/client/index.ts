@@ -8,13 +8,17 @@
  * shell fails the whole boot when a plugin apply throws, and an external
  * plugin must not take the GUI down.
  */
-import type { ClientContext, SessionId, SettingsScope, SettingsScopeSpec, WorkspaceId } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+// Type-only: pulls the ctx.sessions Context merge (the client Session object layer).
+import type {} from '@deepseek-ai/dsh-api-session-controller/client'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
+// Type-only: pulls the renderer-owned ctx.slots Context merge.
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale) and its
 // LocaleNamespaceMap merge table.
 import type {} from '@deepseek-ai/dsh-client-locale/client'
-// Type-only: pulls the settings-surface Context merge (ctx.settingsScope).
+// Type-only: pulls the shared-forms Context merge (ctx.configForms).
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import { BoardController } from '../core/controller.ts'
 import { ExecutionService, type ExecutionHistoryEvent } from '../core/execution.ts'
@@ -23,6 +27,8 @@ import { LocalStorageTaskStore } from '../core/store.ts'
 import { mountBoard } from './board-mount.tsx'
 import { mountSidebarEntry } from './sidebar-entry.ts'
 import { TaskBoardSettingsCard, TaskBoardSettingsCardController, type TaskBoardSettings } from './TaskBoardSettingsCard.tsx'
+import { createServedEntryForm } from './settings-entry-form.ts'
+import { currentSessionList, sessionDriverOf, type SessionId } from './session-driver.ts'
 import { en, zh, type TaskBoardKey } from './locales.ts'
 
 /** Locale namespace this plugin owns. */
@@ -30,6 +36,20 @@ const NS = 'task-board'
 
 /** Settings namespace the settings card edits (the Host plugin registers it). */
 const TASK_BOARD_NS = 'task-board'
+
+/**
+ * Profile entry id this package's patch row carries — the same id in the
+ * standalone bundle patch and in the family aggregate, both of which insert
+ * the row as `ui-task-board`.
+ */
+const TASK_BOARD_ENTRY_ID = 'ui-task-board'
+
+/**
+ * Profile entry ids this package's rows carry: the patch row, then the bare
+ * namespace as the last resort for a Host whose descriptor is keyed by the
+ * family namespace itself.
+ */
+const TASK_BOARD_ENTRY_IDS: readonly string[] = [TASK_BOARD_ENTRY_ID, TASK_BOARD_NS]
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -54,19 +74,99 @@ export interface SettingsPluginItemOwnerProps {
   children?: never
 }
 
+/** Domain-owned description of one settings namespace a family card binds. */
+export interface SettingsFormSpec<T> {
+  /** Settings namespace the card edits. */
+  namespace: string
+  /**
+   * Narrow one wire section; undefined keeps the last accepted value. The
+   * shared form already resolves the namespace's own serialized wire schema,
+   * so a decoder exists only to narrow beyond that schema.
+   */
+  decode?: (section: unknown) => T | undefined
+}
+
+/**
+ * The family settings binder published by the Web UI plugin group. Its `bind`
+ * resolves a family namespace to the profile entry id that owns it and hands
+ * back the shared configuration form, so it is the only seat that can reach
+ * this card's form on a Host whose row id is not the namespace.
+ */
+export interface SettingsFormBinder {
+  /** Bind one family settings namespace. */
+  bind<T>(spec: SettingsFormSpec<T>): ConfigForm<T>
+}
+
+/**
+ * The client Workspace face this file drives, declared structurally: the
+ * browser workspace contract ships in an SDK package this bundle does not
+ * depend on, and the board only reads the roster and connects a workspace for
+ * an execution.
+ */
+export interface WorkspaceClientFace {
+  /** Workspace roster the board's picker and runner consume. */
+  list: {
+    /** @returns the current workspace roster snapshot. */
+    getSnapshot(): {
+      items: Array<{ workspaceId: string; title?: string; path: string }>
+      /** Workspace the Host reports as most recent; undefined when it reports none. */
+      recentWorkspaceId: string | undefined
+    }
+    /** @param listener - invoked after each roster change. @returns the disposer. */
+    subscribe(listener: () => void): () => void
+  }
+  /** Connect a workspace and report the session it is addressed by. */
+  connectWorkspace(workspaceId: string): Promise<string>
+}
+
+/**
+ * The workspace UI's navigation seat: since the multi-instance Client Session
+ * model, selecting a session belongs to the workspace surface rather than the
+ * session catalog.
+ */
+export interface WorkspaceNavigationFace {
+  /** Select one session in the workspace UI. */
+  openSession(sessionId: string): void
+}
+
+/**
+ * The legacy API-gateway face the connection handle still carries at runtime
+ * (the typed handle exposes the generic `rpc` channel instead). The history
+ * read rides it as a narrow optional probe, so a Host that no longer serves it
+ * degrades to "history unavailable" instead of breaking the board.
+ */
+export interface ConnectionApiFace {
+  /** API-gateway proxy face, when the connection still attaches one. */
+  api?: {
+    /** Session-domain endpoints. */
+    sessions?: {
+      /** Read one session's history tail. */
+      history(request: {
+        sessionId: string
+        maxMessages: number
+      }): Promise<{
+        result: {
+          ok: boolean
+          value?: { events: Array<{ event: ExecutionHistoryEvent }> }
+        }
+      }>
+    }
+  }
+}
+
 declare module '@deepseek-ai/cordis' {
   interface Context {
     /**
-     * Optional rc.6 compatibility binder provided by dsh-web-ui-settings;
+     * Optional family settings binder provided by the Web UI plugin group;
      * absent when that group plugin is not installed, so callers fall back to
-     * the official settings scope.
+     * the shared configuration forms service.
      */
-    webUiSettings?: { bind<S>(spec: SettingsScopeSpec<S>): SettingsScope<S> }
+    webUiSettings?: SettingsFormBinder
   }
 }
 
 /** Required services (fiber inject waiting — the runtime must be up first). */
-export const inject = ['slots', 'sessions', 'workspaces', 'connection', 'settingsScope', 'locale', 'remote']
+export const inject = ['slots', 'sessions', 'workspaces', 'connection', 'configForms', 'locale', 'remote']
 
 /**
  * Mount the task board.
@@ -77,9 +177,8 @@ export function apply(ctx: ClientContext): void {
 
   // Plugin configuration card: one staged form over the `task-board` settings
   // namespace, contributed to the Web UI plugin group.
-  const binder = ctx.get('webUiSettings') ?? ctx.settingsScope
-  const settingsScope = binder.bind<TaskBoardSettings>({ namespace: TASK_BOARD_NS })
-  const settingsCard = new TaskBoardSettingsCardController(settingsScope)
+  const settingsForm = bindSettingsForm(ctx)
+  const settingsCard = new TaskBoardSettingsCardController(settingsForm)
   ctx.slots.inject('web-ui.plugin.item', () => ctx.slots.register({
     name: 'web-ui.plugin.item',
     id: 'task-board',
@@ -87,37 +186,45 @@ export function apply(ctx: ClientContext): void {
     locale: NS,
     inject: () => settingsCard.inject(),
   }, TaskBoardSettingsCard))
+  ctx.effect(() => () => { settingsCard.dispose() }, 'task-board: settings card')
 
-  // The sidebar entry and board view mount once the settings scope settles;
-  // while the scope is still loading, the composition default is unknown, so
-  // nothing mounts yet. Only an unavailable scope (no settings surface served)
+  // The sidebar entry and board view mount once the settings form settles;
+  // while the form is still loading, the composition default is unknown, so
+  // nothing mounts yet. Only an unavailable form (no settings surface served)
   // falls back to the composition default (enabled).
   let uiDisposer: (() => void) | undefined
   const mountUi = (): void => {
     if (uiDisposer !== undefined) return
     const sessions = ctx.sessions
-    const workspaces = ctx.workspaces
-    const connection = ctx.get('connection') as ConnectionHandle
+    const workspaces = ctx.get('workspaces') as WorkspaceClientFace
+    const connection = ctx.get('connection') as unknown as ConnectionApiFace
+    const navigation = ctx.get('uiWorkspace') as WorkspaceNavigationFace | undefined
 
-    // Core wiring: real runtime faces into the framework-free services.
+    // Core wiring: real runtime faces into the framework-free services. The
+    // session catalog is adapted (derived main-view selection + a driver over
+    // each binding) because the 0.2.0 Client Session model publishes neither
+    // fact in the shape the core reads.
     const store = new LocalStorageTaskStore()
+    const sessionList = currentSessionList(sessions.list)
     const exec = new ExecutionService({
       sessions: {
-        list: sessions.list,
-        binding: id => sessions.binding(id as SessionId),
+        list: sessionList,
+        binding: (id) => {
+          const binding = sessions.binding(id as SessionId)
+          return binding === undefined ? undefined : { session: sessionDriverOf(binding) }
+        },
       },
       workspaces: {
         list: workspaces.list,
-        connectWorkspace: id => workspaces.connectWorkspace(id as WorkspaceId),
+        connectWorkspace: id => workspaces.connectWorkspace(id),
       },
       history: {
-        loadTail: async sessionId => {
-          const response = await connection.api.sessions.history({
-            sessionId: sessionId as SessionId,
-            maxMessages: 20,
-          })
-          return response.result.ok
-            ? { events: response.result.value.events.map((entry: { event: ExecutionHistoryEvent }) => entry.event) }
+        loadTail: async (sessionId) => {
+          const history = connection.api?.sessions?.history
+          if (history === undefined) return undefined
+          const response = await history({ sessionId, maxMessages: 20 })
+          return response.result.ok && response.result.value !== undefined
+            ? { events: response.result.value.events.map(entry => entry.event) }
             : undefined
         },
       },
@@ -126,8 +233,10 @@ export function apply(ctx: ClientContext): void {
       store,
       exec,
       sessions: {
-        list: sessions.list,
-        open: id => sessions.open(id as SessionId),
+        list: sessionList,
+        // Navigation belongs to the workspace UI since the multi-instance
+        // Client Session model: sessions carry no `open` of their own.
+        open: id => { navigation?.openSession(id) },
       },
     })
     controller.start()
@@ -154,8 +263,8 @@ export function apply(ctx: ClientContext): void {
     try {
       disposers.push(mountSidebarEntry(controller))
       disposers.push(mountBoard(controller, {
-        list: sessions.list,
-        open: id => sessions.open(id as SessionId),
+        list: sessionList,
+        open: id => { navigation?.openSession(id) },
       }))
     } catch (error) {
       // DOM failures degrade the board, never the GUI.
@@ -170,13 +279,36 @@ export function apply(ctx: ClientContext): void {
     }
   }
   const syncEnabled = (): void => {
-    const snapshot = settingsScope.getSnapshot()
+    const snapshot = settingsForm.getSnapshot()
     const enabled = snapshot.status === 'ready'
       ? snapshot.value?.enabled ?? true
       : snapshot.status === 'unavailable'
     if (enabled) mountUi()
     else uiDisposer?.()
   }
-  settingsScope.subscribe(syncEnabled)
+  settingsForm.subscribe(syncEnabled)
   syncEnabled()
+}
+
+/**
+ * Bind the settings form this card stages over.
+ *
+ * The family binder (`ctx.get('webUiSettings')`, published by the Web UI
+ * plugin group) comes first: it is what traces this package's family namespace
+ * onto the profile entry id the Host serves the form under, and it keeps its
+ * own bridge fallback. A page without that group falls back to the shared
+ * configuration forms service bound directly at one of this package's own
+ * profile entry ids.
+ * @param ctx - client root context.
+ * @returns the form the settings card reads and writes.
+ */
+export function bindSettingsForm(ctx: ClientContext): ConfigForm<TaskBoardSettings> {
+  const binder = ctx.get('webUiSettings')
+  if (binder !== undefined && typeof binder.bind === 'function') {
+    return binder.bind<TaskBoardSettings>({ namespace: TASK_BOARD_NS })
+  }
+  return createServedEntryForm<TaskBoardSettings>({
+    forms: ctx.configForms,
+    entryIds: TASK_BOARD_ENTRY_IDS,
+  })
 }

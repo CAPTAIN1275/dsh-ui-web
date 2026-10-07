@@ -1,51 +1,44 @@
 /**
  * Web UI plugin group, browser half. Registers the `web-ui-plugins`
- * dictionaries and one group card into the plugin-configuration section. The
- * group card declares the `web-ui.plugin.item` child slot; the dsh-web-ui
- * family plugins register their per-plugin cards there, so the settings page
- * shows a single Web UI Plugins entry instead of one top-level card per
+ * dictionaries and one first-level settings section that renders the family
+ * plugin cards. The section declares the `web-ui.plugin.item` child slot; the
+ * dsh-web-ui family plugins register their per-plugin cards there, so the
+ * settings page shows a single Web UI Plugins entry instead of one page per
  * family plugin.
  */
 
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+// Type-only: pulls the renderer-owned ctx.slots Context merge.
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: pulls the settings-surface SlotMap merge (the 'settings.section'
-// entry) and the ctx.settingsScope Context merge.
+// entry) and the shared-forms Context merge (ctx.configForms).
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
-// Type-only: loads the official keyed declaration of 'settings.plugin.item'
-// (rc.2+, ui-settings-plugins owns the slot type home) so the group-card
-// registration above typechecks against the real slot kind.
-import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import { AboutSection } from './AboutSection.tsx'
 import { PersonaSection } from './PersonaSection.tsx'
-import { WebUIPluginsCard } from './WebUIPluginsCard.tsx'
+import { WebUIPluginsSection } from './WebUIPluginsSection.tsx'
 import { en, zh, type WebUIPluginsKey } from './locales.ts'
 
-export type { WebUIPluginsCardProps } from './WebUIPluginsCard.tsx'
+export type { WebUIPluginsSectionProps } from './WebUIPluginsSection.tsx'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
-    /** Web UI plugin group card copy. */
+    /** Web UI plugin group copy. */
     'web-ui-plugins': WebUIPluginsKey
   }
 
   interface SlotMap {
     /**
      * The child slot one family plugin card registers into, declared by the
-     * group card. Shape mirrors `settings.plugin.item` so the family plugins
-     * can reuse their existing card implementations.
+     * group section. A list seat keyed by entry id, so the family plugins can
+     * reuse their existing card implementations.
      */
     'web-ui.plugin.item': { kind: 'list'; scope: 'root'; owner: SettingsPluginItemOwnerProps }
-    /**
-     * The plugin configuration section's card seat is declared by the official
-     * ui-settings-plugins package as a KEYED slot in rc.2+ (keyed by the
-     * settings namespace); do not re-declare it here with a different kind.
-     */
   }
 }
 
-/** Owner share of a plugin card (the group card supplies nothing). */
+/** Owner share of a plugin card (the group section supplies nothing). */
 export interface SettingsPluginItemOwnerProps {
   /** Marker field: card owner props are intentionally empty. */
   children?: never
@@ -55,20 +48,24 @@ export interface SettingsPluginItemOwnerProps {
 export const inject = ['slots', 'locale']
 
 /**
- * Register the Web UI plugin group.
+ * Register the Web UI plugin group as a first-level settings section: its own
+ * nav item hosts the family plugin cards in the section body.
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register('web-ui-plugins', { zh, en }), 'web-ui-settings: dictionaries')
 
-  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
-    name: 'settings.plugin.item',
-    // rc.2: settings.plugin.item is a keyed slot (keyed by the settings
-    // namespace); the old list-style `id`/`order` no longer apply.
-    key: 'web-ui-plugins',
+  // Web UI 插件组：一级设置页，家族插件的卡片挂进它声明的 web-ui.plugin.item 子 slot。
+  // rc.2 起官方的 settings.plugin.item keyed 席位已被移除（组卡片原来的落点），
+  // 因此组卡片改成自建的一级 section，聚合形态不变。
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section',
+    id: 'web-ui-plugins',
+    order: 110,
+    label: () => ctx.locale.bind('web-ui-plugins')('title'),
     locale: 'web-ui-plugins',
     children: { 'web-ui.plugin.item': { kind: 'list', scope: 'root' } },
-  }, WebUIPluginsCard))
+  }, WebUIPluginsSection))
 
   // 设置页「人格设定」section：编辑并启用/禁用常驻人格（写 ~/.dsh/persona.json
   // 并同步生成 ~/.dsh/skills/catgirl-rp/SKILL.md，DSH 技能系统热加载生效）。

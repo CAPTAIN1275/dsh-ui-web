@@ -7,15 +7,18 @@
  * copies the one-command apply. The plugin writes only DOM and the settings
  * ledger — no services, no events, no model access.
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+// Type-only: pulls the renderer-owned ctx.slots Context merge.
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type { ThemeRuntime } from '@deepseek-ai/dsh-client-ui-theme/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@deepseek-ai/dsh-client-locale/client'
-// Type-only: pulls the settings-surface Context merge (ctx.settingsScope).
+// Type-only: pulls the settings-surface Context merge (ctx.configForms).
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import { SkinCenter, type SkinCenterInjected } from './SkinCenter.tsx'
 import { BackgroundController, SKIN_BACKGROUND_NS } from './background.ts'
 import { en, zh, type SkinCenterKey } from './locales.ts'
+import { createServedEntryForm } from './settings-entry-form.ts'
 import { TryOnController } from './try-on.ts'
 
 export type { SkinCenterComponentProps, SkinCenterInjected } from './SkinCenter.tsx'
@@ -47,8 +50,8 @@ export interface SettingsPluginItemOwnerProps {
   children?: never
 }
 
-/** Required services: slots + locale (plugin card), theme (preview toggle), and settingsScope + its transport (background scrim). */
-export const inject = ['slots', 'locale', 'theme', 'settingsScope', 'connection', 'remote']
+/** Required services: slots + locale (plugin card), theme (preview toggle), and configForms + its transport (background scrim). */
+export const inject = ['slots', 'locale', 'theme', 'configForms', 'connection', 'remote']
 
 /**
  * Register the skin-center dictionaries, the body scope attribute, and the
@@ -67,9 +70,13 @@ export function apply(ctx: ClientContext): void {
 
   const theme = ctx.get('theme') as ThemeRuntime
   const controller = new TryOnController()
-  // Background occluder over the shared skin-background namespace. The scope
-  // is bound to this plugin's fiber, so it is torn down with the card.
-  const backgroundScope = ctx.settingsScope.bind<{ backgroundOpacity?: number }>({ namespace: SKIN_BACKGROUND_NS })
+  // Background occluder over the shared skin-background namespace. The form
+  // binds the profile entry this Host serves for that namespace, so it is torn
+  // down with the card.
+  const backgroundScope = createServedEntryForm<{ backgroundOpacity?: number }>({
+    forms: ctx.configForms,
+    entryIds: ['ui-skin-center', SKIN_BACKGROUND_NS],
+  })
   const background = new BackgroundController(backgroundScope)
   const injected = (): SkinCenterInjected => ({
     controller,

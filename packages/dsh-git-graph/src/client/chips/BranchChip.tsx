@@ -13,7 +13,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { IconBranchOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconBranchOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { BranchesView, RepoStatus } from '../../core/types.ts'
 import type { GitGraphInjected } from '../index.ts'
@@ -91,7 +91,7 @@ export function BranchChip(props: BranchChipProps) {
   return (
     <div className={css.anchor}>
       <Chip
-        icon={<IconBranchOutline16 size={14} />}
+        icon={<IconBranchOutlineRegular size={14} />}
         label={repo.branch === '' ? props.t('branch.detached') : repo.branch}
         ariaLabel={props.t('chip.aria.branch')}
         open={branchOpen}

@@ -4,7 +4,7 @@
  * 以及不透明度与模糊调节。数据经注入面读写 skin-aurora 设置 scope。
  */
 import { useRef, useSyncExternalStore } from 'react'
-import type { SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ConfigFormSnapshot as SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 import css from './aurora.module.css'
 
 /** 设置值形状（与宿主 schema 对应）。 */

@@ -6,7 +6,8 @@
  */
 
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type { SettingsScope, SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import { PluginSettingsCard, BooleanField } from './PluginSettingsCard.tsx'
 import { CardForm, booleanField, type CardActions, type CardShell, type FieldState as CardFieldState } from './settings-form.ts'
 
@@ -34,13 +35,13 @@ export interface TaskBoardSettingsCardFace extends CardActions {
   }
 }
 
-/** Bridges the `task-board` scope onto the card's staged form. */
+/** Bridges the `task-board` configuration form onto the card's staged form. */
 export class TaskBoardSettingsCardController {
   private readonly form: CardForm<TaskBoardSettings>
   private readonly store: SnapshotStore<TaskBoardSettingsCardState>
 
-  /** @param scope - the bound settings scope for the `task-board` namespace. */
-  constructor(scope: SettingsScope<TaskBoardSettings>) {
+  /** @param scope - the bound configuration form for the `task-board` namespace. */
+  constructor(scope: ConfigForm<TaskBoardSettings>) {
     this.form = new CardForm(scope, [
       booleanField('enabled'),
       booleanField('announceToAgent'),
@@ -62,6 +63,14 @@ export class TaskBoardSettingsCardController {
    */
   inject(): TaskBoardSettingsCardFace {
     return { hooks: { taskBoardSettingsCard: this.store }, ...this.form.actions() }
+  }
+
+  /**
+   * Release the card's form subscription and bound stores; the slot
+   * disposer calls this on teardown.
+   */
+  dispose(): void {
+    this.form.dispose()
   }
 }
 

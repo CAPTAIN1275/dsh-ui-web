@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
+import { createMessage, createToolResultMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import {
   estimateAssistantBlockTokens,
   estimateContentTokens,
@@ -31,13 +31,18 @@ describe('live-stats estimator', () => {
     expect(estimateContentTokens([
       { type: 'tool-call', id: 'call_1' as never, name: 'tool', arguments: '{}' },
     ], SPEC)).toBe(6)
-    // Tool results recurse into their content blocks plus framing.
-    expect(estimateContentTokens([{
-      type: 'tool-result',
-      toolCallId: 'call_1' as never,
-      isError: false,
-      content: [{ type: 'text', text: 'ok' }],
-    }], SPEC)).toBe(9)
+    // rc.2 dropped the nested `tool-result` content block: a tool result is a
+    // message whose blocks are ordinary ones, priced at their own density plus
+    // one block frame (1 + 4).
+    expect(estimateContentTokens([{ type: 'text', text: 'abcd' }], SPEC)).toBe(5)
+    // Content kinds with no text arm of their own price structurally, matching
+    // the fallback they shared before the flat-content change.
+    expect(estimateContentTokens([
+      { type: 'tool-addition', toolName: 'bash' },
+    ], SPEC)).toBe(SPEC.blockOverhead + Math.ceil(JSON.stringify({ type: 'tool-addition', toolName: 'bash' }).length / 4))
+    expect(estimateContentTokens([
+      { type: 'tool-removal', toolName: 'bash' },
+    ], SPEC)).toBe(SPEC.blockOverhead + Math.ceil(JSON.stringify({ type: 'tool-removal', toolName: 'bash' }).length / 4))
     // Unknown blocks fall back to JSON sizing.
     expect(estimateContentTokens([{ type: 'mystery' } as never], SPEC)).toBe(9)
     // Message role framing applies on top of the content price.
@@ -53,13 +58,20 @@ describe('live-stats estimator', () => {
     }), SPEC)).toBe(9)
   })
 
-  it('bounds deep and cyclic tool-result nesting instead of overflowing', () => {
-    // A deeply nested tool-result chain prices without exhausting the stack.
-    let block: Parameters<typeof estimateContentTokens>[0][number] = { type: 'text', text: 'x' }
-    for (let depth = 0; depth < 1_000; depth++) {
-      block = { type: 'tool-result', toolCallId: 'c' as never, isError: false, content: [block] }
-    }
-    expect(() => estimateContentTokens([block], SPEC)).not.toThrow()
+  it('prices the flat content of a tool-result message without recursing', () => {
+    // A tool result's own blocks are priced flat; the old nested-content
+    // recursion has no counterpart in the rc.2 message shape.
+    const message = createToolResultMessage({
+      callId: 'call_1' as never,
+      content: [{ type: 'text', text: 'ok' }],
+      isError: false,
+    })
+    expect(estimateMessageTokens(message, SPEC)).toBe(9)
+    // A deeply nested value supplied by a merge-extended block kind is priced
+    // structurally at JSON size rather than walked.
+    let nested: unknown = { type: 'text', text: 'x' }
+    for (let depth = 0; depth < 1_000; depth++) nested = { type: 'mystery', nested }
+    expect(() => estimateContentTokens([nested as never], SPEC)).not.toThrow()
   })
 
   it('prices header framing for system text and tool schemas', () => {

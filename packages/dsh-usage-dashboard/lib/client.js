@@ -3542,8 +3542,7 @@ window.__ModuleLoader__.load({
 		const inject = [
 			"slots",
 			"locale",
-			"connection",
-			"settingsScope"
+			"connection"
 		];
 		/**
 		* Register the usage dashboard surface.

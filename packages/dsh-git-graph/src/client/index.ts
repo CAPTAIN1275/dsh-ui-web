@@ -23,8 +23,13 @@
  * @module dsh-git-graph/client
  */
 
-import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
+// Type-only: pulls the ui-renderer Context merge (`ctx.slots`, the registry
+// service that owns register/inject) — since 0.2.0 the registry lives there,
+// not in ui-slots (whose entry module is the pure core).
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 // Type-only: pulls the ui-conversation SlotMap merge (the conversation
 // slots); the selector-context hole is spelled locally below because the
 // published npm SDK (rc.6) dropped it while the running shell still renders it.
@@ -64,7 +69,33 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
       owner: InputSelectorContextOwnerProps
     }
   }
+
+  /**
+   * The current Session identity standard seat. The shipped shell merges it
+   * from ui-session's SessionProvider binding (a stable plain prop on every
+   * session / session-maybe slot; `undefined` without a current Session).
+   * ui-session is not a dependency of this package, so the merge is restated
+   * here — the same reason the context hole above is spelled locally — to
+   * keep `props.sessionId` typed against the running shell.
+   */
+  interface SessionStandardProps {
+    /** The Session this entry is rendered under. */
+    sessionId: SessionId
+  }
+
+  interface SessionMaybeStandardProps {
+    /** The current Session, or undefined while none is selected. */
+    sessionId: SessionId | undefined
+  }
 }
+
+/**
+ * The branded Session identity as the sessions service projects it. Since
+ * 0.2.0 `@deepseek-ai/dsh-session/types` is only a transitive dependency and
+ * cannot be imported from a feature package, so the id type is derived from
+ * the sessions service this package already depends on.
+ */
+export type SessionId = SessionListState['ids'][number]
 
 /** Owner share of the input selector context-chip hole (empty by contract). */
 export interface InputSelectorContextOwnerProps {}
