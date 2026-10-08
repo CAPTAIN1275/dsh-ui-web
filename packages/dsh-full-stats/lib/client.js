@@ -230,31 +230,33 @@ window.__ModuleLoader__.load({
 				};
 			} catch {}
 		}
-		/** The label text this plugin replaced, per status row, so clearing the config restores it. */
-		const replacedStatusText = /* @__PURE__ */ new WeakMap();
 		/**
-		* 替换思考状态行的标签文本（原地改写，保留计时用的 span）。配置为空时还原原文。
+		* 替换思考状态行的标签文本，保留实时时长。配置为空时还原官方标签。
 		*
-		* 匹配靠**结构**而不是字面量：官方标签是本地化的（英文 "Deep diving..."、
-		* 中文「深度求索中，」……），原先按英文串比较，在非英文语言下永远匹配不上，
-		* 用户配的自定义文本因此**从未生效**。状态行自己的直接文本子节点就是标签
-		* （计时在子 span 里），与语言无关。
+		* 定位靠**稳定的 data 属性**：0.2.0 的 RunningStatus 渲染为
+		* `<div data-chat-running><span role="status">纯本地化标签</span>…<span>标签+用时</span></div>`，
+		* 没有 `turnStatus` 类（旧选择器因此在 0.2.0 上匹配不到任何东西），
+		* 而 `role="status"` 那个视觉隐藏的 span 里正是**不带时长的本地化标签**
+		* （中文「深度求索中」/ 英文 "Deep diving"）。
+		*
+		* 可见 span 里标签与时长是同一个插值字符串（"chat.deepDivingFor"），
+		* 所以只替换标签前缀、把其后紧随的时长原样留下，并且每次 DOM 变动都重新推导，
+		* 让计时继续走。
 		*/
 		function applyThinkingText() {
 			const configured = cachedConfig.thinkingText;
-			document.querySelectorAll("[class*=\"turnStatus\"]").forEach((el) => {
-				const textNode = Array.from(el.childNodes).find((n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? "").trim() !== "");
+			document.querySelectorAll("[data-chat-running]").forEach((row) => {
+				const official = (row.querySelector("[role=\"status\"]")?.textContent ?? "").trim();
+				const visible = Array.from(row.querySelectorAll("span")).filter((s) => s.getAttribute("role") !== "status" && (s.textContent ?? "").trim() !== "").pop();
+				if (visible === void 0) return;
+				const textNode = Array.from(visible.childNodes).find((n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? "").trim() !== "");
 				if (textNode === void 0) return;
 				const current = textNode.textContent ?? "";
-				if (configured === "") {
-					const original = replacedStatusText.get(el);
-					if (original !== void 0 && original !== current) textNode.textContent = original;
-					replacedStatusText.delete(el);
-					return;
-				}
-				if (current === configured) return;
-				if (!replacedStatusText.has(el)) replacedStatusText.set(el, current);
-				textNode.textContent = configured;
+				let tail = "";
+				if (official !== "" && current.startsWith(official)) tail = current.slice(official.length);
+				else if (configured !== "" && current.startsWith(configured)) tail = current.slice(configured.length);
+				const next = (configured === "" ? official : configured) + tail;
+				if (next !== current && next !== "") textNode.textContent = next;
 			});
 		}
 		function mountThinkingTextReplacer() {
