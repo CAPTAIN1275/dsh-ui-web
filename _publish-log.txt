@@ -1,0 +1,23 @@
+# packages already on npm at publish time
+OK	@captain1275/dsh-client-ui-aionui-panel@0.4.0
+OK	@captain1275/dsh-client-ui-git-graph@0.4.0
+OK	@captain1275/dsh-client-ui-skin-aurora@0.4.0
+OK	@captain1275/dsh-client-ui-skin-blue-fantasy@0.4.0
+OK	@captain1275/dsh-client-ui-skin-center@0.4.0
+OK	@captain1275/dsh-client-ui-skin-miku@0.4.0
+OK	@captain1275/dsh-client-ui-skin-minecraft@0.4.0
+OK	@captain1275/dsh-client-ui-skin-ths@0.4.0
+OK	@captain1275/dsh-client-ui-skin-trading@0.4.0
+OK	@captain1275/dsh-client-ui-skin-xp@0.4.0
+OK	@captain1275/dsh-client-ui-task-board@0.4.0
+OK	@captain1275/dsh-client-ui-web-ui-settings@0.4.0
+OK	@captain1275/dsh-full-stats@0.4.0
+OK	@captain1275/dsh-live-stats@0.4.0
+# this run
+FAIL	@captain1275/dsh-client-ui-skin-dragon-heir@0.4.0	Command failed: pnpm.cmd publish --registry=https://registry.npmjs.org/ --access public --no-git-checks
+FAIL	@captain1275/dsh-client-ui-skin-whale-song@0.4.0	Command failed: pnpm.cmd publish --registry=https://registry.npmjs.org/ --access public --no-git-checks
+FAIL	@captain1275/dsh-pet@0.4.0	[E403] 403 Forbidden - PUT https://registry.npmjs.org/@captain1275%2fdsh-pet - You cannot publish over the previously published versions: 0.4.0. | pnpm: 403 Forbidden - PUT https://registry.npmjs.org/@captain1275%2fdsh-pet - You cannot publish over the previou
+OK	@captain1275/dsh-skins@0.4.0	[E403] 403 Forbidden - PUT https://registry.npmjs.org/@captain1275%2fdsh-skins - You cannot publish over the previously published versions: 0.4.0. | pnpm: 403 Forbidden - PUT https://registry.npmjs.org/@captain1275%2fdsh-skins - You cannot publish over the pre
+OK	@captain1275/dsh-ssh@0.4.0	[E403] 403 Forbidden - PUT https://registry.npmjs.org/@captain1275%2fdsh-ssh - You cannot publish over the previously published versions: 0.4.0. | pnpm: 403 Forbidden - PUT https://registry.npmjs.org/@captain1275%2fdsh-ssh - You cannot publish over the previou
+OK	@captain1275/dsh-usage-dashboard@0.4.0	[E403] 403 Forbidden - PUT https://registry.npmjs.org/@captain1275%2fdsh-usage-dashboard - You cannot publish over the previously published versions: 0.4.0. | pnpm: 403 Forbidden - PUT https://registry.npmjs.org/@captain1275%2fdsh-usage-dashboard - You cannot 
+FAIL	@captain1275/dsh-web-ui-all@0.4.0	Command failed: pnpm.cmd publish --registry=https://registry.npmjs.org/ --access public --no-git-checks
