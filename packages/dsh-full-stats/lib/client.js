@@ -238,16 +238,31 @@ window.__ModuleLoader__.load({
 		* MutationObserver 监听会话区，出现官方占位文本且用户配置了 thinkingText
 		* 时原位替换（保留时钟 span）。配置为空或文本已非官方占位时不动。
 		*/
+		/** The exact status text this plugin last wrote, so a later config edit can find it again. */
+		let appliedThinkingText = "";
+		/**
+		* Replace the official "Deep diving..." status text in place (the clock span is
+		* preserved). Empty config restores the official placeholder.
+		*
+		* The node is matched by the official string OR by the text this plugin itself
+		* wrote: after one replacement the node no longer carries the official string,
+		* so without the second match a config edit could never reach a status line
+		* that is already on screen -- it only picked up the new text once the line was
+		* rebuilt by the next turn.
+		*/
+		function applyThinkingText() {
+			const configured = cachedConfig.thinkingText;
+			const target = configured === "" ? OFFICIAL_THINKING_TEXT : configured;
+			document.querySelectorAll("[class*=\"turnStatus\"]").forEach((el) => {
+				const textNode = Array.from(el.childNodes).find((n) => n.nodeType === Node.TEXT_NODE && (n.textContent?.includes(OFFICIAL_THINKING_TEXT) === true || appliedThinkingText !== "" && n.textContent === appliedThinkingText));
+				if (textNode === void 0 || textNode.textContent === target) return;
+				textNode.textContent = target;
+				appliedThinkingText = configured === "" ? "" : target;
+			});
+		}
 		function mountThinkingTextReplacer() {
-			const apply = () => {
-				if (cachedConfig.thinkingText === "") return;
-				document.querySelectorAll("[class*=\"turnStatus\"]").forEach((el) => {
-					const textNode = Array.from(el.childNodes).find((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.includes(OFFICIAL_THINKING_TEXT));
-					if (textNode !== void 0) textNode.textContent = cachedConfig.thinkingText;
-				});
-			};
-			apply();
-			const observer = new MutationObserver(apply);
+			applyThinkingText();
+			const observer = new MutationObserver(applyThinkingText);
 			observer.observe(document.body, {
 				childList: true,
 				subtree: true
@@ -343,7 +358,7 @@ window.__ModuleLoader__.load({
 		function apply(ctx) {
 			refreshConfig();
 			const onConfig = () => {
-				refreshConfig();
+				refreshConfig().then(applyThinkingText);
 			};
 			window.addEventListener(FULL_STATS_EVENT, onConfig);
 			ctx.effect(() => () => window.removeEventListener(FULL_STATS_EVENT, onConfig), "ui-full-stats: config listener");

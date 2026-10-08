@@ -93,21 +93,38 @@ const OFFICIAL_THINKING_TEXT = 'Deep diving...'
  * MutationObserver 监听会话区，出现官方占位文本且用户配置了 thinkingText
  * 时原位替换（保留时钟 span）。配置为空或文本已非官方占位时不动。
  */
+/** The exact status text this plugin last wrote, so a later config edit can find it again. */
+let appliedThinkingText = ''
+
+/**
+ * Replace the official "Deep diving..." status text in place (the clock span is
+ * preserved). Empty config restores the official placeholder.
+ *
+ * The node is matched by the official string OR by the text this plugin itself
+ * wrote: after one replacement the node no longer carries the official string,
+ * so without the second match a config edit could never reach a status line
+ * that is already on screen -- it only picked up the new text once the line was
+ * rebuilt by the next turn.
+ */
+function applyThinkingText(): void {
+  const configured = cachedConfig.thinkingText
+  const target = configured === '' ? OFFICIAL_THINKING_TEXT : configured
+  document.querySelectorAll<HTMLElement>('[class*="turnStatus"]').forEach((el) => {
+    const textNode = Array.from(el.childNodes).find(
+      (n) => n.nodeType === Node.TEXT_NODE
+        && (n.textContent?.includes(OFFICIAL_THINKING_TEXT) === true
+          || (appliedThinkingText !== '' && n.textContent === appliedThinkingText)),
+    )
+    if (textNode === undefined || textNode.textContent === target) return
+    textNode.textContent = target
+    appliedThinkingText = configured === '' ? '' : target
+  })
+}
+
 function mountThinkingTextReplacer(): () => void {
-  const apply = (): void => {
-    if (cachedConfig.thinkingText === '') return
-    document.querySelectorAll<HTMLElement>('[class*="turnStatus"]').forEach((el) => {
-      const textNode = Array.from(el.childNodes).find(
-        (n) => n.nodeType === Node.TEXT_NODE && n.textContent?.includes(OFFICIAL_THINKING_TEXT),
-      )
-      if (textNode !== undefined) {
-        textNode.textContent = cachedConfig.thinkingText
-      }
-    })
-  }
   // 立即执行 + 监听 DOM 变化（会话切换/流式重渲染都会重建状态行）。
-  apply()
-  const observer = new MutationObserver(apply)
+  applyThinkingText()
+  const observer = new MutationObserver(applyThinkingText)
   observer.observe(document.body, { childList: true, subtree: true })
   return () => observer.disconnect()
 }
@@ -220,7 +237,9 @@ function renderLine(running: boolean, text: string) {
 /** 浏览器插件体：覆盖官方统计行 + 注册 WebUI 配置卡片。 */
 export function apply(ctx: ClientContext): void {
   void refreshConfig()
-  const onConfig = (): void => { void refreshConfig() }
+  // Re-apply after the refresh settles: a config edit must reach a status line
+  // that is already on screen, not only the next one the shell rebuilds.
+  const onConfig = (): void => { void refreshConfig().then(applyThinkingText) }
   window.addEventListener(FULL_STATS_EVENT, onConfig)
   ctx.effect(() => () => window.removeEventListener(FULL_STATS_EVENT, onConfig), 'ui-full-stats: config listener')
 
