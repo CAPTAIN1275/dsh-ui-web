@@ -84,40 +84,34 @@ async function refreshConfig(): Promise<void> {
   }
 }
 
-/** 官方「思考中」占位文本（ChatView 硬编码，无可字典化文案）。 */
-const OFFICIAL_THINKING_TEXT = 'Deep diving...'
+/** The label text this plugin replaced, per status row, so clearing the config restores it. */
+const replacedStatusText = new WeakMap<HTMLElement, string>()
 
 /**
- * 替换官方「Deep diving...」状态文本。ChatView 将思考中文本硬编码为内联
- * JSX（role=status + turnStatus 类），无法通过官方配置修改；这里用
- * MutationObserver 监听会话区，出现官方占位文本且用户配置了 thinkingText
- * 时原位替换（保留时钟 span）。配置为空或文本已非官方占位时不动。
- */
-/** The exact status text this plugin last wrote, so a later config edit can find it again. */
-let appliedThinkingText = ''
-
-/**
- * Replace the official "Deep diving..." status text in place (the clock span is
- * preserved). Empty config restores the official placeholder.
+ * 替换思考状态行的标签文本（原地改写，保留计时用的 span）。配置为空时还原原文。
  *
- * The node is matched by the official string OR by the text this plugin itself
- * wrote: after one replacement the node no longer carries the official string,
- * so without the second match a config edit could never reach a status line
- * that is already on screen -- it only picked up the new text once the line was
- * rebuilt by the next turn.
+ * 匹配靠**结构**而不是字面量：官方标签是本地化的（英文 "Deep diving..."、
+ * 中文「深度求索中，」……），原先按英文串比较，在非英文语言下永远匹配不上，
+ * 用户配的自定义文本因此**从未生效**。状态行自己的直接文本子节点就是标签
+ * （计时在子 span 里），与语言无关。
  */
 function applyThinkingText(): void {
   const configured = cachedConfig.thinkingText
-  const target = configured === '' ? OFFICIAL_THINKING_TEXT : configured
   document.querySelectorAll<HTMLElement>('[class*="turnStatus"]').forEach((el) => {
     const textNode = Array.from(el.childNodes).find(
-      (n) => n.nodeType === Node.TEXT_NODE
-        && (n.textContent?.includes(OFFICIAL_THINKING_TEXT) === true
-          || (appliedThinkingText !== '' && n.textContent === appliedThinkingText)),
+      (n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? '').trim() !== '',
     )
-    if (textNode === undefined || textNode.textContent === target) return
-    textNode.textContent = target
-    appliedThinkingText = configured === '' ? '' : target
+    if (textNode === undefined) return
+    const current = textNode.textContent ?? ''
+    if (configured === '') {
+      const original = replacedStatusText.get(el)
+      if (original !== undefined && original !== current) textNode.textContent = original
+      replacedStatusText.delete(el)
+      return
+    }
+    if (current === configured) return
+    if (!replacedStatusText.has(el)) replacedStatusText.set(el, current)
+    textNode.textContent = configured
   })
 }
 
