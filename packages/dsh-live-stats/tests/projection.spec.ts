@@ -5,6 +5,7 @@ import {
 } from '@deepseek-ai/dsh-llm'
 import type { AssistantStreamRecord, CallId, Message, StreamChunk, TimedStreamChunk, TokenUsage } from '@deepseek-ai/dsh-llm'
 import SessionStore from '@deepseek-ai/dsh-session'
+import { foldSurface } from '@deepseek-ai/dsh-session'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import { apply, inject, resolveEstimatorConfig } from '../src/index.ts'
@@ -593,5 +594,116 @@ describe('liveTokenUsage projection', () => {
       .toThrow('invalid current range')
     expect(() => definition.apply(state, surfaceEvent(4, 'bad', { op: 'replace', startSeq: 3, endSeq: 99 })))
       .toThrow('invalid current range')
+  })
+
+  it('replays an existing log whose replacement reordered the surface, including a start === end range', async () => {
+    // The log is built with the projection NOT mounted and folded in one pass
+    // afterwards: that is the resume path over a session that already existed
+    // when the plugin was installed, and it must never throw.
+    const ctx = new Context()
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(SessionProjectionRegistry)
+    const session = ctx.sessions.create()
+    const prompt = (text: string): SessionEvent => session.append('user/message', createUserMessage({
+      content: [{ type: 'text', text }],
+      source: { kind: 'user' },
+    }), { surfaceOp: 'append' })
+    const replace = (text: string, startSeq: number, endSeq: number, sources: number[]): SessionEvent =>
+      session.append('user/message', createUserMessage({
+        content: [{ type: 'text', text }],
+        source: { kind: 'user' },
+      }), {
+        surfaceOp: { op: 'replace', startSeq: startSeq as never, endSeq: endSeq as never },
+        sourceEventSeqs: sources as never,
+      })
+
+    const [a, b, c, d] = ['a', 'b', 'c', 'd'].map(prompt)
+    // One node shadows [a, c]: the surface now reads [shadow, d], so a node
+    // with a LARGER seq (d, 3) sits after one with a smaller seq (shadow, 4).
+    // Surface order and seq order part ways from here on.
+    const shadow = replace('abc', a.seq, c.seq, [a.seq, b.seq, c.seq])
+    const e = prompt('e')
+    // [d, e] is the range in SURFACE order; numerically its seq span (3..5)
+    // also covers `shadow` (4), which the canonical surface keeps because it
+    // sits BEFORE d.
+    const top = replace('de', d.seq, e.seq, [d.seq, e.seq])
+    // A single-node rewrite (start === end) of the node that a numeric sweep
+    // wrongly dropped. The canonical surface still holds it, so this is a
+    // valid replace; replay must not throw.
+    const rewrite = replace('abc2', shadow.seq, shadow.seq, [shadow.seq])
+    session.append('step/start', { turn: 1, step: 1 })
+
+    await ctx.plugin({ inject, apply })
+
+    // The SDK's own surface fold over the same log is the reference: after the
+    // single-node rewrite the current nodes are the rewrite plus `top`.
+    const canonical = foldSurface(session.snapshotEvents())
+    expect(canonical.nodes).toEqual([rewrite.seq, top.seq])
+    const spec = resolveEstimatorConfig({})
+    const expectedSurface = canonical.nodes.reduce((sum, seq) => {
+      const event = session.eventAt(seq)
+      if (event === undefined) throw new Error(`missing canonical surface event ${seq}`)
+      return sum + estimateMessageTokens((event as { data: Message }).data, spec)
+    }, 0)
+    expect(expectedSurface).toBeGreaterThan(0)
+    expect(projected(ctx, session).uncachedInputTokens).toBe(expectedSurface)
+  })
+
+  it('matches the canonical surface fold over randomized existing logs', async () => {
+    // Deterministic PRNG: a failing round is reproducible.
+    let seed = 0x5eed1234
+    const random = (): number => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+      return seed / 0x100000000
+    }
+    const spec = resolveEstimatorConfig({})
+    const userOf = (text: string) => createUserMessage({
+      content: [{ type: 'text', text }],
+      source: { kind: 'user' },
+    })
+    let replaces = 0
+    let singleNodeReplaces = 0
+    for (let round = 0; round < 12; round++) {
+      const ctx = new Context()
+      await ctx.plugin(SessionStore)
+      await ctx.plugin(SessionProjectionRegistry)
+      const session = ctx.sessions.create()
+      for (let step = 0; step < 30; step++) {
+        const nodes = foldSurface(session.snapshotEvents()).nodes
+        if (nodes.length === 0 || random() < 0.5) {
+          session.append('user/message', userOf(`a${round}-${step}`), { surfaceOp: 'append' })
+          continue
+        }
+        // Pick a range by POSITION in the current surface and cite exactly the
+        // nodes it shadows, so the SDK's own append validation accepts it.
+        const startIndex = Math.floor(random() * nodes.length)
+        const endIndex = startIndex + Math.floor(random() * (nodes.length - startIndex))
+        session.append('user/message', userOf(`r${round}-${step}`), {
+          surfaceOp: { op: 'replace', startSeq: nodes[startIndex], endSeq: nodes[endIndex] },
+          sourceEventSeqs: nodes.slice(startIndex, endIndex + 1),
+        })
+        replaces += 1
+        if (startIndex === endIndex) singleNodeReplaces += 1
+      }
+      session.append('step/start', { turn: 1, step: 1 })
+      await ctx.plugin({ inject, apply })
+
+      const state = ctx.sessionProjections.stateOf(session, 'liveTokenUsage')
+      if (state === undefined) throw new Error('liveTokenUsage state is absent')
+      const canonical = foldSurface(session.snapshotEvents())
+      // The fold's surface must be exactly the canonical model-visible surface,
+      // in the same order, with the same estimated price.
+      expect([...state.surface.keys()]).toEqual(canonical.nodes)
+      const expectedTokens = canonical.nodes.reduce((sum, seq) => {
+        const event = session.eventAt(seq)
+        if (event === undefined) throw new Error(`missing canonical surface event ${seq}`)
+        return sum + estimateMessageTokens((event as { data: Message }).data, spec)
+      }, 0)
+      expect(state.surfaceTokens).toBe(expectedTokens)
+      expect(projected(ctx, session).uncachedInputTokens).toBe(expectedTokens)
+    }
+    // The corpus really exercised replacements, including start === end.
+    expect(replaces).toBeGreaterThan(50)
+    expect(singleNodeReplaces).toBeGreaterThan(0)
   })
 })

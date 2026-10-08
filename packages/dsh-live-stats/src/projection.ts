@@ -99,7 +99,11 @@ export interface State {
   settled: TokenUsageProjection
   settledEstimates: number
   last: SettledSample | null
-  /** Surface message seq -> estimated tokens, kept in increasing seq order. */
+  /**
+   * Surface seq -> estimated tokens, in MODEL-VISIBLE (surface) order: the
+   * iteration order is the surface order, which a positional replacement can
+   * put out of seq order (its node lands where the shadowed range started).
+   */
   surface: Map<number, number>
   surfaceTokens: number
   header: EpochHeader | undefined
@@ -142,29 +146,48 @@ function applySurface(
     }
   }
   const operation = event.surfaceOp
-  if (
-    !state.surface.has(operation.startSeq)
-    || !state.surface.has(operation.endSeq)
-    || operation.startSeq > operation.endSeq
-  ) {
+  // The declared range is POSITIONAL, not numeric: it runs between the two
+  // nodes' positions in surface order, exactly as the canonical fold resolves
+  // it (`@deepseek-ai/dsh-session`'s `replacementRange` uses indexOf over the
+  // node list) and as the type docs state ("replaces surface nodes from
+  // startSeq (inclusive) through endSeq (inclusive)"; startSeq === endSeq
+  // replaces a single node). A replacement inserts its own node at the
+  // shadowed range's start position, so a node with a larger seq can sit
+  // BEFORE one with a smaller seq after the first replacement; comparing seq
+  // numbers, or sweeping the numeric interval between them, then removes
+  // nodes the surface keeps and keeps nodes it drops. The Map is maintained
+  // in surface order (appends extend the tail, a replacement rebuilds it), so
+  // positions are read by iterating it.
+  let startIndex = -1
+  let endIndex = -1
+  let position = 0
+  for (const seq of state.surface.keys()) {
+    if (seq === operation.startSeq) startIndex = position
+    if (seq === operation.endSeq) endIndex = position
+    if (startIndex !== -1 && endIndex !== -1) break
+    position++
+  }
+  if (startIndex === -1 || endIndex === -1 || startIndex > endIndex) {
     throw new Error(
       'live-stats: replace at seq ' + event.seq + ' has invalid current range '
       + operation.startSeq + '-' + operation.endSeq,
     )
   }
-  // Keys enter in increasing seq order (appends grow, and a replace's own
-  // seq is always the newest), so one pass with an early exit removes the
-  // exact range. Deleting entries while iterating a Map is safe.
+  // Rebuild the surface in place but in surface order: every node before the
+  // range, the replacement at the range's start position, then the nodes after
+  // it. Storing the replacement by splice position (not by insertion at the
+  // Map tail) is what keeps later positional ranges resolvable.
+  const next = new Map<number, number>()
   let removed = 0
+  position = 0
   for (const [seq, nodeTokens] of state.surface) {
-    if (seq < operation.startSeq) continue
-    if (seq > operation.endSeq) break
-    removed += nodeTokens
-    state.surface.delete(seq)
+    if (position === startIndex) next.set(event.seq, tokens)
+    if (position >= startIndex && position <= endIndex) removed += nodeTokens
+    else next.set(seq, nodeTokens)
+    position++
   }
-  state.surface.set(event.seq, tokens)
   return {
-    surface: state.surface,
+    surface: next,
     surfaceTokens: state.surfaceTokens - removed + tokens,
   }
 }
