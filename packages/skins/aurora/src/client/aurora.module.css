@@ -80,6 +80,30 @@ body[data-dsh-aurora]:not([data-ds-dark-theme]) {
   --aion-border-base: rgba(20, 30, 80, 0.14);
 }
 
+/* ---- 壁纸可见性加固 ----------------------------------------------------
+   自定义背景层是 body 子级的 z-index:-1 固定层：它画在所有 in-flow 背景
+   （body / [data-dsh-frame] / Windows 标题栏布局的 [class*='centerCol'] /
+   [data-phase] …）之下。只要其中任何一层带不透明底色（别的皮肤/插件的
+   !important 规则、桌面标题栏布局多加的一层 centerCol），壁纸就会被整个
+   盖掉——症状正是「主内容区全黑，侧边栏玻璃还在」。
+   这里把主内容列的表面统一强制为透明（并加 !important 提高接管强度），
+   只保留 body 上那层极光自己的半透明底（--dsw-alias-bg-base）。
+   选择器一律以 body[data-dsh-aurora] 起头：即使玻璃层被关掉（html 上
+   没有 data-dsh-aurora），背景层仍然受保护。 */
+body[data-dsh-aurora][data-dsh-aurora] {
+  background-color: var(--dsw-alias-bg-base) !important;
+  background-image: none !important;
+}
+body[data-dsh-aurora] [data-dsh-frame],
+body[data-dsh-aurora] [data-dsh-frame]::before,
+body[data-dsh-aurora] [class*='centerCol'],
+body[data-dsh-aurora] [data-phase],
+body[data-dsh-aurora] [data-dsh-details],
+body[data-dsh-aurora] [data-conversation-scroll] {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
 /* ---- 背景层：固定铺满、位于内容之下、不拦截指针 ---- */
 .auroraBackdrop {
   position: fixed;

@@ -111,6 +111,32 @@ function cssEscape(url: string): string {
   return url.replace(/["\\]/g, '\\$&')
 }
 
+/**
+ * 视频背景的可加载 URL。
+ *
+ * 桌面客户端的页面 origin 是自定义协议 `dsh-app://app`（Electron
+ * protocol.handle 会把 `/api/...` 转发给宿主），因此根相对地址在桌面上
+ * 会变成 `dsh-app://app/api/skin-aurora/media/...`；而外壳通过
+ * `globalThis.__DSH_TRANSPORT__.streamBaseUrl` 暴露宿主的真实 HTTP origin
+ * （与官方 transport 的 WebSocket / 账号登录同一来源）。视频是唯一需要
+ * Range 流式拉取 + 末尾 moov 寻址的资源：走宿主的 HTTP origin 才能拿到
+ * 正常的 206/分片响应，走自定义协议转发层则可能整段不可播。
+ * streamBaseUrl 缺失（web profile，同源）时退回页面 origin，行为不变。
+ * @param url - 配置里的媒体地址（通常是根相对路径）。
+ * @returns 绝对 URL（无法解析时原样返回）。
+ */
+function mediaUrl(url: string): string {
+  if (url === '') return url
+  try {
+    const base = (globalThis as {
+      __DSH_TRANSPORT__?: { streamBaseUrl?: string }
+    }).__DSH_TRANSPORT__?.streamBaseUrl
+    return new URL(url, base ?? window.location.href).href
+  } catch {
+    return url
+  }
+}
+
 /** 深色极光渐变（深色模式默认背景）。 */
 function auroraGradient(dark: boolean): string {
   return dark
@@ -273,13 +299,40 @@ export function apply(ctx: ClientContext): void {
       // 视频背景：<video> 铺底，autoplay/muted/loop/playsinline。
       // 永不显示 controls（避免进度条/控制条）；声音只由 muted 开关控制。
       const video = document.createElement('video')
-      video.src = cfg.backgroundUrl
+      const src = mediaUrl(cfg.backgroundUrl)
+      video.src = src
       video.autoplay = true
       video.muted = cfg.muted
+      video.setAttribute('muted', '')
       video.loop = true
       video.playsInline = true
       video.setAttribute('playsinline', '')
       video.className = cls('auroraVideo')
+      // 兜底：视频加载/解码失败，或迟迟解不出首帧时，改画极光渐变。
+      // 否则这一层完全没有背景图，主内容区只剩宿主深色底 —— 看起来就是
+      // 「壁纸不显示 + 主区全黑」。宁可退化成极光渐变，也不要一块黑。
+      let fell = false
+      let timer: number | undefined
+      const fallback = (why: string): void => {
+        if (fell || video.isConnected === false) return
+        fell = true
+        if (timer !== undefined) window.clearTimeout(timer)
+        console.warn(`[aurora] video background unavailable (${why}); using the aurora gradient fallback: ${src}`)
+        video.remove()
+        videoEl = null
+        layer.style.backgroundImage = auroraGradient(dark)
+      }
+      timer = window.setTimeout(() => {
+        if (video.readyState < 2) fallback(`no frame after 8s, readyState=${video.readyState}, networkState=${video.networkState}`)
+      }, 8000)
+      video.addEventListener('error', () => {
+        const code = video.error?.code ?? 0
+        const detail = video.error?.message ?? ''
+        fallback(`media error ${code} ${detail}`)
+      })
+      video.addEventListener('loadeddata', () => {
+        if (timer !== undefined) window.clearTimeout(timer)
+      })
       layer.appendChild(video)
       videoEl = video
       videoSrc = cfg.backgroundUrl
