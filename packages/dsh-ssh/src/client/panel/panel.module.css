@@ -8,6 +8,11 @@
 
 /* --- center-column takeover (global rules, attribute-scoped) ----------------- */
 
+/* The center column is the AppFrame center grid item. ui-layout names its
+   columns with CSS-module classes (`<hash>_centerCol`) rather than data
+   attributes, so the class substring is the hook on 0.2.0-rc.2; older shells
+   tagged the same grid item `data-pane="conversation"`. Both are listed. */
+[class*='centerCol'],
 [data-pane='conversation'] {
   position: relative;
 }
@@ -22,11 +27,12 @@
      panel and its modals paint over the input card, mirroring the task board
      (issue #87). */
   z-index: 60;
-  /* Opaque backdrop: the conversation subtree stays mounted under the panel.
-     Even if the hide rule below were defeated by a stronger host inline
-     style, this background keeps sticky code-block banners (host z-index 6)
-     from showing through the active panel (issue #100). */
-  background: var(--dsw-alias-bg-base);
+  /* No background of its own: the panel rides on whatever the shell paints
+     behind the center column, so a skin's wallpaper and its glass treatment
+     show through exactly as they do on the built-in pages. The conversation
+     subtree underneath is removed with display:none (below), which is what
+     the previous opaque --dsw-alias-bg-base was insuring against. */
+  background: transparent;
 }
 
 /* The center column is single-occupant; the :not() guards keep the two
@@ -37,11 +43,12 @@ html[data-dsh-ssh-active]:not([data-dsh-taskboard-active]) [data-dsh-ssh-view] {
 }
 
 /* While the panel is active, the conversation content underneath is hidden
-   (it stays mounted and stateful). The rule targets both the pane attribute
-   and the center-column class so the chat subtree (including the code-block
-   copy banner, issue #100) stays hidden whichever host container carries it. */
+   (it stays mounted and stateful). The rule targets every center-column anchor
+   so the chat subtree (including the code-block copy banner, issue #100) stays
+   hidden whichever host container carries it. */
+html[data-dsh-ssh-active]:not([data-dsh-taskboard-active]) [class*='centerCol'] > :not([data-dsh-ssh-view]),
 html[data-dsh-ssh-active]:not([data-dsh-taskboard-active]) [data-pane='conversation'] > :not([data-dsh-ssh-view]),
-html[data-dsh-ssh-active]:not([data-dsh-taskboard-active]) [class*='centerCol'] > :not([data-dsh-ssh-view]) {
+html[data-dsh-ssh-active]:not([data-dsh-taskboard-active]) [data-conversation-region='chat'] > :not([data-dsh-ssh-view]) {
   display: none !important;
 }
 
@@ -111,7 +118,10 @@ html[data-dsh-ssh-active]:not([data-dsh-taskboard-active]) [class*='centerCol'] 
   min-height: 0;
   padding: 14px 16px 16px;
   gap: 10px;
-  background: var(--dsw-alias-bg-base);
+  /* Transparent so the shell's own content background -- and, under a skin,
+     its wallpaper -- carries through, matching the built-in pages. The tabs
+     and their content keep their own surfaces, so contrast is unaffected. */
+  background: transparent;
   color: var(--dsw-alias-label-primary);
   font-family: var(--dsw-font-family);
 }

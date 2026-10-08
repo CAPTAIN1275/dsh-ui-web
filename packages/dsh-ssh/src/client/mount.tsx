@@ -3,11 +3,11 @@
  *
  * The `conversation` slot is single-occupant (ui-conversation) and external
  * plugins cannot declare slots, so the panel takes over the center column at
- * the DOM level: a container is appended inside the `[data-pane="conversation"]`
- * grid item (an extra trailing child React never manages), and a stylesheet
- * rule hides the conversation content while the panel is active. Toggling is
- * a data attribute on <html> — no React involvement, so the conversation
- * subtree underneath stays mounted and stateful.
+ * the DOM level: a container is appended inside the AppFrame center grid item
+ * (an extra trailing child React never manages), and a stylesheet rule hides
+ * the conversation content while the panel is active. Toggling is a data
+ * attribute on <html> — no React involvement, so the conversation subtree
+ * underneath stays mounted and stateful.
  */
 import { createRoot, type Root } from 'react-dom/client'
 import type { SshApi } from './api.ts'
@@ -18,7 +18,25 @@ import css from './panel/panel.module.css'
 /** The injected panel container (kept in the DOM, hidden when inactive). */
 export const PANEL_VIEW_SELECTOR = '[data-dsh-ssh-view]'
 
-const CONVERSATION_COLUMN_SELECTOR = '[data-pane="conversation"]'
+/**
+ * Center-column anchors, tried in priority order.
+ *
+ * `data-pane` is gone from the shell: the AppFrame columns (ui-layout) are
+ * plain CSS-module classes, so 0.2.0-rc.2 renders the center item as
+ * `class="BynINW_centerCol"` (`AppFrame.module.css` -> `centerCol`) with no
+ * data attribute at all. The hashed prefix changes per build while the
+ * `centerCol` local name is the module's contract, so the class substring is
+ * the stable hook — it is the same grid item older shells tagged
+ * `data-pane="conversation"`. `[data-conversation-region="chat"]` (the
+ * ui-conversation body root) is the last resort for a shell that renders the
+ * conversation without the frame column.
+ */
+const CONVERSATION_COLUMN_SELECTORS = [
+  '[class*="centerCol"]',
+  '[data-pane="conversation"]',
+  '[data-conversation-region="chat"]',
+] as const
+
 const ACTIVE_ATTR = 'data-dsh-ssh-active'
 /** The sibling panel's activation attribute (task board), removed when this panel opens. */
 const OTHER_ACTIVE_ATTR = 'data-dsh-taskboard-active'
@@ -28,7 +46,11 @@ const PANEL_NAME = 'ssh'
 
 /** Find the center column, or undefined while the frame is not mounted. */
 function conversationColumn(): HTMLElement | undefined {
-  return document.querySelector<HTMLElement>(CONVERSATION_COLUMN_SELECTOR) ?? undefined
+  for (const selector of CONVERSATION_COLUMN_SELECTORS) {
+    const column = document.querySelector<HTMLElement>(selector)
+    if (column !== null) return column
+  }
+  return undefined
 }
 
 /**

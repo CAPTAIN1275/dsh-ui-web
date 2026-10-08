@@ -194,6 +194,72 @@ window.__ModuleLoader__.load({
 				})]
 			});
 		}
+		/**
+		* 计算替换后的文本；返回 `undefined` 表示「保持官方文本」。
+		*
+		* 只替换标签前缀，其余部分（含 `{duration}` 已渲染出的实时用时与分隔符）
+		* 原样保留，因此计时继续走秒，各语言模板的排版也不被破坏。
+		*
+		* @param input.key - 被翻译的 key
+		* @param input.official - 该 key 官方翻译出的完整文本
+		* @param input.officialLabel - `chat.deepDiving` 官方翻译出的纯标签
+		* @param input.configured - 用户配置；空串表示不替换
+		* @returns 替换后的文本，或 `undefined`（不替换 / 不是可替换的 key）
+		*/
+		function rewriteThinkingText(input) {
+			const { key, official, officialLabel, configured } = input;
+			if (configured === "") return void 0;
+			if (key === "chat.deepDiving") return configured;
+			if (key !== "chat.deepDivingFor") return void 0;
+			return officialLabel !== "" && official.startsWith(officialLabel) ? configured + official.slice(officialLabel.length) : configured;
+		}
+		/**
+		* 在 locale 运行时实例上装入单键替换，返回幂等卸载函数。
+		*
+		* 包装函数只拦截 `chat` 命名空间的两个 key，其余（`common` 兜底查询、参数
+		* 插值、回退链、其它命名空间）全部交给原始 `translate`，且包装内部直接调用
+		* 原始函数，不会递归回自己。
+		*
+		* @param locale - 客户端 locale 运行时（`ctx.locale`）
+		* @param configured - 读取当前配置文本；空串表示还原官方文案
+		* @returns 卸载函数：恢复原始 `translate`
+		*/
+		function installThinkingTextOverride(locale, configured) {
+			const hadOwnTranslate = Object.prototype.hasOwnProperty.call(locale, "translate");
+			const original = locale.translate;
+			const patched = function(ns, key, params) {
+				const value = original.call(locale, ns, key, params);
+				if (ns !== "chat") return value;
+				const custom = configured();
+				if (custom === "") return value;
+				return rewriteThinkingText({
+					key,
+					official: value,
+					officialLabel: key === "chat.deepDivingFor" ? original.call(locale, ns, "chat.deepDiving") : "",
+					configured: custom
+				}) ?? value;
+			};
+			locale.translate = patched;
+			let disposed = false;
+			return () => {
+				if (disposed) return;
+				disposed = true;
+				if (locale.translate !== patched) return;
+				if (hadOwnTranslate) locale.translate = original;
+				else delete locale.translate;
+			};
+		}
+		/**
+		* 把替换挂到客户端上下文的 locale 服务上（服务缺失时静默跳过，不影响统计行）。
+		*
+		* @param ctx - 客户端 cordis 上下文
+		* @param configured - 读取当前配置文本
+		*/
+		function mountThinkingTextOverride(ctx, configured) {
+			ctx.inject(["locale"], (scope) => {
+				scope.effect(() => installThinkingTextOverride(scope.locale, configured), "ui-full-stats: thinking text locale override");
+			});
+		}
 		//#endregion
 		//#region src/client/index.ts
 		/**
@@ -203,8 +269,9 @@ window.__ModuleLoader__.load({
 		* 更低 priority 顶替）：
 		*  - 不省略：整行可换行展示（官方是 white-space:nowrap + ellipsis 截断）；
 		*  - 加运行状态：行首状态点，会话运行中为琥珀色、空闲为绿色；
-		*  - 自定义状态文本：WebUI 插件管理卡片配置「工作中/完成时」文本（经宿主
-		*    /api/full-stats/config 持久化），配置后按状态显示对应文字；
+		*  - 自定义状态文本：WebUI 插件管理卡片配置「思考中/工作中/完成时」文本（经宿主
+		*    /api/full-stats/config 持久化），配置后按状态显示对应文字；「思考中」走
+		*    locale 层替换（见 ./thinking-text.ts），由 React 自己渲染，不改 DOM 文本；
 		*  - 数据与官方同源：sessionStats 投影（轮/步/耗时/首 token/速度）+ tokenUsage
 		*    投影（缓存命中/输入输出 token）。
 		*/
@@ -231,43 +298,17 @@ window.__ModuleLoader__.load({
 			} catch {}
 		}
 		/**
-		* 替换思考状态行的标签文本，保留实时时长。配置为空时还原官方标签。
+		* 思考中状态行的标签替换。
 		*
-		* 定位靠**稳定的 data 属性**：0.2.0 的 RunningStatus 渲染为
-		* `<div data-chat-running><span role="status">纯本地化标签</span>…<span>标签+用时</span></div>`，
-		* 没有 `turnStatus` 类（旧选择器因此在 0.2.0 上匹配不到任何东西），
-		* 而 `role="status"` 那个视觉隐藏的 span 里正是**不带时长的本地化标签**
-		* （中文「深度求索中」/ 英文 "Deep diving"）。
+		* 曾经的做法是用 MutationObserver 盯着 `[data-chat-running]` 的文本节点，把
+		* React 每秒写回的官方文本改回自定义文本 —— 那是与 React 抢同一个文本节点：
+		* 官方每渲染一次就把自定义文本盖掉，观察器再改回来，用户看到两者交替闪烁
+		* （且 `childList` 观察不到 React 的 `characterData` 写入，闪烁节奏还很随机）。
 		*
-		* 可见 span 里标签与时长是同一个插值字符串（"chat.deepDivingFor"），
-		* 所以只替换标签前缀、把其后紧随的时长原样留下，并且每次 DOM 变动都重新推导，
-		* 让计时继续走。
+		* 现在改为在 locale 服务层替换 `chat` 命名空间的两个 key（见 ./thinking-text.ts）：
+		* React 自己渲染出的就是自定义文本，只有一个写入方，不存在被覆盖的问题。
+		* 实时用时来自官方 `chat.deepDivingFor` 模板里 `{duration}` 之后的部分，原样保留。
 		*/
-		function applyThinkingText() {
-			const configured = cachedConfig.thinkingText;
-			document.querySelectorAll("[data-chat-running]").forEach((row) => {
-				const official = (row.querySelector("[role=\"status\"]")?.textContent ?? "").trim();
-				const visible = Array.from(row.querySelectorAll("span")).filter((s) => s.getAttribute("role") !== "status" && (s.textContent ?? "").trim() !== "").pop();
-				if (visible === void 0) return;
-				const textNode = Array.from(visible.childNodes).find((n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? "").trim() !== "");
-				if (textNode === void 0) return;
-				const current = textNode.textContent ?? "";
-				let tail = "";
-				if (official !== "" && current.startsWith(official)) tail = current.slice(official.length);
-				else if (configured !== "" && current.startsWith(configured)) tail = current.slice(configured.length);
-				const next = (configured === "" ? official : configured) + tail;
-				if (next !== current && next !== "") textNode.textContent = next;
-			});
-		}
-		function mountThinkingTextReplacer() {
-			applyThinkingText();
-			const observer = new MutationObserver(applyThinkingText);
-			observer.observe(document.body, {
-				childList: true,
-				subtree: true
-			});
-			return () => observer.disconnect();
-		}
 		function formatDuration(ms) {
 			const s = ms / 1e3;
 			if (s < 60) return `${Math.round(s * 10) / 10}s`;
@@ -357,11 +398,11 @@ window.__ModuleLoader__.load({
 		function apply(ctx) {
 			refreshConfig();
 			const onConfig = () => {
-				refreshConfig().then(applyThinkingText);
+				refreshConfig();
 			};
 			window.addEventListener(FULL_STATS_EVENT, onConfig);
 			ctx.effect(() => () => window.removeEventListener(FULL_STATS_EVENT, onConfig), "ui-full-stats: config listener");
-			ctx.effect(() => mountThinkingTextReplacer(), "ui-full-stats: thinking text replacer");
+			mountThinkingTextOverride(ctx, () => cachedConfig.thinkingText);
 			ctx.slots.inject(DOCK, () => ctx.slots.register({
 				name: DOCK,
 				id: STATS_ID,
