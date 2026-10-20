@@ -543,10 +543,14 @@ window.__ModuleLoader__.load({
 			const rawIndex = currentEffortId === void 0 ? -1 : efforts.findIndex((level) => level.id === currentEffortId);
 			const step100 = efforts.length > 1 ? 100 / (efforts.length - 1) : 100;
 			const initialRaw = usable && rawIndex >= 0 ? rawIndex * step100 : 0;
+			const draggingRef = (0, react.useRef)(false);
 			(0, react.useEffect)(() => {
+				draggingRef.current = dragging;
+			}, [dragging]);
+			(0, react.useEffect)(() => {
+				if (draggingRef.current) return;
 				setRawValue(initialRaw);
-				setDragging(false);
-			}, [current]);
+			}, [initialRaw]);
 			const displayIndex = usable ? Math.round(rawValue / step100) : 0;
 			const level = efforts[displayIndex];
 			const slider100 = usable ? rawValue : 0;
@@ -1229,7 +1233,11 @@ window.__ModuleLoader__.load({
 				return remoteFace;
 			};
 			/**
-			* 该会话持久的模型选择投影（投影键 `modelSelection`，取 `next`）。
+			* 该会话持久的模型选择投影（投影键 `modelSelection`）。
+			*
+			* 读 `next ?? lastUsed`：`next` 只是「下一次请求该用的」选择，一旦某个请求
+			* 消费了它就会被清空、落到 `lastUsed`。只读 `next` 会让面板在一个请求之后
+			* 丢掉 effort 回退到目录默认值（表现为设了 high、再打开变成 off）。
 			* 0.2.0 的目录里没有 per-session `current`，官方选择器同样以投影为准。
 			*/
 			const sessionSelection = (sessionId) => {
@@ -1237,7 +1245,8 @@ window.__ModuleLoader__.load({
 				if (face === void 0) return void 0;
 				return {
 					get: () => {
-						return face.getSnapshot()?.next ?? void 0;
+						const value = face.getSnapshot();
+						return value?.next ?? value?.lastUsed ?? void 0;
 					},
 					subscribe: (listener) => face.subscribe(listener)
 				};

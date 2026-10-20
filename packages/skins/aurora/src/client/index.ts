@@ -398,7 +398,11 @@ export function apply(ctx: ClientContext): void {
   }
 
   /**
-   * 该会话持久的模型选择投影（投影键 `modelSelection`，取 `next`）。
+   * 该会话持久的模型选择投影（投影键 `modelSelection`）。
+   *
+   * 读 `next ?? lastUsed`：`next` 只是「下一次请求该用的」选择，一旦某个请求
+   * 消费了它就会被清空、落到 `lastUsed`。只读 `next` 会让面板在一个请求之后
+   * 丢掉 effort 回退到目录默认值（表现为设了 high、再打开变成 off）。
    * 0.2.0 的目录里没有 per-session `current`，官方选择器同样以投影为准。
    */
   const sessionSelection = (sessionId: string): SessionSelectionSource | undefined => {
@@ -407,8 +411,10 @@ export function apply(ctx: ClientContext): void {
     if (face === undefined) return undefined
     return {
       get: () => {
-        const value = face.getSnapshot() as { next?: ModelSelection | null } | undefined
-        return value?.next ?? undefined
+        const value = face.getSnapshot() as
+          | { next?: ModelSelection | null; lastUsed?: ModelSelection | null }
+          | undefined
+        return value?.next ?? value?.lastUsed ?? undefined
       },
       subscribe: (listener) => face.subscribe(listener),
     }

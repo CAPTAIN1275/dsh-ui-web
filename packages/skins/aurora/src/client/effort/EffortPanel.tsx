@@ -126,11 +126,20 @@ export function EffortPanel(props: EffortPanelProps): ReactElement {
   const step100 = efforts.length > 1 ? 100 / (efforts.length - 1) : 100
   const initialRaw = usable && rawIndex >= 0 ? rawIndex * step100 : 0
 
+  // The slider must follow BOTH the selection and the catalog: the catalog
+  // loads asynchronously, so on the first render `efforts` is still empty and
+  // `initialRaw` is 0. Keying the reset on `current` alone therefore froze the
+  // slider at OFF once the catalog arrived, which read as "set high, reopen and
+  // it says off". `initialRaw` is a number, so it is a stable dependency.
+  // A drag in flight owns the position; only sync when the user is not dragging.
+  const draggingRef = useRef(false)
   useEffect(() => {
+    draggingRef.current = dragging
+  }, [dragging])
+  useEffect(() => {
+    if (draggingRef.current) return
     setRawValue(initialRaw)
-    setDragging(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current])
+  }, [initialRaw])
 
   const displayIndex = usable ? Math.round(rawValue / step100) : 0
   const level = efforts[displayIndex]
