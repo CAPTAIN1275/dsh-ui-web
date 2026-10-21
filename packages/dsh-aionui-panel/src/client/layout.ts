@@ -141,6 +141,18 @@ export class PanelLayoutController {
     explorerCol.style.flexDirection = 'column'
     explorerCol.style.borderLeft = '1px solid var(--aion-bg-3, #e5e6eb)'
 
+    // Pin both columns to the shell's single content row (row 1) and to the
+    // two trailing tracks applyGrid appends. Without this, they are auto-placed
+    // into the shell's implicit grid row BELOW the bottomRow: the shell frame
+    // declares `grid-template-rows: minmax(0,1fr) auto` (0.2.1-rc.2), so a
+    // third implicit row steals the panel's content height from that 1fr row
+    // and the whole app frame (sidebar + center column) collapses to the
+    // panel's content height (~25-40% of the window).
+    previewCol.style.gridRow = '1'
+    previewCol.style.gridColumn = '4'
+    explorerCol.style.gridRow = '1'
+    explorerCol.style.gridColumn = '5'
+
     frame.appendChild(previewCol)
     frame.appendChild(explorerCol)
     this.previewCol = previewCol
