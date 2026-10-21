@@ -1,12 +1,13 @@
 /**
  * Host loader entry for the task-board plugin.
  *
- * Everything the board does is browser work (DOM, localStorage, driving the
- * client runtime's session services over the wire), so the host half's main
- * behavior is a system-prompt section announcing the plugin to every agent.
- * The section registers while this plugin is in the host composition (mount /
- * DSH restart) and disappears when the plugin leaves it (unmount / restart),
- * so agents always know the board exists and how to cooperate with it. The
+ * The host half owns the board's authoritative ledger: the task data lives in
+ * `$DSH_HOME/task-board/ledger.json` and is served over `/task-board/*`
+ * (whole-snapshot read/write plus a revision-only SSE stream). It also
+ * registers a system-prompt section announcing the plugin to every agent. The
+ * section registers while this plugin is in the host composition (mount / DSH
+ * restart) and disappears when the plugin leaves it (unmount / restart), so
+ * agents always know the board exists and how to cooperate with it. The
  * announcement can be turned off through the web settings plugin-configuration
  * surface (`announceToAgent`); the section then disappears live.
  */
@@ -14,6 +15,8 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-system-prompt'
+import { defaultLedgerPath, LedgerFile } from './host/ledger-file.ts'
+import { registerTaskBoardRoutes, type WebServerFace } from './host/routes.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Events {
@@ -33,7 +36,7 @@ const SECTION_ORDER = 200
 export const inject = ['systemPrompt']
 
 /** Model-facing announcement: plugin presence, capabilities, and limits. */
-export const TASK_BOARD_GUIDANCE = '本机已安装 dsh-task-board 插件（DSH Web GUI 的任务看板）：侧边栏「任务看板」入口；在 dsh-web-ui 插件全家桶仓库（packages/dsh-task-board）统一维护，经聚合包 web-ui-all 一键安装。能力：多列看板管理任务；任务可真实执行（驱动 agent 会话）；任务支持 5 段 cron 定时执行（如 0 23 * * *）；数据存浏览器 localStorage（键 dsh.taskBoard.v1）。限制：定时调度在浏览器端，需 GUI 标签页打开，错过即跳过；执行消耗 API 额度。用户提到「任务看板 / 看板 / 定时任务」时即指本插件，请据此协作。'
+export const TASK_BOARD_GUIDANCE = '本机已安装 dsh-task-board 插件（DSH Web GUI 的任务看板）：侧边栏「任务看板」入口；在 dsh-web-ui 插件全家桶仓库（packages/dsh-task-board）统一维护，经聚合包 web-ui-all 一键安装。能力：多列看板管理任务；任务可真实执行（驱动 agent 会话）；任务支持 5 段 cron 定时执行（如 0 23 * * *）；任务数据存 Host 账本 $DSH_HOME/task-board/ledger.json（多窗口经 SSE 实时同步）。限制：定时调度在浏览器端，需 GUI 标签页打开，错过即跳过；执行消耗 API 额度。用户提到「任务看板 / 看板 / 定时任务」时即指本插件，请据此协作。'
 
 /**
  * Settings namespace of the board's announcement capability — the section the
@@ -104,6 +107,12 @@ function readConfigField<T>(field: ConfigField<T> | undefined, fallback: T): T {
  * `announceToAgent` and `enabled` config values. The section is re-registered
  * whenever a settings edit is committed into this instance, so the change
  * takes effect without a restart.
+ *
+ * Also registers the Host ledger routes (`/task-board/*`): the board's
+ * authoritative store is `$DSH_HOME/task-board/ledger.json`, served to every
+ * open window over HTTP plus a revision-only SSE stream. The routes are
+ * registered regardless of `enabled` — a disabled board simply never mounts a
+ * client that would call them.
  * @param ctx - the plugin context (systemPrompt injected).
  * @param config - resolved plugin config (schema defaults applied by the loader).
  */
@@ -131,6 +140,19 @@ export function apply(ctx: Context, config?: ResolvedConfig): void {
   // announced on the owning fiber (the entry is not remounted), so the
   // announcement is re-derived from the new values here.
   ctx.on('loader/volatile-update', () => { sync() })
+
+  // Authoritative ledger routes: the Host owns the board data. The browser
+  // half reads/writes whole snapshots over HTTP and follows a revision-only
+  // SSE stream, so several windows stay consistent and a page refresh reloads
+  // from disk rather than from localStorage.
+  ctx.inject(['webServer'], (httpCtx) => {
+    const webServer = (httpCtx as unknown as { webServer: WebServerFace }).webServer
+    const ledger = new LedgerFile(defaultLedgerPath())
+    httpCtx.effect(
+      () => registerTaskBoardRoutes(webServer, ledger),
+      'task-board: ledger routes',
+    )
+  })
 
   // Initial registration from the config the Host activated this row with.
   sync()

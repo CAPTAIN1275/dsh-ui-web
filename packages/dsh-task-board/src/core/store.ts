@@ -1,96 +1,60 @@
 /**
- * Task persistence: a small storage seam with a localStorage backend.
+ * Task persistence: a small storage seam with a legacy localStorage backend.
  *
- * The task-board client plugin runs in the browser, and dsh exposes no
- * browser-writable file channel (same conclusion the skin-center research
- * reached for cordis.patch.yml), so tasks persist in the browser's
- * localStorage under a versioned key — the same persistence mechanism dsh's
- * own client snapshot stores use (`createSnapshotStore` persist). Data
- * survives page refreshes and dsh restarts (same origin), and survives
- * plugin uninstall (the key is simply left in place).
+ * The board's authoritative ledger now lives on the Host (`$DSH_HOME/
+ * task-board/ledger.json`, see `../host/ledger-file.ts`), reached through the
+ * {@link HostTaskStore} in `./host-store.ts`, which implements the same seam.
+ * This module keeps the seam itself, the localStorage backend used only for
+ * the one-shot migration of pre-Host data, and the in-memory backend the unit
+ * tests use.
  *
- * The seam keeps the backend swappable (e.g. an IndexedDB or a host-file
- * channel later); tests run against the in-memory backend and a jsdom
- * localStorage backend.
+ * The seam stays deliberately small and synchronous so the controller's
+ * mutations stay synchronous; a backend with an async authority (the Host
+ * ledger) additionally implements the optional `ready`/`subscribe` hooks,
+ * which the controller uses to adopt a snapshot fetched after boot.
  */
-import { isValidCron } from './schedule.ts'
-import type { ScheduleRule, TaskRecord, TaskStatus } from './tasks.ts'
-import { isTaskStatus } from './tasks.ts'
+import { isTaskRecord, parseRowList } from './ledger.ts'
+import type { TaskRecord } from './tasks.ts'
+
+export { isTaskRecord }
 
 /** Persistence seam for the task ledger. */
 export interface TaskStore {
-  /** Read the persisted ledger (empty when nothing is stored yet). */
+  /** Read the current ledger rows (the last known snapshot). */
   load(): TaskRecord[]
   /** Persist the whole ledger (replaces the stored document). */
   save(tasks: readonly TaskRecord[]): void
   /** Drop the persisted ledger (leaves the in-memory state alone). */
   clear(): void
+  /**
+   * Optional: settle once the backend's authoritative snapshot has been
+   * loaded. A synchronous backend has nothing to wait for and omits this.
+   * @returns a promise resolving after the first snapshot load attempt.
+   */
+  ready?(): Promise<void>
+  /**
+   * Optional: subscribe to backend-side changes (Host pushes / another
+   * window's write). The listener re-renders from {@link load}.
+   * @param fn - called after each backend-side change.
+   * @returns the disposer.
+   */
+  subscribe?(fn: () => void): () => void
+  /** Optional: release backend resources (event stream, timers). */
+  dispose?(): void
 }
 
-/** Storage key for the task ledger document. */
+/** Storage key for the legacy (pre-Host) ledger document. */
 export const DEFAULT_STORAGE_KEY = 'dsh.taskBoard.v1'
 
 /**
- * Structural row check with the status left unvalidated (see {@link parseLedger}).
- * The `schedule` field is deliberately NOT checked here: a malformed schedule
- * never drops the task row — {@link normalizeSchedule} repairs or drops the
- * schedule alone.
+ * Read-only backup key the legacy document is moved to after the Host ledger
+ * takes over. Keeping the bytes under another key means an upgrade never
+ * silently destroys the user's old board, while the migration key itself is
+ * gone and can never be imported twice.
  */
-function isTaskRecordShape(value: unknown): value is Omit<TaskRecord, 'status'> & { status: unknown } {
-  if (typeof value !== 'object' || value === null) return false
-  const record = value as Record<string, unknown>
-  if (typeof record.id !== 'string' || record.id === '') return false
-  if (typeof record.title !== 'string') return false
-  if (typeof record.description !== 'string') return false
-  if (typeof record.prompt !== 'string') return false
-  if (typeof record.createdAt !== 'number') return false
-  if (typeof record.updatedAt !== 'number') return false
-  if (!Array.isArray(record.executions)) return false
-  for (const execution of record.executions) {
-    if (typeof execution !== 'object' || execution === null) return false
-    const entry = execution as Record<string, unknown>
-    if (typeof entry.id !== 'string') return false
-    if (entry.sessionId !== undefined && typeof entry.sessionId !== 'string') return false
-    if (typeof entry.startedAt !== 'number') return false
-    if (entry.endedAt !== undefined && typeof entry.endedAt !== 'number') return false
-    if (entry.result !== undefined && entry.result !== 'succeeded' && entry.result !== 'failed' && entry.result !== 'cancelled') return false
-    if (entry.error !== undefined && typeof entry.error !== 'string') return false
-  }
-  return true
-}
+export const BACKUP_STORAGE_KEY = 'dsh.taskBoard.v1.backup'
 
-/** A task record is structurally valid if it round-trips through the UI. */
-export function isTaskRecord(value: unknown): value is TaskRecord {
-  return isTaskRecordShape(value) && isTaskStatus(value.status)
-}
-
-/** Normalize an unknown persisted status back into the closed status union. */
-function normalizeStatus(status: unknown): TaskStatus {
-  return isTaskStatus(status) ? status : 'todo'
-}
-
-/**
- * Repair a persisted schedule rule: drop rules without a usable cron string,
- * coerce booleans/numbers, and leave `nextRunAt`/`lastTriggeredAt` undefined
- * when missing (a fresh recompute or the next tick fixes them).
- */
-function normalizeSchedule(schedule: unknown): ScheduleRule | undefined {
-  if (typeof schedule !== 'object' || schedule === null) return undefined
-  const rule = schedule as Record<string, unknown>
-  // Reject (drop) a schedule whose cron is not a well-formed 5-field
-  // expression: a malformed rule would otherwise linger as a never-firing
-  // schedule instead of being dropped for later repair.
-  if (typeof rule.cron !== 'string') return undefined
-  if (rule.cron.trim() === '' || !isValidCron(rule.cron)) return undefined
-  return {
-    enabled: rule.enabled === true,
-    cron: rule.cron,
-    nextRunAt: typeof rule.nextRunAt === 'number' ? rule.nextRunAt : undefined,
-    lastTriggeredAt: typeof rule.lastTriggeredAt === 'number' ? rule.lastTriggeredAt : undefined,
-  }
-}
-
-/** Parse + validate a persisted ledger document; invalid rows are dropped. */
+/** Parse a persisted ledger document; invalid rows are dropped. */
 export function parseLedger(raw: string | null): TaskRecord[] {
   if (raw === null) return []
   let parsed: unknown
@@ -100,29 +64,13 @@ export function parseLedger(raw: string | null): TaskRecord[] {
     console.error('[dsh-task-board] persisted task ledger is not valid JSON; starting empty', error)
     return []
   }
-  if (!Array.isArray(parsed)) {
-    console.error('[dsh-task-board] persisted task ledger is not an array; starting empty')
-    return []
-  }
-  const tasks: TaskRecord[] = []
-  for (const row of parsed) {
-    // Status is normalized (an unknown status from a future version lands in
-    // todo instead of dropping the row); the schedule is repaired field by
-    // field; every other field must be valid.
-    if (!isTaskRecordShape(row)) {
-      console.warn('[dsh-task-board] dropping invalid task row from persisted ledger', row)
-      continue
-    }
-    // Always (re)assign the schedule: a repair that returns undefined must
-    // clear a malformed persisted rule rather than leave it in the row.
-    const task: TaskRecord = { ...row, status: normalizeStatus(row.status) }
-    task.schedule = normalizeSchedule(row.schedule)
-    tasks.push(task)
-  }
-  return tasks
+  return parseRowList(parsed)
 }
 
-/** localStorage-backed store (the browser backend). */
+/**
+ * localStorage-backed store (the legacy browser backend). The board no longer
+ * writes through it; it survives as the migration source.
+ */
 export class LocalStorageTaskStore implements TaskStore {
   /**
    * @param key - storage key for the ledger document.

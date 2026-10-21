@@ -22,8 +22,9 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import { BoardController } from '../core/controller.ts'
 import { ExecutionService, type ExecutionHistoryEvent } from '../core/execution.ts'
+import { HostTaskStore } from '../core/host-store.ts'
+import { HttpLedgerTransport } from '../core/http-ledger.ts'
 import { SchedulerService } from '../core/scheduler.ts'
-import { LocalStorageTaskStore } from '../core/store.ts'
 import { mountBoard } from './board-mount.tsx'
 import { mountSidebarEntry } from './sidebar-entry.ts'
 import { TaskBoardSettingsCard, TaskBoardSettingsCardController, type TaskBoardSettings } from './TaskBoardSettingsCard.tsx'
@@ -201,10 +202,13 @@ export function apply(ctx: ClientContext): void {
     const navigation = ctx.get('uiWorkspace') as WorkspaceNavigationFace | undefined
 
     // Core wiring: real runtime faces into the framework-free services. The
-    // session catalog is adapted (derived main-view selection + a driver over
-    // each binding) because the 0.2.0 Client Session model publishes neither
-    // fact in the shape the core reads.
-    const store = new LocalStorageTaskStore()
+    // board's ledger is authoritative on the Host (state persists across page
+    // refreshes and DSH restarts, and every open window follows the revision
+    // stream); the legacy localStorage document is only the one-shot
+    // migration source. The session catalog is adapted (derived main-view
+    // selection + a driver over each binding) because the 0.2.0 Client Session
+    // model publishes neither fact in the shape the core reads.
+    const store = new HostTaskStore({ transport: new HttpLedgerTransport() })
     const sessionList = currentSessionList(sessions.list)
     const exec = new ExecutionService({
       sessions: {
@@ -275,6 +279,7 @@ export function apply(ctx: ClientContext): void {
       for (const dispose of disposers.splice(0)) dispose()
       scheduler.dispose()
       controller.dispose()
+      store.dispose()
       uiDisposer = undefined
     }
   }

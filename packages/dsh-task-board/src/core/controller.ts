@@ -97,6 +97,23 @@ export class BoardController {
     this.disposers.push(this.deps.sessions.list.subscribe(() => {
       this.onSessionsChanged()
     }))
+    // A backend with an async authority (the Host ledger) publishes its first
+    // snapshot after boot and every later change pushed from another window;
+    // both are handled by re-reading the store and re-rendering. A synchronous
+    // backend (in-memory, legacy localStorage) omits these hooks, so its
+    // behavior is exactly the old synchronous load.
+    const store = this.deps.store
+    if (store.subscribe !== undefined) {
+      this.disposers.push(store.subscribe(() => { this.onStoreChanged() }))
+    }
+    if (store.ready !== undefined) {
+      void store.ready()
+        .then(() => { this.onStoreChanged() })
+        .catch((error: unknown) => {
+          // A backend failure degrades to the last known snapshot, never the GUI.
+          console.error('[dsh-task-board] ledger load failed; keeping the current board', error)
+        })
+    }
     this.notify()
   }
 
@@ -355,6 +372,16 @@ export class BoardController {
 
   private persistAndNotify(): void {
     this.deps.store.save(this.tasks)
+    this.notify()
+  }
+
+  /**
+   * Adopt the store's current snapshot (first Host load, or a change another
+   * window pushed). The store is the single source of truth for the rows, so
+   * the controller only mirrors them.
+   */
+  private onStoreChanged(): void {
+    this.tasks = this.deps.store.load()
     this.notify()
   }
 
