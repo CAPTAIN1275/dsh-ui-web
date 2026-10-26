@@ -159,17 +159,17 @@ body[data-dsh-aurora][data-ds-dark-theme] [data-aurora-sidebar-blur] {
 }
 
 /* ---- 输入框毛玻璃：参考登录弹窗玻璃卡片（blur 30px + 半透明底 + 细边框 + 内高光） ---- */
+/* No backdrop-filter here on purpose: the blur is painted by the aqua layer's
+   [data-composer-card]::before. A filter on the card itself would become the
+   containing block for the shell's fixed-position hover tooltips and make the
+   composer jump-scroll on hover (see aqua.module.css). */
 body[data-dsh-aurora] [data-composer-card] {
   background: rgba(16, 25, 38, 0.42);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px rgba(255, 255, 255, 0.06);
 }
 body[data-dsh-aurora]:not([data-ds-dark-theme]) [data-composer-card] {
   background: rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 8px 32px rgba(20, 30, 80, 0.14), inset 0 1px rgba(255, 255, 255, 0.8);
 }

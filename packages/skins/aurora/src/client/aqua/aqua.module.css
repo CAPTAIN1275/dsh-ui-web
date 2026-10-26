@@ -230,7 +230,28 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     0 10px 36px rgba(19, 45, 83, 0.16);
+}
+
+/* The composer blur must live on a pseudo-element instead of the card itself.
+   The shell mounts its hover tooltips (position: fixed) inside the composer;
+   backdrop-filter turns the card into their containing block, so a tooltip
+   whose viewport top is ~817px is placed at cardTop + 817 (~1586px), growing
+   the scroll body by that much. The app then auto-scrolls to the "bottom" and
+   snaps back on the next frame - the whole UI flashes every time the stop
+   button is hovered. A pseudo-element with the blur keeps the glass look while
+   leaving the card free of filter/containing-block semantics. */
+[data-dsh-aurora] [data-composer-card]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  /* Chromium needs a non-fully-transparent paint to run backdrop-filter.
+     0.001 got minified down to a fully transparent #fff0, which made the blur
+     silently disappear; 0.01 survives minification and is still invisible. */
+  background: rgba(255, 255, 255, 0.01);
   backdrop-filter: blur(var(--dsh-aurora-blur, 14px));
+  pointer-events: none;
 }
 
 [data-dsh-aurora] body[data-ds-dark-theme] [data-composer-card] {
