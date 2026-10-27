@@ -206,6 +206,16 @@ function mount(ctx: ClientContext): () => void {
   const refreshMessages = async (list: HTMLElement): Promise<void> => {
     try {
       const response = await fetch('/api/dsh-bot/messages?limit=30', { cache: 'no-store' })
+      if (!response.ok) {
+        // The host half only registers this route after a dsh restart; until
+        // then the request falls through to the shell's own 401/404 handler,
+        // whose body is plain text rather than JSON.
+        list.textContent =
+          response.status === 401 || response.status === 404
+            ? '对话记录接口还没加载，重启一次 DSH 后可用'
+            : `读取失败（HTTP ${response.status}）`
+        return
+      }
       const payload = (await response.json()) as { messages?: MessageRow[] }
       list.textContent = ''
       const rows = payload.messages ?? []
