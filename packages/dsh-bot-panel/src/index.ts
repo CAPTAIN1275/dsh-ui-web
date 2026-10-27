@@ -18,6 +18,8 @@ import type { WebRoute } from '@deepseek-ai/dsh-host-webserver'
 
 const SCRIPT = 'D:\\QQBot\\botctl.ps1'
 const POWERSHELL = 'powershell.exe'
+const MSGDUMP = 'D:\\QQBot\\msgdump.py'
+const PYTHON = 'D:\\QQBot\\AstrBot\\venv\\Scripts\\python.exe'
 const ALLOWED_ACTIONS = new Set(['status', 'start', 'stop', 'restart', 'rebuild'])
 
 function isLoopbackRequest(request: IncomingMessage): boolean {
@@ -75,6 +77,24 @@ function parseStatus(text: string): Array<{ label: string; ok: boolean; detail: 
   return rows
 }
 
+/** Run the message dump and resolve with its JSON text. */
+function runMsgdump(limit: number, timeoutMs = 20_000): Promise<string> {
+  return new Promise((resolve, reject) => {
+    execFile(
+      PYTHON,
+      [MSGDUMP, String(limit)],
+      { timeout: timeoutMs, windowsHide: true, encoding: 'utf8' },
+      (error, stdout, stderr) => {
+        if (error !== null && (stdout ?? '') === '') {
+          reject(new Error(`${error.message}${stderr ? `: ${stderr}` : ''}`))
+          return
+        }
+        resolve(stdout ?? '')
+      },
+    )
+  })
+}
+
 const routes: WebRoute[] = [
   {
     kind: 'exact',
@@ -87,6 +107,30 @@ const routes: WebRoute[] = [
       try {
         const out = await runBotctl('status', 30_000)
         writeJson(res, 200, { ok: true, rows: parseStatus(out), raw: out })
+      } catch (error) {
+        writeJson(res, 502, { ok: false, error: (error as Error).message })
+      }
+    },
+  },
+  {
+    kind: 'exact',
+    path: '/api/dsh-bot/messages',
+    handler: async (req, res) => {
+      if (!isLoopbackRequest(req)) {
+        writeJson(res, 403, { error: 'forbidden: loopback-only' })
+        return
+      }
+      const url = new URL(req.url ?? '/', 'http://localhost')
+      const raw = Number(url.searchParams.get('limit') ?? '30')
+      const limit = Number.isFinite(raw) ? Math.max(1, Math.min(100, Math.trunc(raw))) : 30
+      try {
+        const out = await runMsgdump(limit)
+        // The dump already emits JSON; pass it through rather than re-encoding.
+        res.writeHead(200, {
+          'content-type': 'application/json; charset=utf-8',
+          'cache-control': 'no-store',
+        })
+        res.end(out)
       } catch (error) {
         writeJson(res, 502, { ok: false, error: (error as Error).message })
       }

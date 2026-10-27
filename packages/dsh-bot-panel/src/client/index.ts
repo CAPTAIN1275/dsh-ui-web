@@ -29,6 +29,13 @@ interface StatusRow {
   detail: string
 }
 
+interface MessageRow {
+  at: string
+  session: string
+  sender: string
+  text: string
+}
+
 /** Find the sidebar shell root element, or undefined while not yet mounted. */
 function sidebarRoot(): HTMLElement | undefined {
   const column = document.querySelector<HTMLElement>('[data-pane="sidebar"], [class*="sidebarCol"]')
@@ -122,6 +129,22 @@ function renderRow(row: StatusRow): HTMLElement {
   return line
 }
 
+/** One conversation line: time, sender, then the text. */
+function renderMessage(row: MessageRow): HTMLElement {
+  const line = document.createElement('div')
+  line.style.cssText = 'padding:5px 0;font-size:12.5px;line-height:1.45'
+  const meta = document.createElement('span')
+  meta.style.cssText = 'opacity:.55;font-variant-numeric:tabular-nums;margin-right:6px'
+  meta.textContent = row.at
+  const who = document.createElement('span')
+  who.style.cssText = 'opacity:.85;margin-right:4px'
+  who.textContent = (row.sender || '未知') + ':'
+  const body = document.createElement('span')
+  body.textContent = row.text
+  line.append(meta, who, body)
+  return line
+}
+
 /** A control button (start / stop / restart / rebuild). */
 function renderButton(text: string, danger: boolean, onClick: () => void): HTMLButtonElement {
   const button = document.createElement('button')
@@ -179,10 +202,36 @@ function mount(ctx: ClientContext): () => void {
     }
   }
 
-  const runAction = async (action: string, list: HTMLElement): Promise<void> => {
+  /** Render the recent conversation records into the list container. */
+  const refreshMessages = async (list: HTMLElement): Promise<void> => {
+    try {
+      const response = await fetch('/api/dsh-bot/messages?limit=30', { cache: 'no-store' })
+      const payload = (await response.json()) as { messages?: MessageRow[] }
+      list.textContent = ''
+      const rows = payload.messages ?? []
+      if (rows.length === 0) {
+        const empty = document.createElement('div')
+        empty.style.cssText = 'font-size:13px;opacity:.7;padding:8px 0'
+        empty.textContent = '还没有对话记录'
+        list.append(empty)
+        return
+      }
+      for (const row of rows) list.append(renderMessage(row))
+      list.scrollTop = list.scrollHeight
+    } catch (error) {
+      list.textContent = '读取失败: ' + (error as Error).message
+    }
+  }
+
+  const runAction = async (
+    action: string,
+    list: HTMLElement,
+    after?: () => void,
+  ): Promise<void> => {
     try {
       await fetch('/api/dsh-bot/action?action=' + encodeURIComponent(action), { method: 'POST' })
-      await refresh(list)
+      if (after !== undefined) after()
+      else await refresh(list)
     } catch (error) {
       console.warn('[dsh-bot-panel] action failed:', error)
     }
@@ -200,13 +249,19 @@ function mount(ctx: ClientContext): () => void {
       'left:50%',
       'transform:translate(-50%,-50%)',
       'z-index:10000',
-      'width:360px',
+      'width:400px',
+      'max-height:70vh',
+      'display:flex',
+      'flex-direction:column',
       'padding:18px',
-      'border-radius:14px',
-      'background:var(--dsw-alias-bg-layer-1, #1b1f2a)',
-      'border:1px solid var(--dsw-alias-border-l2, rgba(128,128,128,.3))',
-      'box-shadow:0 18px 50px rgba(0,0,0,.45)',
-      'color:inherit',
+      'border-radius:16px',
+      // 毛玻璃：半透明底 + 背景模糊 + 细边框与高光，和皮肤是同一种质感。
+      'background:rgba(24,28,38,.66)',
+      'backdrop-filter:blur(22px) saturate(1.35)',
+      '-webkit-backdrop-filter:blur(22px) saturate(1.35)',
+      'border:1px solid rgba(255,255,255,.14)',
+      'box-shadow:0 18px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.12)',
+      'color:#e8eef8',
       'font:inherit',
     ].join(';')
 
@@ -215,15 +270,43 @@ function mount(ctx: ClientContext): () => void {
     title.textContent = 'QQ 机器人'
 
     const list = document.createElement('div')
-    list.style.cssText = 'margin-bottom:12px'
+    list.style.cssText = 'margin-bottom:12px;overflow-y:auto;flex:1;min-height:0'
+
+    const tabs = document.createElement('div')
+    tabs.style.cssText = 'display:flex;gap:6px;margin-bottom:10px'
 
     const bar = document.createElement('div')
     bar.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap'
-    bar.append(
-      renderButton('启动', false, () => void runAction('start', list)),
-      renderButton('停止', false, () => void runAction('stop', list)),
-      renderButton('重启', false, () => void runAction('restart', list)),
-      renderButton('重建 NapCat', true, () => void runAction('rebuild', list)),
+
+    /** Switch to the live status view (polls every five seconds). */
+    const showStatus = (): void => {
+      if (timer !== undefined) window.clearInterval(timer)
+      list.textContent = ''
+      bar.textContent = ''
+      bar.append(
+        renderButton('启动', false, () => void runAction('start', list, showStatus)),
+        renderButton('停止', false, () => void runAction('stop', list, showStatus)),
+        renderButton('重启', false, () => void runAction('restart', list, showStatus)),
+        renderButton('重建 NapCat', true, () => void runAction('rebuild', list, showStatus)),
+      )
+      void refresh(list)
+      timer = window.setInterval(() => void refresh(list), 5000)
+    }
+
+    /** Switch to the conversation record view (one-shot read). */
+    const showMessages = (): void => {
+      if (timer !== undefined) {
+        window.clearInterval(timer)
+        timer = undefined
+      }
+      bar.textContent = ''
+      bar.append(renderButton('刷新', false, () => void showMessages()))
+      void refreshMessages(list)
+    }
+
+    tabs.append(
+      renderButton('状态', false, showStatus),
+      renderButton('对话记录', false, showMessages),
     )
 
     const close = document.createElement('button')
@@ -233,12 +316,11 @@ function mount(ctx: ClientContext): () => void {
       'position:absolute;top:10px;right:12px;border:0;background:transparent;color:inherit;cursor:pointer;font-size:16px;opacity:.6'
     close.addEventListener('click', closePanel)
 
-    card.append(title, close, list, bar)
+    card.append(title, close, tabs, list, bar)
     document.body.appendChild(card)
     overlay = card
 
-    void refresh(list)
-    timer = window.setInterval(() => void refresh(list), 5000)
+    showStatus()
   }
 
   const entry = createEntry(openPanel)
