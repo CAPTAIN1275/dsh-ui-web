@@ -1,20 +1,13 @@
 /**
  * Standalone build config for the bot panel plugin.
  *
- * Host-only: the node half exposes the /api/dsh-bot route family. There is no
- * browser bundle yet, so this uses the plain tsdown entry rather than the
- * shared client preset.
+ * Uses the repo's shared client-bundle preset (shared/tsdown.client.ts): the
+ * node half goes to lib/index.js (host routes) and the browser half to
+ * lib/client.js, which the GUI's __ModuleLoader__ picks up. The client entry
+ * is auto-detected at src/client/index.ts by the preset.
  */
-export default {
-  entry: ['src/index.ts'],
-  outDir: 'lib',
-  format: ['esm'],
-  platform: 'node',
-  dts: false,
-  clean: false,
-  external: [
-    '@deepseek-ai/dsh',
-    '@deepseek-ai/dsh-host-webserver',
-    '@deepseek-ai/dsh-tools',
-  ],
-}
+import { clientBundle } from '../../shared/tsdown.client.ts'
+
+export default clientBundle('@captain1275/dsh-bot-panel', ['src/index.ts'], {
+  libExternal: ['@deepseek-ai/dsh-host-webserver'],
+})

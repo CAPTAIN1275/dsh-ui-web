@@ -13,7 +13,7 @@
 
 import { execFile } from 'node:child_process'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import type { Context } from '@deepseek-ai/dsh'
+import type { Context } from '@deepseek-ai/cordis'
 import type { WebRoute } from '@deepseek-ai/dsh-host-webserver'
 
 const SCRIPT = 'D:\\QQBot\\botctl.ps1'

@@ -8,8 +8,13 @@ packages:
 autoInstallPeers: false
 
 allowBuilds:
+  '@deepseek-ai/dsh-subprocess-local': set this to true or false
+  '@google/genai': set this to true or false
   cpu-features: true
   esbuild: true
+  koffi: set this to true or false
+  node-pty: set this to true or false
+  protobufjs: set this to true or false
   ssh2: true
 
 minimumReleaseAgeExclude:

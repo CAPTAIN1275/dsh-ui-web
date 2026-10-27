@@ -1,6 +1,6 @@
 {
   "name": "@captain1275/dsh-bot-panel",
-  "description": "Operations surface for the QQ bot stack (AstrBot + NapCat + hdc device): a /api/dsh-bot status and action route family plus agent tools, wrapping the botctl script. Hot-pluggable via the profile bundle list, no dsh source changes.",
+  "description": "Operations surface for the QQ bot stack (AstrBot + NapCat + hdc device): a /api/dsh-bot status and action route family in the host, plus a sidebar entry and control panel in the web GUI. Hot-pluggable via the profile bundle list, no dsh source changes.",
   "version": "0.1.0",
   "type": "module",
   "engines": {
@@ -13,6 +13,10 @@
       "types": "./lib/types/index.d.ts",
       "default": "./lib/index.js"
     },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
     "./src/*": "./src/*",
     "./package.json": "./package.json"
   },
@@ -22,16 +26,21 @@
     },
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
     }
   },
   "peerDependencies": {
     "@deepseek-ai/dsh": ">=0.2.0-rc.2"
   },
   "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/dsh": "0.2.0-rc.2",
     "@deepseek-ai/dsh-host-webserver": "^0.2.0-rc.2",
     "@deepseek-ai/dsh-tools": "^0.2.0-rc.2",
     "@types/node": "^22.20.0",
+    "lightningcss": "1.32.0",
     "tsdown": "0.22.2",
     "typescript": "~5.7.2"
   },
