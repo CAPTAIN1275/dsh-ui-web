@@ -1,0 +1,10 @@
+# dsh-bot-panel bundle patch: inserts the plugin row into the web profile
+# roster. Applied as a profile bundle layer over dsh-base; activate with
+# `dsh plugin --profile <name> add link:~/code/dsh-web-ui/packages/dsh-bot-panel`.
+#
+# The row is a bare plugin by package name: only the node half (exports ".")
+# runs, serving /api/dsh-bot/status and /api/dsh-bot/action in the host
+# process. There is no browser half yet.
+- insert:
+    - id: bot-panel
+      name: '@captain1275/dsh-bot-panel'
